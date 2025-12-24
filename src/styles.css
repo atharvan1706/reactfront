@@ -1,0 +1,110 @@
+:root{
+  --bg:#0f172a;
+  --card:#0b1220;
+  --text:#e6eef8;
+}
+
+/* GLOBAL */
+body{
+  margin:0;
+  font-family:Inter,Segoe UI,Roboto,Arial;
+  background:linear-gradient(180deg,#071028 0%, #08101b 100%);
+  color:var(--text);
+  min-height:100vh;
+  display:flex;
+  flex-direction:column;
+}
+
+.app{
+  width:100%;
+  max-width:1600px;         /* 🔥 instead of 5000px */
+  margin:0 auto;
+  padding:16px;
+  box-sizing:border-box;
+}
+
+.topbar{
+  padding:12px 8px;
+}
+
+.topbar h1{
+  margin:0;
+  font-size:clamp(18px,2vw,28px);   /* responsive font */
+}
+
+.subtitle{
+  margin:4px 0 0;
+  color:#9fb1d6;
+  font-size:clamp(12px,1.5vw,15px);
+}
+
+.content{
+  margin-top:12px;
+}
+
+.footer{
+  margin:16px 8px;
+  color:#9fb1d6;
+  font-size:12px;
+}
+
+/* CONTROLS */
+.controls{
+  margin-bottom:12px;
+  display:flex;
+  flex-wrap:wrap;
+  gap:8px;
+}
+
+button{
+  padding:8px 12px;
+  border-radius:6px;
+  border:none;
+  cursor:pointer;
+  background:#1e293b;
+  color:var(--text);
+}
+
+/* LAYOUT */
+.layout{
+  background:transparent;
+  display:grid;
+  grid-template-columns:repeat(auto-fit, minmax(300px, 1fr));  /* 🔥 responsive grid */
+  gap:16px;
+}
+
+/* PANELS */
+.panel{
+  background:rgba(255,255,255,0.03);
+  border-radius:8px;
+  overflow:hidden;
+  box-shadow:0 6px 18px rgba(3,7,18,0.6);
+  border:1px solid rgba(255,255,255,0.03);
+  display:flex;
+  flex-direction:column;
+  min-height:260px;     /* gives charts proper space */
+}
+
+.panel-title{
+  padding:10px 14px;
+  font-weight:600;
+  cursor:move;
+  font-size:14px;
+  background:linear-gradient(90deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));
+  border-bottom:1px solid rgba(255,255,255,0.02);
+}
+
+.panel-body{
+  padding:12px;
+  flex:1;   /* 🔥 makes charts fill available space */
+}
+
+/* MOBILE BREAKPOINTS */
+@media (max-width:800px){
+  .app{
+    padding:10px;
+  }
+  .panel{
+    min-height:200px;
+  }
+}

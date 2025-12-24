@@ -1,0 +1,126 @@
+/* ROOT + THEME */
+:root {
+  --bg: #0f172a;
+  --panel: #0b1220;
+  --panel-highlight: rgba(255,255,255,0.04);
+  --text: #e6eef8;
+  --text-muted: #9fb1d6;
+
+  font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
+  line-height: 1.5;
+  font-weight: 400;
+
+  color: var(--text);
+  background: linear-gradient(180deg, #071028 0%, #08101b 100%);
+}
+
+/* GLOBAL */
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-width: 320px;
+  min-height: 100vh;
+  background: transparent;
+  display: block;         /* 🔥 remove forced centering */
+  color: var(--text);
+}
+
+/* LINKS */
+a {
+  font-weight: 500;
+  color: #86a2ff;
+  text-decoration: none;
+}
+a:hover {
+  color: #b4c5ff;
+}
+
+/* TITLES */
+h1, h2, h3, h4, h5 {
+  margin: 0;
+  color: var(--text);
+}
+
+/* BUTTONS */
+button {
+  border-radius: 6px;
+  border: 1px solid rgba(255,255,255,0.05);
+  padding: 0.6em 1.2em;
+  font-size: 0.95rem;
+  font-family: inherit;
+  background: rgba(255,255,255,0.05);
+  color: var(--text);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+button:hover {
+  background: rgba(255,255,255,0.12);
+  border-color: rgba(255,255,255,0.2);
+}
+button:focus,
+button:focus-visible {
+  outline: 2px solid #4a67ff;
+}
+
+/* —— DASHBOARD PANEL STYLES —— */
+
+.panel {
+  background: var(--panel-highlight);
+  border: 1px solid rgba(255,255,255,0.05);
+  border-radius: 8px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  min-height: 240px;      /* 🔥 avoids tiny charts */
+  box-shadow: 0 8px 28px rgba(0,0,0,0.4);
+}
+
+.panel-title {
+  cursor: move;
+  padding: 10px 12px;
+  background: rgba(255,255,255,0.04);
+  border-bottom: 1px solid rgba(255,255,255,0.05);
+  font-weight: 600;
+  color: var(--text);
+  font-size: 14px;
+}
+
+.panel-body {
+  flex: 1;
+  overflow: hidden;
+  padding: 12px;
+  color: var(--text);
+}
+
+/* —— REACT GRID LAYOUT —— */
+
+.react-grid-item {
+  transition: all 200ms ease;
+}
+
+.react-grid-item.react-grid-placeholder {
+  background: rgba(255,255,255,0.15);
+  border-radius: 6px;
+}
+
+/* GRID WRAPPER */
+.layout {
+  display: grid;
+  gap: 16px;
+}
+
+/* RESPONSIVE BREAKPOINTS */
+@media (max-width: 900px) {
+  .panel {
+    min-height: 200px;
+  }
+}
+
+@media (max-width: 600px) {
+  button {
+    width: 100%;
+  }
+}
