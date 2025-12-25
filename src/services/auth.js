@@ -3,7 +3,7 @@ import axios from 'axios';
 
 // ✅ Use environment variable instead of hardcoded URL
 const API_URL = import.meta.env.VITE_API_URL;
-
+console.log('VITE_API_URL:', import.meta.env.VITE_API_URL);
 class AuthService {
   constructor() {
     this.token = localStorage.getItem('token');
