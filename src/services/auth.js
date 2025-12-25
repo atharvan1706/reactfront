@@ -13,7 +13,7 @@ class AuthService {
   async login(email, password) {
     try {
       const response = await axios.post(
-        `${API_URL}/auth/login`,
+        `https://reactback-production-6cd8.up.railway.app/api/auth/login`,
         { email, password },
         {
           headers: {
