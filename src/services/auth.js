@@ -1,8 +1,8 @@
 // src/services/auth.js
 import axios from 'axios';
 
-// ✅ MUST be full backend URL (Railway)
-const API_URL = 'https://reactback-production-6cd8.up.railway.app/api';
+// ✅ Use environment variable instead of hardcoded URL
+const API_URL = import.meta.env.VITE_API_URL;
 
 class AuthService {
   constructor() {
@@ -22,7 +22,7 @@ class AuthService {
         }
       );
 
-      if (response.data.success) {
+      if (response.data?.success) {
         this.token = response.data.token;
         this.user = response.data.user;
 
@@ -32,9 +32,9 @@ class AuthService {
         return { success: true, user: this.user };
       }
 
-      return { success: false, message: 'Login failed' };
+      return { success: false, message: response.data?.message || 'Login failed' };
     } catch (error) {
-      console.error('Login error:', error);
+      console.error('Login error:', error.response?.data || error.message);
       return {
         success: false,
         message: error.response?.data?.message || 'Login failed'
@@ -71,7 +71,7 @@ class AuthService {
         }
       });
 
-      return response.data.success === true;
+      return response.data?.success === true;
     } catch (error) {
       return false;
     }
