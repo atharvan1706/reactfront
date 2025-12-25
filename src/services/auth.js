@@ -2,8 +2,8 @@
 import axios from 'axios';
 
 // ✅ Use environment variable instead of hardcoded URL
-const API_URL = import.meta.env.VITE_API_URL;
-console.log('VITE_API_URL:', import.meta.env.VITE_API_URL);
+
+
 class AuthService {
   constructor() {
     this.token = localStorage.getItem('token');
@@ -65,7 +65,7 @@ class AuthService {
     if (!this.token) return false;
 
     try {
-      const response = await axios.get(`${API_URL}/auth/verify`, {
+      const response = await axios.get(`https://reactback-production-6cd8.up.railway.app/auth/verify`, {
         headers: {
           Authorization: `Bearer ${this.token}`
         }
