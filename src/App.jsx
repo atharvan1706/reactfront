@@ -113,17 +113,7 @@ function App() {
 
   return (
     <div>
-      <nav className="bg-white shadow-sm">
-        <div className="max-w-7xl mx-auto px-6 py-4 flex justify-between items-center">
-          <h1 className="text-xl font-bold">QuestDB Monitor</h1>
-          <button
-            onClick={handleLogout}
-            className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700 transition-colors"
-          >
-            Logout
-          </button>
-        </div>
-      </nav>
+    
       <Dashboard />
     </div>
   );
