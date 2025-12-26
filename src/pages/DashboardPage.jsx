@@ -1,7 +1,6 @@
 // src/pages/DashboardPage.jsx
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import GridLayout from 'react-grid-layout';
 import {
   LineChart, Line, BarChart, Bar, AreaChart, Area, PieChart, Pie, Cell,
   ScatterChart, Scatter, RadarChart, Radar, PolarGrid, PolarAngleAxis, PolarRadiusAxis,
@@ -9,15 +8,13 @@ import {
 } from 'recharts';
 import {
   Plus, LogOut, Database, Activity, TrendingUp, BarChart3, PieChart as PieIcon,
-  Edit2, Trash2, Copy, Play, RefreshCw, X, Gauge, Radar as RadarIcon,
-  CircleDot, Table as TableIcon, AlertCircle, Settings, Save, Eye
+  Trash2, Copy, Play, RefreshCw, X, Gauge, Radar as RadarIcon,
+  CircleDot, Table as TableIcon, AlertCircle, Settings, Save, Eye, Zap
 } from 'lucide-react';
 import authService from '../services/auth';
 import questdbService from '../services/questdb';
-import 'react-grid-layout/css/styles.css';
-import 'react-resizable/css/styles.css';
 
-const COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#14b8a6', '#f97316'];
+const COLORS = ['#667eea', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#14b8a6', '#f97316'];
 
 const VIZ_TYPES = [
   { id: 'line', name: 'Line Chart', icon: Activity, description: 'Time series line chart' },
@@ -30,19 +27,9 @@ const VIZ_TYPES = [
   { id: 'table', name: 'Table', icon: TableIcon, description: 'Data table' }
 ];
 
-// Helper: ensure config yAxis is always an array
-const normalizeConfig = (cfg) => {
-  const copy = { ...cfg };
-  if (!Array.isArray(copy.yAxis)) {
-    copy.yAxis = copy.yAxis ? [copy.yAxis] : [];
-  }
-  if (!copy.xAxis) copy.xAxis = copy.timestampField || '_time';
-  return copy;
-};
-
 // Panel Configuration Modal
 function PanelConfigModal({ panel, onSave, onClose, allTables }) {
-  const initial = panel ? normalizeConfig(panel) : {
+  const [config, setConfig] = useState(panel || {
     id: `panel_${Date.now()}`,
     title: 'New Panel',
     vizType: 'line',
@@ -51,7 +38,7 @@ function PanelConfigModal({ panel, onSave, onClose, allTables }) {
     table: '',
     timestampField: 'timestamp',
     xAxis: 'timestamp',
-    yAxis: [],
+    yAxis: 'value',
     limit: 100,
     refreshInterval: 5000,
     colors: [COLORS[0]],
@@ -61,9 +48,8 @@ function PanelConfigModal({ panel, onSave, onClose, allTables }) {
     showDots: false,
     fillOpacity: 0.3,
     aggregate: 'none'
-  };
+  });
 
-  const [config, setConfig] = useState(initial);
   const [previewData, setPreviewData] = useState([]);
   const [previewLoading, setPreviewLoading] = useState(false);
   const [previewError, setPreviewError] = useState(null);
@@ -74,7 +60,7 @@ function PanelConfigModal({ panel, onSave, onClose, allTables }) {
     if (config.table && config.dataSource === 'table') {
       fetchTableFields(config.table);
     }
-  }, [config.table, config.dataSource]);
+  }, [config.table]);
 
   const fetchTableFields = async (tableName) => {
     try {
@@ -83,31 +69,23 @@ function PanelConfigModal({ panel, onSave, onClose, allTables }) {
       if (result.length > 0) {
         const fields = Object.keys(result[0]);
         setAvailableFields(fields);
-      } else {
-        setAvailableFields([]);
       }
     } catch (error) {
       console.error('Error fetching fields:', error);
-      setAvailableFields([]);
     }
   };
 
   const handlePreview = async () => {
     setPreviewLoading(true);
     setPreviewError(null);
-
+    
     try {
       let query = config.query;
-
+      
       if (config.dataSource === 'table' && config.table) {
-        const orderField = config.timestampField || config.xAxis || 'timestamp';
-        // Include only requested fields if multiple selected, else select all
-        const fieldsToSelect = config.xAxis && config.yAxis.length > 0
-          ? [config.xAxis, ...config.yAxis].join(', ')
-          : '*';
-        query = `SELECT ${fieldsToSelect} FROM ${config.table} ORDER BY ${orderField} DESC LIMIT ${config.limit}`;
+        query = `SELECT * FROM ${config.table} ORDER BY ${config.timestampField} DESC LIMIT ${config.limit}`;
       }
-
+      
       if (!query) {
         setPreviewError('Please enter a query or select a table');
         setPreviewLoading(false);
@@ -115,31 +93,22 @@ function PanelConfigModal({ panel, onSave, onClose, allTables }) {
       }
 
       const result = await questdbService.query(query);
-      // Try to preserve a format compatible with your charting helpers
-      const formatted = questdbService.formatForChart
-        ? questdbService.formatForChart(result, config.timestampField || config.xAxis)
-        : result.map(r => ({ ...r }));
-
+      const formatted = questdbService.formatForChart(result, config.timestampField);
       setPreviewData(formatted);
-
+      
       // Auto-detect fields if not set
-      if (formatted.length > 0 && (!config.yAxis || config.yAxis.length === 0)) {
-        const numericFields = Object.keys(formatted[0]).filter(key =>
-          typeof formatted[0][key] === 'number' && !key.startsWith('_')
+      if (formatted.length > 0 && !config.yAxis) {
+        const numericFields = Object.keys(formatted[0]).filter(key => 
+          typeof formatted[0][key] === 'number' && key !== '_timestamp'
         );
         if (numericFields.length > 0) {
-          setConfig({ ...config, yAxis: [numericFields[0]] });
+          setConfig({ ...config, yAxis: numericFields[0] });
         }
       }
-
-      // populate availableFields if empty
-      if (availableFields.length === 0 && result.length > 0) {
-        setAvailableFields(Object.keys(result[0]));
-      }
     } catch (error) {
-      setPreviewError(error.message || String(error));
+      setPreviewError(error.message);
     }
-
+    
     setPreviewLoading(false);
   };
 
@@ -147,17 +116,17 @@ function PanelConfigModal({ panel, onSave, onClose, allTables }) {
     if (previewLoading) {
       return (
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '200px' }}>
-          <RefreshCw size={24} color="#3b82f6" style={{ animation: 'spin 1s linear infinite' }} />
+          <RefreshCw size={24} color="#667eea" style={{ animation: 'spin 1s linear infinite' }} />
         </div>
       );
     }
 
     if (previewError) {
       return (
-        <div style={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
+        <div style={{ 
+          display: 'flex', 
+          alignItems: 'center', 
+          justifyContent: 'center', 
           height: '200px',
           color: '#ef4444',
           textAlign: 'center',
@@ -173,10 +142,10 @@ function PanelConfigModal({ panel, onSave, onClose, allTables }) {
 
     if (previewData.length === 0) {
       return (
-        <div style={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
+        <div style={{ 
+          display: 'flex', 
+          alignItems: 'center', 
+          justifyContent: 'center', 
           height: '200px',
           color: '#9ca3af'
         }}>
@@ -185,42 +154,35 @@ function PanelConfigModal({ panel, onSave, onClose, allTables }) {
       );
     }
 
-    const xKey = config.xAxis || '_time';
     const chartProps = { data: previewData, margin: { top: 5, right: 20, left: 0, bottom: 5 } };
 
     return (
       <ResponsiveContainer width="100%" height={200}>
         {config.vizType === 'line' && (
           <LineChart {...chartProps}>
-            <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
-            <XAxis dataKey={xKey} tick={{ fill: '#9ca3af', fontSize: 10 }} />
-            <YAxis tick={{ fill: '#9ca3af', fontSize: 10 }} />
-            <Tooltip contentStyle={{ background: '#1a1d23', border: '1px solid #2d3139' }} />
-            {Array.isArray(config.yAxis) && config.yAxis.map((field, idx) => (
-              <Line key={field} type="monotone" dataKey={field} stroke={config.colors[idx % config.colors.length] || COLORS[idx % COLORS.length]} strokeWidth={config.lineWidth} dot={config.showDots} />
-            ))}
+            <CartesianGrid strokeDasharray="3 3" stroke="rgba(0,0,0,0.1)" />
+            <XAxis dataKey="_time" tick={{ fill: '#6b7280', fontSize: 10 }} />
+            <YAxis tick={{ fill: '#6b7280', fontSize: 10 }} />
+            <Tooltip contentStyle={{ background: 'white', border: '1px solid #e5e7eb' }} />
+            <Line type="monotone" dataKey={config.yAxis} stroke={config.colors[0]} strokeWidth={config.lineWidth} dot={config.showDots} />
           </LineChart>
         )}
         {config.vizType === 'bar' && (
           <BarChart {...chartProps}>
-            <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
-            <XAxis dataKey={xKey} tick={{ fill: '#9ca3af', fontSize: 10 }} />
-            <YAxis tick={{ fill: '#9ca3af', fontSize: 10 }} />
-            <Tooltip contentStyle={{ background: '#1a1d23', border: '1px solid #2d3139' }} />
-            {Array.isArray(config.yAxis) && config.yAxis.map((field, idx) => (
-              <Bar key={field} dataKey={field} fill={config.colors[idx % config.colors.length] || COLORS[idx % COLORS.length]} />
-            ))}
+            <CartesianGrid strokeDasharray="3 3" stroke="rgba(0,0,0,0.1)" />
+            <XAxis dataKey="_time" tick={{ fill: '#6b7280', fontSize: 10 }} />
+            <YAxis tick={{ fill: '#6b7280', fontSize: 10 }} />
+            <Tooltip contentStyle={{ background: 'white', border: '1px solid #e5e7eb' }} />
+            <Bar dataKey={config.yAxis} fill={config.colors[0]} />
           </BarChart>
         )}
         {config.vizType === 'area' && (
           <AreaChart {...chartProps}>
-            <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
-            <XAxis dataKey={xKey} tick={{ fill: '#9ca3af', fontSize: 10 }} />
-            <YAxis tick={{ fill: '#9ca3af', fontSize: 10 }} />
-            <Tooltip contentStyle={{ background: '#1a1d23', border: '1px solid #2d3139' }} />
-            {Array.isArray(config.yAxis) && config.yAxis.map((field, idx) => (
-              <Area key={field} type="monotone" dataKey={field} stroke={config.colors[idx % config.colors.length] || COLORS[idx % COLORS.length]} fill={config.colors[idx % config.colors.length] || COLORS[idx % COLORS.length]} fillOpacity={config.fillOpacity} />
-            ))}
+            <CartesianGrid strokeDasharray="3 3" stroke="rgba(0,0,0,0.1)" />
+            <XAxis dataKey="_time" tick={{ fill: '#6b7280', fontSize: 10 }} />
+            <YAxis tick={{ fill: '#6b7280', fontSize: 10 }} />
+            <Tooltip contentStyle={{ background: 'white', border: '1px solid #e5e7eb' }} />
+            <Area type="monotone" dataKey={config.yAxis} stroke={config.colors[0]} fill={config.colors[0]} fillOpacity={config.fillOpacity} />
           </AreaChart>
         )}
       </ResponsiveContainer>
@@ -234,7 +196,7 @@ function PanelConfigModal({ panel, onSave, onClose, allTables }) {
       left: 0,
       right: 0,
       bottom: 0,
-      background: 'rgba(0,0,0,0.85)',
+      background: 'rgba(0,0,0,0.75)',
       display: 'flex',
       alignItems: 'center',
       justifyContent: 'center',
@@ -242,37 +204,37 @@ function PanelConfigModal({ panel, onSave, onClose, allTables }) {
       padding: '20px'
     }}>
       <div style={{
-        background: '#1a1d23',
+        background: 'white',
         borderRadius: '16px',
         width: '100%',
         maxWidth: '1000px',
         maxHeight: '90vh',
         overflow: 'hidden',
-        border: '1px solid #2d3139',
         display: 'flex',
-        flexDirection: 'column'
+        flexDirection: 'column',
+        boxShadow: '0 20px 60px rgba(0,0,0,0.3)'
       }}>
         {/* Header */}
         <div style={{
           padding: '20px 24px',
-          borderBottom: '1px solid #2d3139',
+          borderBottom: '1px solid #e5e7eb',
           display: 'flex',
           justifyContent: 'space-between',
           alignItems: 'center',
-          background: '#0f1117'
+          background: '#f9fafb'
         }}>
           <div>
-            <h2 style={{ margin: 0, fontSize: '20px', color: '#fff', fontWeight: '700' }}>
+            <h2 style={{ margin: 0, fontSize: '20px', color: '#111827', fontWeight: '700' }}>
               {panel ? 'Edit Panel' : 'Add New Panel'}
             </h2>
-            <p style={{ margin: '4px 0 0', fontSize: '13px', color: '#9ca3af' }}>
+            <p style={{ margin: '4px 0 0', fontSize: '13px', color: '#6b7280' }}>
               Configure your visualization settings
             </p>
           </div>
           <button onClick={onClose} style={{
             background: 'none',
             border: 'none',
-            color: '#9ca3af',
+            color: '#6b7280',
             cursor: 'pointer',
             padding: '8px'
           }}>
@@ -283,12 +245,12 @@ function PanelConfigModal({ panel, onSave, onClose, allTables }) {
         {/* Content - Scrollable */}
         <div style={{ flex: 1, overflow: 'auto', padding: '24px' }}>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px' }}>
-
+            
             {/* Left Column */}
             <div>
               {/* Panel Title */}
               <div style={{ marginBottom: '20px' }}>
-                <label style={{ display: 'block', marginBottom: '8px', fontSize: '13px', color: '#e5e7eb', fontWeight: '600' }}>
+                <label style={{ display: 'block', marginBottom: '8px', fontSize: '13px', color: '#374151', fontWeight: '600' }}>
                   Panel Title
                 </label>
                 <input
@@ -299,10 +261,10 @@ function PanelConfigModal({ panel, onSave, onClose, allTables }) {
                   style={{
                     width: '100%',
                     padding: '10px 12px',
-                    background: '#0f1117',
-                    border: '1px solid #2d3139',
+                    background: 'white',
+                    border: '2px solid #e5e7eb',
                     borderRadius: '8px',
-                    color: '#fff',
+                    color: '#111827',
                     fontSize: '14px'
                   }}
                 />
@@ -310,7 +272,7 @@ function PanelConfigModal({ panel, onSave, onClose, allTables }) {
 
               {/* Visualization Type */}
               <div style={{ marginBottom: '20px' }}>
-                <label style={{ display: 'block', marginBottom: '12px', fontSize: '13px', color: '#e5e7eb', fontWeight: '600' }}>
+                <label style={{ display: 'block', marginBottom: '12px', fontSize: '13px', color: '#374151', fontWeight: '600' }}>
                   Visualization Type
                 </label>
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
@@ -323,11 +285,11 @@ function PanelConfigModal({ panel, onSave, onClose, allTables }) {
                         onClick={() => setConfig({ ...config, vizType: type.id })}
                         style={{
                           padding: '12px',
-                          background: isSelected ? '#3b82f6' : '#0f1117',
-                          border: '1px solid',
-                          borderColor: isSelected ? '#3b82f6' : '#2d3139',
+                          background: isSelected ? '#667eea' : '#f9fafb',
+                          border: '2px solid',
+                          borderColor: isSelected ? '#667eea' : '#e5e7eb',
                           borderRadius: '8px',
-                          color: '#fff',
+                          color: isSelected ? 'white' : '#374151',
                           cursor: 'pointer',
                           display: 'flex',
                           alignItems: 'center',
@@ -350,7 +312,7 @@ function PanelConfigModal({ panel, onSave, onClose, allTables }) {
 
               {/* Data Source Selection */}
               <div style={{ marginBottom: '20px' }}>
-                <label style={{ display: 'block', marginBottom: '8px', fontSize: '13px', color: '#e5e7eb', fontWeight: '600' }}>
+                <label style={{ display: 'block', marginBottom: '8px', fontSize: '13px', color: '#374151', fontWeight: '600' }}>
                   Data Source
                 </label>
                 <div style={{ display: 'flex', gap: '8px', marginBottom: '12px' }}>
@@ -359,11 +321,11 @@ function PanelConfigModal({ panel, onSave, onClose, allTables }) {
                     style={{
                       flex: 1,
                       padding: '10px',
-                      background: config.dataSource === 'table' ? '#3b82f6' : '#0f1117',
-                      border: '1px solid',
-                      borderColor: config.dataSource === 'table' ? '#3b82f6' : '#2d3139',
+                      background: config.dataSource === 'table' ? '#667eea' : '#f9fafb',
+                      border: '2px solid',
+                      borderColor: config.dataSource === 'table' ? '#667eea' : '#e5e7eb',
                       borderRadius: '8px',
-                      color: '#fff',
+                      color: config.dataSource === 'table' ? 'white' : '#374151',
                       cursor: 'pointer',
                       fontSize: '13px',
                       fontWeight: '600'
@@ -377,11 +339,11 @@ function PanelConfigModal({ panel, onSave, onClose, allTables }) {
                     style={{
                       flex: 1,
                       padding: '10px',
-                      background: config.dataSource === 'custom' ? '#3b82f6' : '#0f1117',
-                      border: '1px solid',
-                      borderColor: config.dataSource === 'custom' ? '#3b82f6' : '#2d3139',
+                      background: config.dataSource === 'custom' ? '#667eea' : '#f9fafb',
+                      border: '2px solid',
+                      borderColor: config.dataSource === 'custom' ? '#667eea' : '#e5e7eb',
                       borderRadius: '8px',
-                      color: '#fff',
+                      color: config.dataSource === 'custom' ? 'white' : '#374151',
                       cursor: 'pointer',
                       fontSize: '13px',
                       fontWeight: '600'
@@ -398,10 +360,10 @@ function PanelConfigModal({ panel, onSave, onClose, allTables }) {
                     style={{
                       width: '100%',
                       padding: '10px 12px',
-                      background: '#0f1117',
-                      border: '1px solid #2d3139',
+                      background: 'white',
+                      border: '2px solid #e5e7eb',
                       borderRadius: '8px',
-                      color: '#fff',
+                      color: '#111827',
                       fontSize: '14px'
                     }}
                   >
@@ -415,14 +377,14 @@ function PanelConfigModal({ panel, onSave, onClose, allTables }) {
                     value={config.query}
                     onChange={(e) => setConfig({ ...config, query: e.target.value })}
                     rows={4}
-                    placeholder="SELECT timestamp, field1, field2 FROM your_table WHERE condition ORDER BY timestamp DESC LIMIT 100"
+                    placeholder="SELECT * FROM your_table WHERE condition ORDER BY timestamp DESC LIMIT 100"
                     style={{
                       width: '100%',
                       padding: '10px 12px',
-                      background: '#0f1117',
-                      border: '1px solid #2d3139',
+                      background: 'white',
+                      border: '2px solid #e5e7eb',
                       borderRadius: '8px',
-                      color: '#fff',
+                      color: '#111827',
                       fontSize: '13px',
                       fontFamily: 'monospace',
                       resize: 'vertical'
@@ -433,30 +395,28 @@ function PanelConfigModal({ panel, onSave, onClose, allTables }) {
 
               {/* Field Configuration */}
               <div style={{ marginBottom: '20px' }}>
-                <label style={{ display: 'block', marginBottom: '12px', fontSize: '13px', color: '#e5e7eb', fontWeight: '600' }}>
+                <label style={{ display: 'block', marginBottom: '12px', fontSize: '13px', color: '#374151', fontWeight: '600' }}>
                   Field Configuration
                 </label>
-
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
                   <div>
-                    <label style={{ display: 'block', marginBottom: '6px', fontSize: '12px', color: '#9ca3af' }}>
-                      X-Axis Field
+                    <label style={{ display: 'block', marginBottom: '6px', fontSize: '12px', color: '#6b7280' }}>
+                      Timestamp Field
                     </label>
                     {availableFields.length > 0 ? (
                       <select
-                        value={config.xAxis}
-                        onChange={(e) => setConfig({ ...config, xAxis: e.target.value })}
+                        value={config.timestampField}
+                        onChange={(e) => setConfig({ ...config, timestampField: e.target.value })}
                         style={{
                           width: '100%',
                           padding: '8px',
-                          background: '#0f1117',
-                          border: '1px solid #2d3139',
+                          background: 'white',
+                          border: '2px solid #e5e7eb',
                           borderRadius: '6px',
-                          color: '#fff',
+                          color: '#111827',
                           fontSize: '13px'
                         }}
                       >
-                        <option value="_time">_time (formatted)</option>
                         {availableFields.map(field => (
                           <option key={field} value={field}>{field}</option>
                         ))}
@@ -464,90 +424,57 @@ function PanelConfigModal({ panel, onSave, onClose, allTables }) {
                     ) : (
                       <input
                         type="text"
-                        value={config.xAxis}
-                        onChange={(e) => setConfig({ ...config, xAxis: e.target.value })}
-                        placeholder="timestamp or your field name"
+                        value={config.timestampField}
+                        onChange={(e) => setConfig({ ...config, timestampField: e.target.value })}
+                        placeholder="timestamp"
                         style={{
                           width: '100%',
                           padding: '8px',
-                          background: '#0f1117',
-                          border: '1px solid #2d3139',
+                          background: 'white',
+                          border: '2px solid #e5e7eb',
                           borderRadius: '6px',
-                          color: '#fff',
+                          color: '#111827',
                           fontSize: '13px'
                         }}
                       />
                     )}
                   </div>
-
                   <div>
-                    <label style={{ display: 'block', marginBottom: '6px', fontSize: '12px', color: '#9ca3af' }}>
-                      Value Fields (Y-Axis) — select multiple
+                    <label style={{ display: 'block', marginBottom: '6px', fontSize: '12px', color: '#6b7280' }}>
+                      Value Field (Y-Axis)
                     </label>
-
                     {availableFields.length > 0 ? (
-                      <div>
-                        <select
-                          multiple
-                          value={config.yAxis}
-                          onChange={(e) => {
-                            const values = Array.from(e.target.selectedOptions).map(o => o.value);
-                            setConfig({ ...config, yAxis: values });
-                          }}
-                          style={{
-                            width: '100%',
-                            padding: '8px',
-                            height: '120px',
-                            background: '#0f1117',
-                            border: '1px solid #2d3139',
-                            borderRadius: '6px',
-                            color: '#fff',
-                            fontSize: '13px'
-                          }}
-                        >
-                          {availableFields.filter(f => f !== config.xAxis).map(field => (
-                            <option key={field} value={field}>{field}</option>
-                          ))}
-                        </select>
-
-                        {/* Show selected as chips */}
-                        <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginTop: '8px' }}>
-                          {(config.yAxis || []).map((f, i) => (
-                            <div key={f} style={{
-                              display: 'inline-flex',
-                              alignItems: 'center',
-                              gap: '8px',
-                              background: '#0b1220',
-                              border: '1px solid #2d3139',
-                              padding: '6px 8px',
-                              borderRadius: '999px',
-                              fontSize: '12px',
-                              color: '#fff'
-                            }}>
-                              <span style={{ width: 10, height: 10, borderRadius: 2, background: config.colors[i % config.colors.length] || COLORS[i % COLORS.length], display: 'inline-block' }} />
-                              <span>{f}</span>
-                              <button onClick={() => {
-                                setConfig({ ...config, yAxis: config.yAxis.filter(x => x !== f) });
-                              }} style={{ background: 'transparent', border: 'none', color: '#9ca3af', cursor: 'pointer' }}>
-                                ✕
-                              </button>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    ) : (
-                      <input
-                        type="text"
-                        value={(config.yAxis || []).join(',')}
-                        onChange={(e) => setConfig({ ...config, yAxis: e.target.value.split(',').map(s => s.trim()).filter(Boolean) })}
-                        placeholder="comma,separated,fields"
+                      <select
+                        value={config.yAxis}
+                        onChange={(e) => setConfig({ ...config, yAxis: e.target.value })}
                         style={{
                           width: '100%',
                           padding: '8px',
-                          background: '#0f1117',
-                          border: '1px solid #2d3139',
+                          background: 'white',
+                          border: '2px solid #e5e7eb',
                           borderRadius: '6px',
-                          color: '#fff',
+                          color: '#111827',
+                          fontSize: '13px'
+                        }}
+                      >
+                        <option value="">Select field...</option>
+                        {availableFields.map(field => (
+                          <option key={field} value={field}>{field}</option>
+                        ))}
+                      </select>
+                    ) : (
+                      <input
+                        type="text"
+                        value={config.yAxis}
+                        onChange={(e) => setConfig({ ...config, yAxis: e.target.value })}
+                        placeholder="value"
+                        style={{
+                          width: '100%',
+                          padding: '8px',
+                          background: 'white',
+                          border: '2px solid #e5e7eb',
+                          borderRadius: '6px',
+                          color: '#111827',
                           fontSize: '13px'
                         }}
                       />
@@ -558,22 +485,22 @@ function PanelConfigModal({ panel, onSave, onClose, allTables }) {
 
               {/* Limit */}
               <div style={{ marginBottom: '20px' }}>
-                <label style={{ display: 'block', marginBottom: '8px', fontSize: '13px', color: '#e5e7eb', fontWeight: '600' }}>
+                <label style={{ display: 'block', marginBottom: '8px', fontSize: '13px', color: '#374151', fontWeight: '600' }}>
                   Data Point Limit
                 </label>
                 <input
                   type="number"
                   value={config.limit}
-                  onChange={(e) => setConfig({ ...config, limit: parseInt(e.target.value || '0') })}
+                  onChange={(e) => setConfig({ ...config, limit: parseInt(e.target.value) })}
                   min="10"
                   max="10000"
                   style={{
                     width: '100%',
                     padding: '10px 12px',
-                    background: '#0f1117',
-                    border: '1px solid #2d3139',
+                    background: 'white',
+                    border: '2px solid #e5e7eb',
                     borderRadius: '8px',
-                    color: '#fff',
+                    color: '#111827',
                     fontSize: '14px'
                   }}
                 />
@@ -581,7 +508,7 @@ function PanelConfigModal({ panel, onSave, onClose, allTables }) {
 
               {/* Refresh Interval */}
               <div style={{ marginBottom: '20px' }}>
-                <label style={{ display: 'block', marginBottom: '8px', fontSize: '13px', color: '#e5e7eb', fontWeight: '600' }}>
+                <label style={{ display: 'block', marginBottom: '8px', fontSize: '13px', color: '#374151', fontWeight: '600' }}>
                   Auto Refresh Interval
                 </label>
                 <select
@@ -590,10 +517,10 @@ function PanelConfigModal({ panel, onSave, onClose, allTables }) {
                   style={{
                     width: '100%',
                     padding: '10px 12px',
-                    background: '#0f1117',
-                    border: '1px solid #2d3139',
+                    background: 'white',
+                    border: '2px solid #e5e7eb',
                     borderRadius: '8px',
-                    color: '#fff',
+                    color: '#111827',
                     fontSize: '14px'
                   }}
                 >
@@ -614,7 +541,7 @@ function PanelConfigModal({ panel, onSave, onClose, allTables }) {
               {/* Preview */}
               <div style={{ marginBottom: '20px' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
-                  <label style={{ fontSize: '13px', color: '#e5e7eb', fontWeight: '600' }}>
+                  <label style={{ fontSize: '13px', color: '#374151', fontWeight: '600' }}>
                     Preview
                   </label>
                   <button
@@ -622,10 +549,10 @@ function PanelConfigModal({ panel, onSave, onClose, allTables }) {
                     disabled={previewLoading}
                     style={{
                       padding: '6px 12px',
-                      background: '#3b82f6',
+                      background: '#667eea',
                       border: 'none',
                       borderRadius: '6px',
-                      color: '#fff',
+                      color: 'white',
                       cursor: previewLoading ? 'not-allowed' : 'pointer',
                       fontSize: '12px',
                       fontWeight: '600',
@@ -639,8 +566,8 @@ function PanelConfigModal({ panel, onSave, onClose, allTables }) {
                   </button>
                 </div>
                 <div style={{
-                  background: '#0f1117',
-                  border: '1px solid #2d3139',
+                  background: '#f9fafb',
+                  border: '2px solid #e5e7eb',
                   borderRadius: '8px',
                   padding: '16px',
                   minHeight: '200px'
@@ -648,7 +575,7 @@ function PanelConfigModal({ panel, onSave, onClose, allTables }) {
                   {renderPreviewChart()}
                 </div>
                 {previewData.length > 0 && (
-                  <div style={{ marginTop: '8px', fontSize: '12px', color: '#9ca3af' }}>
+                  <div style={{ marginTop: '8px', fontSize: '12px', color: '#6b7280' }}>
                     {previewData.length} data points loaded
                   </div>
                 )}
@@ -656,14 +583,14 @@ function PanelConfigModal({ panel, onSave, onClose, allTables }) {
 
               {/* Style Options */}
               <div style={{ marginBottom: '20px' }}>
-                <label style={{ display: 'block', marginBottom: '12px', fontSize: '13px', color: '#e5e7eb', fontWeight: '600' }}>
+                <label style={{ display: 'block', marginBottom: '12px', fontSize: '13px', color: '#374151', fontWeight: '600' }}>
                   Style Options
                 </label>
-
+                
                 {/* Color Picker */}
                 <div style={{ marginBottom: '12px' }}>
-                  <label style={{ display: 'block', marginBottom: '6px', fontSize: '12px', color: '#9ca3af' }}>
-                    Chart Colors (will be applied in order to selected fields)
+                  <label style={{ display: 'block', marginBottom: '6px', fontSize: '12px', color: '#6b7280' }}>
+                    Chart Color
                   </label>
                   <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
                     {COLORS.map(color => (
@@ -671,24 +598,22 @@ function PanelConfigModal({ panel, onSave, onClose, allTables }) {
                         key={color}
                         onClick={() => setConfig({ ...config, colors: [color] })}
                         style={{
-                          width: '32px',
-                          height: '32px',
+                          width: '36px',
+                          height: '36px',
                           background: color,
-                          border: config.colors[0] === color ? '2px solid #fff' : '1px solid #2d3139',
-                          borderRadius: '6px',
-                          cursor: 'pointer',
-                          boxShadow: config.colors[0] === color ? '0 0 0 2px #3b82f6' : 'none'
+                          border: config.colors[0] === color ? '3px solid #374151' : '2px solid #e5e7eb',
+                          borderRadius: '8px',
+                          cursor: 'pointer'
                         }}
                       />
                     ))}
-                    <div style={{ color: '#9ca3af', fontSize: '12px', alignSelf: 'center' }}>Tip: first color is primary</div>
                   </div>
                 </div>
 
                 {/* Line Width (for line/area charts) */}
                 {(config.vizType === 'line' || config.vizType === 'area') && (
                   <div style={{ marginBottom: '12px' }}>
-                    <label style={{ display: 'block', marginBottom: '6px', fontSize: '12px', color: '#9ca3af' }}>
+                    <label style={{ display: 'block', marginBottom: '6px', fontSize: '12px', color: '#6b7280' }}>
                       Line Width: {config.lineWidth}px
                     </label>
                     <input
@@ -705,7 +630,7 @@ function PanelConfigModal({ panel, onSave, onClose, allTables }) {
                 {/* Fill Opacity (for area charts) */}
                 {config.vizType === 'area' && (
                   <div style={{ marginBottom: '12px' }}>
-                    <label style={{ display: 'block', marginBottom: '6px', fontSize: '12px', color: '#9ca3af' }}>
+                    <label style={{ display: 'block', marginBottom: '6px', fontSize: '12px', color: '#6b7280' }}>
                       Fill Opacity: {Math.round(config.fillOpacity * 100)}%
                     </label>
                     <input
@@ -722,7 +647,7 @@ function PanelConfigModal({ panel, onSave, onClose, allTables }) {
 
                 {/* Display Options */}
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                  <label style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#e5e7eb', fontSize: '13px', cursor: 'pointer' }}>
+                  <label style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#374151', fontSize: '13px', cursor: 'pointer' }}>
                     <input
                       type="checkbox"
                       checked={config.showLegend}
@@ -731,7 +656,7 @@ function PanelConfigModal({ panel, onSave, onClose, allTables }) {
                     />
                     Show Legend
                   </label>
-                  <label style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#e5e7eb', fontSize: '13px', cursor: 'pointer' }}>
+                  <label style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#374151', fontSize: '13px', cursor: 'pointer' }}>
                     <input
                       type="checkbox"
                       checked={config.showGrid}
@@ -741,7 +666,7 @@ function PanelConfigModal({ panel, onSave, onClose, allTables }) {
                     Show Grid Lines
                   </label>
                   {(config.vizType === 'line' || config.vizType === 'area') && (
-                    <label style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#e5e7eb', fontSize: '13px', cursor: 'pointer' }}>
+                    <label style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#374151', fontSize: '13px', cursor: 'pointer' }}>
                       <input
                         type="checkbox"
                         checked={config.showDots}
@@ -760,20 +685,20 @@ function PanelConfigModal({ panel, onSave, onClose, allTables }) {
         {/* Footer */}
         <div style={{
           padding: '16px 24px',
-          borderTop: '1px solid #2d3139',
+          borderTop: '1px solid #e5e7eb',
           display: 'flex',
           justifyContent: 'flex-end',
           gap: '12px',
-          background: '#0f1117'
+          background: '#f9fafb'
         }}>
           <button
             onClick={onClose}
             style={{
               padding: '10px 20px',
-              background: '#2d3139',
-              border: 'none',
+              background: 'white',
+              border: '2px solid #e5e7eb',
               borderRadius: '8px',
-              color: '#9ca3af',
+              color: '#6b7280',
               cursor: 'pointer',
               fontSize: '14px',
               fontWeight: '600'
@@ -782,13 +707,13 @@ function PanelConfigModal({ panel, onSave, onClose, allTables }) {
             Cancel
           </button>
           <button
-            onClick={() => onSave(normalizeConfig(config))}
+            onClick={() => onSave(config)}
             style={{
               padding: '10px 20px',
-              background: 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)',
+              background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
               border: 'none',
               borderRadius: '8px',
-              color: '#fff',
+              color: 'white',
               cursor: 'pointer',
               fontSize: '14px',
               fontWeight: '600',
@@ -814,8 +739,7 @@ function PanelConfigModal({ panel, onSave, onClose, allTables }) {
 }
 
 // Panel Component with Real QuestDB Data
-function QuestDBPanel({ config: rawConfig, onEdit, onDelete, onDuplicate }) {
-  const config = normalizeConfig(rawConfig);
+function QuestDBPanel({ config, onEdit, onDelete, onDuplicate }) {
   const [data, setData] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -824,16 +748,10 @@ function QuestDBPanel({ config: rawConfig, onEdit, onDelete, onDuplicate }) {
   const fetchData = async () => {
     try {
       setError(null);
-      setLoading(true);
-
       let query = config.query;
-
+      
       if (config.dataSource === 'table' && config.table) {
-        const orderField = config.timestampField || config.xAxis || 'timestamp';
-        const fieldsToSelect = (config.xAxis ? [config.xAxis] : ['*']).concat(config.yAxis || []).join(', ');
-        // If user selected no Y fields, keep '*' to get full record
-        const selectClause = (config.yAxis && config.yAxis.length > 0) ? `${config.xAxis}, ${config.yAxis.join(', ')}` : '*';
-        query = `SELECT ${selectClause} FROM ${config.table} ORDER BY ${orderField} DESC LIMIT ${config.limit}`;
+        query = `SELECT * FROM ${config.table} ORDER BY ${config.timestampField} DESC LIMIT ${config.limit}`;
       }
 
       if (!query) {
@@ -841,15 +759,12 @@ function QuestDBPanel({ config: rawConfig, onEdit, onDelete, onDuplicate }) {
       }
 
       const result = await questdbService.query(query);
-      const formatted = questdbService.formatForChart
-        ? questdbService.formatForChart(result, config.timestampField || config.xAxis)
-        : result.map(r => ({ ...r }));
-
+      const formatted = questdbService.formatForChart(result, config.timestampField);
       setData(formatted);
       setLoading(false);
     } catch (err) {
       console.error('Error fetching data:', err);
-      setError(err.message || String(err));
+      setError(err.message);
       setLoading(false);
     }
   };
@@ -866,16 +781,15 @@ function QuestDBPanel({ config: rawConfig, onEdit, onDelete, onDuplicate }) {
         clearInterval(timerRef.current);
       }
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [JSON.stringify(config)]); // refetch when config changes
+  }, [config]);
 
   const renderChart = () => {
     if (loading) {
       return (
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%' }}>
           <div style={{ textAlign: 'center' }}>
-            <RefreshCw size={32} color="#3b82f6" style={{ animation: 'spin 1s linear infinite' }} />
-            <p style={{ color: '#9ca3af', marginTop: '12px', fontSize: '13px' }}>Loading data...</p>
+            <RefreshCw size={32} color="#667eea" style={{ animation: 'spin 1s linear infinite' }} />
+            <p style={{ color: '#6b7280', marginTop: '12px', fontSize: '13px' }}>Loading data...</p>
           </div>
         </div>
       );
@@ -911,10 +825,9 @@ function QuestDBPanel({ config: rawConfig, onEdit, onDelete, onDuplicate }) {
       );
     }
 
-    const xKey = config.xAxis || '_time';
     const chartProps = {
       data,
-      margin: { top: 10, right: 30, left: 0, bottom: 0 }
+      margin: { top: 10, right: 20, left: 10, bottom: 5 }
     };
 
     switch (config.vizType) {
@@ -922,22 +835,18 @@ function QuestDBPanel({ config: rawConfig, onEdit, onDelete, onDuplicate }) {
         return (
           <ResponsiveContainer width="100%" height="100%">
             <LineChart {...chartProps}>
-              {config.showGrid && <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />}
-              <XAxis dataKey={xKey} tick={{ fill: '#9ca3af', fontSize: 11 }} stroke="#2d3139" />
-              <YAxis tick={{ fill: '#9ca3af', fontSize: 11 }} stroke="#2d3139" />
-              <Tooltip contentStyle={{ background: '#1a1d23', border: '1px solid #2d3139' }} />
+              {config.showGrid && <CartesianGrid strokeDasharray="3 3" stroke="rgba(0,0,0,0.1)" />}
+              <XAxis dataKey="_time" tick={{ fill: '#6b7280', fontSize: 11 }} stroke="#e5e7eb" />
+              <YAxis tick={{ fill: '#6b7280', fontSize: 11 }} stroke="#e5e7eb" />
+              <Tooltip contentStyle={{ background: 'white', border: '1px solid #e5e7eb', borderRadius: '6px' }} />
               {config.showLegend && <Legend />}
-              {(config.yAxis && config.yAxis.length > 0) ? config.yAxis.map((field, idx) => (
-                <Line
-                  key={field}
-                  type="monotone"
-                  dataKey={field}
-                  stroke={config.colors[idx % config.colors.length] || COLORS[idx % COLORS.length]}
-                  strokeWidth={config.lineWidth}
-                  dot={config.showDots}
-                  isAnimationActive={false}
-                />
-              )) : <div style={{ color: '#9ca3af' }}>No Y fields selected</div>}
+              <Line 
+                type="monotone" 
+                dataKey={config.yAxis} 
+                stroke={config.colors[0]} 
+                strokeWidth={config.lineWidth} 
+                dot={config.showDots} 
+              />
             </LineChart>
           </ResponsiveContainer>
         );
@@ -946,23 +855,19 @@ function QuestDBPanel({ config: rawConfig, onEdit, onDelete, onDuplicate }) {
         return (
           <ResponsiveContainer width="100%" height="100%">
             <AreaChart {...chartProps}>
-              {config.showGrid && <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />}
-              <XAxis dataKey={xKey} tick={{ fill: '#9ca3af', fontSize: 11 }} stroke="#2d3139" />
-              <YAxis tick={{ fill: '#9ca3af', fontSize: 11 }} stroke="#2d3139" />
-              <Tooltip contentStyle={{ background: '#1a1d23', border: '1px solid #2d3139' }} />
+              {config.showGrid && <CartesianGrid strokeDasharray="3 3" stroke="rgba(0,0,0,0.1)" />}
+              <XAxis dataKey="_time" tick={{ fill: '#6b7280', fontSize: 11 }} stroke="#e5e7eb" />
+              <YAxis tick={{ fill: '#6b7280', fontSize: 11 }} stroke="#e5e7eb" />
+              <Tooltip contentStyle={{ background: 'white', border: '1px solid #e5e7eb', borderRadius: '6px' }} />
               {config.showLegend && <Legend />}
-              {(config.yAxis && config.yAxis.length > 0) ? config.yAxis.map((field, idx) => (
-                <Area
-                  key={field}
-                  type="monotone"
-                  dataKey={field}
-                  stroke={config.colors[idx % config.colors.length] || COLORS[idx % COLORS.length]}
-                  fill={config.colors[idx % config.colors.length] || COLORS[idx % COLORS.length]}
-                  fillOpacity={config.fillOpacity}
-                  strokeWidth={config.lineWidth}
-                  isAnimationActive={false}
-                />
-              )) : <div style={{ color: '#9ca3af' }}>No Y fields selected</div>}
+              <Area 
+                type="monotone" 
+                dataKey={config.yAxis} 
+                stroke={config.colors[0]} 
+                fill={config.colors[0]} 
+                fillOpacity={config.fillOpacity}
+                strokeWidth={config.lineWidth}
+              />
             </AreaChart>
           </ResponsiveContainer>
         );
@@ -971,85 +876,78 @@ function QuestDBPanel({ config: rawConfig, onEdit, onDelete, onDuplicate }) {
         return (
           <ResponsiveContainer width="100%" height="100%">
             <BarChart {...chartProps}>
-              {config.showGrid && <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />}
-              <XAxis dataKey={xKey} tick={{ fill: '#9ca3af', fontSize: 11 }} stroke="#2d3139" />
-              <YAxis tick={{ fill: '#9ca3af', fontSize: 11 }} stroke="#2d3139" />
-              <Tooltip contentStyle={{ background: '#1a1d23', border: '1px solid #2d3139' }} />
+              {config.showGrid && <CartesianGrid strokeDasharray="3 3" stroke="rgba(0,0,0,0.1)" />}
+              <XAxis dataKey="_time" tick={{ fill: '#6b7280', fontSize: 11 }} stroke="#e5e7eb" />
+              <YAxis tick={{ fill: '#6b7280', fontSize: 11 }} stroke="#e5e7eb" />
+              <Tooltip contentStyle={{ background: 'white', border: '1px solid #e5e7eb', borderRadius: '6px' }} />
               {config.showLegend && <Legend />}
-              {(config.yAxis && config.yAxis.length > 0) ? config.yAxis.map((field, idx) => (
-                <Bar key={field} dataKey={field} fill={config.colors[idx % config.colors.length] || COLORS[idx % COLORS.length]} />
-              )) : <div style={{ color: '#9ca3af' }}>No Y fields selected</div>}
+              <Bar dataKey={config.yAxis} fill={config.colors[0]} />
             </BarChart>
           </ResponsiveContainer>
         );
 
       case 'pie':
-        // For pie: use latest record and show selected Y fields as slices
-        const latest = data[0] || data[data.length - 1] || {};
-        const pieData = (config.yAxis && config.yAxis.length > 0) ? config.yAxis.map((field) => ({
-          name: field,
-          value: Number(latest[field] || 0)
-        })) : [];
         return (
           <ResponsiveContainer width="100%" height="100%">
             <PieChart>
-              <Pie data={pieData} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={80} label>
-                {pieData.map((entry, index) => (
-                  <Cell key={`cell-${index}`} fill={config.colors[index % config.colors.length] || COLORS[index % COLORS.length]} />
+              <Pie 
+                data={data.slice(0, 10)} 
+                dataKey={config.yAxis} 
+                nameKey="_time" 
+                cx="50%" 
+                cy="50%" 
+                outerRadius={80} 
+                label
+              >
+                {data.slice(0, 10).map((entry, index) => (
+                  <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                 ))}
               </Pie>
-              <Tooltip contentStyle={{ background: '#1a1d23', border: '1px solid #2d3139' }} />
+              <Tooltip contentStyle={{ background: 'white', border: '1px solid #e5e7eb', borderRadius: '6px' }} />
               {config.showLegend && <Legend />}
             </PieChart>
           </ResponsiveContainer>
         );
 
       case 'scatter':
-        // scatter with x=selected xKey and y each selected field shown as separate Scatter series
         return (
           <ResponsiveContainer width="100%" height="100%">
             <ScatterChart {...chartProps}>
-              {config.showGrid && <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />}
-              <XAxis dataKey={xKey} tick={{ fill: '#9ca3af', fontSize: 11 }} stroke="#2d3139" />
-              <YAxis tick={{ fill: '#9ca3af', fontSize: 11 }} stroke="#2d3139" />
-              <Tooltip contentStyle={{ background: '#1a1d23', border: '1px solid #2d3139' }} />
+              {config.showGrid && <CartesianGrid strokeDasharray="3 3" stroke="rgba(0,0,0,0.1)" />}
+              <XAxis dataKey="_time" tick={{ fill: '#6b7280', fontSize: 11 }} stroke="#e5e7eb" />
+              <YAxis dataKey={config.yAxis} tick={{ fill: '#6b7280', fontSize: 11 }} stroke="#e5e7eb" />
+              <Tooltip contentStyle={{ background: 'white', border: '1px solid #e5e7eb', borderRadius: '6px' }} />
               {config.showLegend && <Legend />}
-              {(config.yAxis && config.yAxis.length > 0) ? config.yAxis.map((field, idx) => (
-                <Scatter key={field} name={field} data={data} dataKey={field} fill={config.colors[idx % config.colors.length] || COLORS[idx % COLORS.length]} />
-              )) : <div style={{ color: '#9ca3af' }}>No Y fields selected</div>}
+              <Scatter dataKey={config.yAxis} fill={config.colors[0]} />
             </ScatterChart>
           </ResponsiveContainer>
         );
 
       case 'radar':
-        // radar: use aggregated/sliced dataset — use first N rows or calculated averages
-        const radarData = data.slice(0, 8).map((row, i) => {
-          const obj = { _time: row[xKey] || row._time || `r${i}` };
-          (config.yAxis || []).forEach(field => {
-            obj[field] = Number(row[field] || 0);
-          });
-          return obj;
-        });
         return (
           <ResponsiveContainer width="100%" height="100%">
-            <RadarChart data={radarData}>
-              <PolarGrid stroke="rgba(255,255,255,0.1)" />
-              <PolarAngleAxis dataKey="_time" tick={{ fill: '#9ca3af', fontSize: 11 }} />
-              <PolarRadiusAxis tick={{ fill: '#9ca3af', fontSize: 11 }} />
-              {(config.yAxis || []).map((field, idx) => (
-                <Radar key={field} name={field} dataKey={field} stroke={config.colors[idx % config.colors.length] || COLORS[idx % COLORS.length]} fill={config.colors[idx % config.colors.length] || COLORS[idx % COLORS.length]} fillOpacity={config.fillOpacity || 0.5} />
-              ))}
+            <RadarChart data={data.slice(0, 8)}>
+              <PolarGrid stroke="rgba(0,0,0,0.1)" />
+              <PolarAngleAxis dataKey="_time" tick={{ fill: '#6b7280', fontSize: 11 }} />
+              <PolarRadiusAxis tick={{ fill: '#6b7280', fontSize: 11 }} />
+              <Radar 
+                dataKey={config.yAxis} 
+                stroke={config.colors[0]} 
+                fill={config.colors[0]} 
+                fillOpacity={config.fillOpacity || 0.5} 
+              />
               {config.showLegend && <Legend />}
             </RadarChart>
           </ResponsiveContainer>
         );
 
       case 'stat':
-        const values = data.map(d => Number(d[config.yAxis[0]] || 0));
-        const latestVal = values[0] ?? 0;
-        const previous = values[1] ?? latestVal;
-        const change = latestVal - previous;
-        const avg = values.length > 0 ? (values.reduce((a, b) => a + b, 0) / values.length) : 0;
+        const values = data.map(d => d[config.yAxis] || 0);
+        const latest = values[values.length - 1] || 0;
+        const previous = values[values.length - 2] || 0;
+        const change = latest - previous;
+        const avg = values.reduce((a, b) => a + b, 0) / values.length;
+
         return (
           <div style={{
             display: 'flex',
@@ -1058,8 +956,8 @@ function QuestDBPanel({ config: rawConfig, onEdit, onDelete, onDuplicate }) {
             justifyContent: 'center',
             height: '100%'
           }}>
-            <div style={{ fontSize: '56px', fontWeight: 'bold', color: '#fff', marginBottom: '8px' }}>
-              {Number(latestVal).toFixed(2)}
+            <div style={{ fontSize: '48px', fontWeight: 'bold', color: config.colors[0], marginBottom: '8px' }}>
+              {latest.toFixed(2)}
             </div>
             <div style={{
               fontSize: '16px',
@@ -1067,12 +965,12 @@ function QuestDBPanel({ config: rawConfig, onEdit, onDelete, onDuplicate }) {
               marginBottom: '16px',
               fontWeight: '600'
             }}>
-              {change >= 0 ? '↑' : '↓'} {Math.abs(change).toFixed(2)} ({previous !== 0 ? ((change / previous) * 100).toFixed(1) : '—'}%)
+              {change >= 0 ? '↑' : '↓'} {Math.abs(change).toFixed(2)} ({((change / previous) * 100).toFixed(1)}%)
             </div>
-            <div style={{ display: 'flex', gap: '24px', fontSize: '14px', color: '#9ca3af' }}>
-              <div>Min: <span style={{ color: '#fff', fontWeight: '600' }}>{(Math.min(...values) || 0).toFixed(2)}</span></div>
-              <div>Max: <span style={{ color: '#fff', fontWeight: '600' }}>{(Math.max(...values) || 0).toFixed(2)}</span></div>
-              <div>Avg: <span style={{ color: '#fff', fontWeight: '600' }}>{(avg || 0).toFixed(2)}</span></div>
+            <div style={{ display: 'flex', gap: '24px', fontSize: '14px', color: '#6b7280' }}>
+              <div>Min: <span style={{ color: '#111827', fontWeight: '600' }}>{Math.min(...values).toFixed(2)}</span></div>
+              <div>Max: <span style={{ color: '#111827', fontWeight: '600' }}>{Math.max(...values).toFixed(2)}</span></div>
+              <div>Avg: <span style={{ color: '#111827', fontWeight: '600' }}>{avg.toFixed(2)}</span></div>
             </div>
           </div>
         );
@@ -1083,13 +981,13 @@ function QuestDBPanel({ config: rawConfig, onEdit, onDelete, onDuplicate }) {
           <div style={{ height: '100%', overflow: 'auto' }}>
             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px' }}>
               <thead>
-                <tr style={{ background: '#0f1117', position: 'sticky', top: 0, zIndex: 1 }}>
+                <tr style={{ background: '#f9fafb', position: 'sticky', top: 0, zIndex: 1 }}>
                   {columns.map(col => (
-                    <th key={col} style={{
-                      padding: '10px',
-                      textAlign: 'left',
-                      borderBottom: '1px solid #2d3139',
-                      color: '#9ca3af',
+                    <th key={col} style={{ 
+                      padding: '10px', 
+                      textAlign: 'left', 
+                      borderBottom: '2px solid #e5e7eb', 
+                      color: '#374151', 
                       fontWeight: '600',
                       fontSize: '12px'
                     }}>
@@ -1100,9 +998,9 @@ function QuestDBPanel({ config: rawConfig, onEdit, onDelete, onDuplicate }) {
               </thead>
               <tbody>
                 {data.map((row, i) => (
-                  <tr key={i} style={{ borderBottom: '1px solid #2d3139' }}>
+                  <tr key={i} style={{ borderBottom: '1px solid #e5e7eb' }}>
                     {columns.map(col => (
-                      <td key={col} style={{ padding: '10px', color: '#e5e7eb' }}>
+                      <td key={col} style={{ padding: '10px', color: '#111827' }}>
                         {typeof row[col] === 'number' ? row[col].toFixed(2) : row[col]}
                       </td>
                     ))}
@@ -1114,7 +1012,7 @@ function QuestDBPanel({ config: rawConfig, onEdit, onDelete, onDuplicate }) {
         );
 
       default:
-        return <div style={{ textAlign: 'center', color: '#9ca3af' }}>Unsupported chart type</div>;
+        return <div style={{ textAlign: 'center', color: '#6b7280' }}>Unsupported chart type</div>;
     }
   };
 
@@ -1123,31 +1021,40 @@ function QuestDBPanel({ config: rawConfig, onEdit, onDelete, onDuplicate }) {
       height: '100%',
       display: 'flex',
       flexDirection: 'column',
-      background: '#1a1d23',
-      border: '1px solid #2d3139',
-      borderRadius: '8px',
-      overflow: 'hidden'
-    }}>
+      background: 'white',
+      border: '2px solid #e5e7eb',
+      borderRadius: '12px',
+      overflow: 'hidden',
+      boxShadow: '0 4px 6px rgba(0,0,0,0.05)',
+      transition: 'box-shadow 0.2s'
+    }}
+    onMouseEnter={(e) => e.currentTarget.style.boxShadow = '0 8px 12px rgba(0,0,0,0.1)'}
+    onMouseLeave={(e) => e.currentTarget.style.boxShadow = '0 4px 6px rgba(0,0,0,0.05)'}
+    >
       {/* Header */}
       <div style={{
         padding: '12px 16px',
-        background: '#0f1117',
-        borderBottom: '1px solid #2d3139',
+        background: '#f9fafb',
+        borderBottom: '2px solid #e5e7eb',
         display: 'flex',
         justifyContent: 'space-between',
         alignItems: 'center'
       }}>
-        <div className="drag-handle" style={{
-          cursor: 'move',
+        <div style={{
           fontWeight: '600',
-          color: '#fff',
+          color: '#111827',
           fontSize: '14px',
           flex: 1,
           display: 'flex',
           alignItems: 'center',
           gap: '8px'
         }}>
-          <Database size={16} color={config.colors[0]} />
+          <div style={{
+            width: '8px',
+            height: '8px',
+            borderRadius: '50%',
+            background: config.colors[0]
+          }} />
           {config.title}
         </div>
         <div style={{ display: 'flex', gap: '4px' }}>
@@ -1155,42 +1062,42 @@ function QuestDBPanel({ config: rawConfig, onEdit, onDelete, onDuplicate }) {
             padding: '6px',
             background: 'transparent',
             border: 'none',
-            color: '#9ca3af',
+            color: '#6b7280',
             cursor: 'pointer',
             borderRadius: '4px',
             transition: 'background 0.2s'
-          }}
-            onMouseEnter={(e) => e.target.style.background = '#2d3139'}
-            onMouseLeave={(e) => e.target.style.background = 'transparent'}
-            title="Refresh">
+          }} 
+          onMouseEnter={(e) => e.target.style.background = '#e5e7eb'}
+          onMouseLeave={(e) => e.target.style.background = 'transparent'}
+          title="Refresh">
             <RefreshCw size={14} />
           </button>
           <button onClick={() => onDuplicate(config)} style={{
             padding: '6px',
             background: 'transparent',
             border: 'none',
-            color: '#9ca3af',
+            color: '#6b7280',
             cursor: 'pointer',
             borderRadius: '4px',
             transition: 'background 0.2s'
           }}
-            onMouseEnter={(e) => e.target.style.background = '#2d3139'}
-            onMouseLeave={(e) => e.target.style.background = 'transparent'}
-            title="Duplicate">
+          onMouseEnter={(e) => e.target.style.background = '#e5e7eb'}
+          onMouseLeave={(e) => e.target.style.background = 'transparent'}
+          title="Duplicate">
             <Copy size={14} />
           </button>
           <button onClick={() => onEdit(config)} style={{
             padding: '6px',
             background: 'transparent',
             border: 'none',
-            color: '#9ca3af',
+            color: '#6b7280',
             cursor: 'pointer',
             borderRadius: '4px',
             transition: 'background 0.2s'
           }}
-            onMouseEnter={(e) => e.target.style.background = '#2d3139'}
-            onMouseLeave={(e) => e.target.style.background = 'transparent'}
-            title="Edit">
+          onMouseEnter={(e) => e.target.style.background = '#e5e7eb'}
+          onMouseLeave={(e) => e.target.style.background = 'transparent'}
+          title="Edit">
             <Settings size={14} />
           </button>
           <button onClick={() => onDelete(config.id)} style={{
@@ -1202,28 +1109,28 @@ function QuestDBPanel({ config: rawConfig, onEdit, onDelete, onDuplicate }) {
             borderRadius: '4px',
             transition: 'background 0.2s'
           }}
-            onMouseEnter={(e) => e.target.style.background = 'rgba(239, 68, 68, 0.1)'}
-            onMouseLeave={(e) => e.target.style.background = 'transparent'}
-            title="Delete">
+          onMouseEnter={(e) => e.target.style.background = 'rgba(239, 68, 68, 0.1)'}
+          onMouseLeave={(e) => e.target.style.background = 'transparent'}
+          title="Delete">
             <Trash2 size={14} />
           </button>
         </div>
       </div>
 
       {/* Body */}
-      <div style={{ flex: 1, minHeight: 0, padding: '12px' }}>
+      <div style={{ flex: 1, minHeight: 0, padding: '16px' }}>
         {renderChart()}
       </div>
 
       {/* Footer */}
       <div style={{
         padding: '8px 12px',
-        borderTop: '1px solid #2d3139',
+        borderTop: '1px solid #e5e7eb',
         display: 'flex',
         justifyContent: 'space-between',
         fontSize: '11px',
         color: '#6b7280',
-        background: '#0f1117'
+        background: '#f9fafb'
       }}>
         <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
           <div style={{ display: 'flex', gap: '4px', alignItems: 'center' }}>
@@ -1231,10 +1138,17 @@ function QuestDBPanel({ config: rawConfig, onEdit, onDelete, onDuplicate }) {
             <span>{config.refreshInterval > 0 ? `${config.refreshInterval / 1000}s` : 'Manual'}</span>
           </div>
           <div>•</div>
-          <div>{config.vizType}</div>
+          <div style={{ textTransform: 'capitalize' }}>{config.vizType}</div>
         </div>
         <div>{data.length} pts</div>
       </div>
+
+      <style>{`
+        @keyframes spin {
+          0% { transform: rotate(0deg); }
+          100% { transform: rotate(360deg); }
+        }
+      `}</style>
     </div>
   );
 }
@@ -1244,7 +1158,6 @@ export default function DashboardPage() {
   const navigate = useNavigate();
   const user = authService.getUser();
   const [panels, setPanels] = useState([]);
-  const [layout, setLayout] = useState([]);
   const [showConfigModal, setShowConfigModal] = useState(false);
   const [editingPanel, setEditingPanel] = useState(null);
   const [availableTables, setAvailableTables] = useState([]);
@@ -1265,12 +1178,11 @@ export default function DashboardPage() {
 
   // Load saved dashboard from localStorage
   useEffect(() => {
-    const saved = localStorage.getItem('dashboard_panels');
+    const saved = localStorage.getItem('miralys_dashboard_panels');
     if (saved) {
       try {
         const parsed = JSON.parse(saved);
-        setPanels(parsed.panels || []);
-        setLayout(parsed.layout || []);
+        setPanels(parsed || []);
       } catch (e) {
         console.error('Error loading dashboard:', e);
       }
@@ -1280,11 +1192,9 @@ export default function DashboardPage() {
   // Save dashboard to localStorage
   useEffect(() => {
     if (panels.length > 0) {
-      localStorage.setItem('dashboard_panels', JSON.stringify({ panels, layout }));
-    } else {
-      localStorage.removeItem('dashboard_panels');
+      localStorage.setItem('miralys_dashboard_panels', JSON.stringify(panels));
     }
-  }, [panels, layout]);
+  }, [panels]);
 
   const handleLogout = () => {
     authService.logout();
@@ -1296,25 +1206,15 @@ export default function DashboardPage() {
     setShowConfigModal(true);
   };
 
-  const handleSavePanel = (cfg) => {
-    const config = normalizeConfig(cfg);
+  const handleSavePanel = (config) => {
     const exists = panels.some(p => p.id === config.id);
-
+    
     if (exists) {
       setPanels(panels.map(p => p.id === config.id ? config : p));
     } else {
       setPanels([...panels, config]);
-      setLayout([...layout, {
-        i: config.id,
-        x: (layout.length * 6) % 12,
-        y: Infinity,
-        w: 6,
-        h: 12,
-        minH: 8,
-        minW: 3
-      }]);
     }
-
+    
     setShowConfigModal(false);
     setEditingPanel(null);
   };
@@ -1325,9 +1225,8 @@ export default function DashboardPage() {
   };
 
   const handleDelete = (panelId) => {
-    if (confirm('Are you sure you want to delete this panel?')) {
+    if (window.confirm('Are you sure you want to delete this panel?')) {
       setPanels(panels.filter(p => p.id !== panelId));
-      setLayout(layout.filter(l => l.i !== panelId));
     }
   };
 
@@ -1338,66 +1237,54 @@ export default function DashboardPage() {
       title: `${panel.title} (Copy)`
     };
     setPanels([...panels, newPanel]);
-    setLayout([...layout, {
-      i: newPanel.id,
-      x: (layout.length * 6) % 12,
-      y: Infinity,
-      w: 6,
-      h: 12,
-      minH: 8,
-      minW: 3
-    }]);
   };
 
   return (
-    <div style={{
-      minHeight: '100vh',
-      background: 'linear-gradient(180deg, #0a0e1a 0%, #080b14 100%)',
-      color: '#e5e7eb'
-    }}>
+    <div style={{ minHeight: '100vh', background: '#f3f4f6' }}>
       {/* Top Navigation Bar */}
       <div style={{
-        background: '#1a1d23',
-        borderBottom: '1px solid #2d3139',
+        background: 'white',
+        borderBottom: '2px solid #e5e7eb',
         padding: '12px 24px',
         display: 'flex',
         justifyContent: 'space-between',
         alignItems: 'center',
         position: 'sticky',
         top: 0,
-        zIndex: 100
+        zIndex: 100,
+        boxShadow: '0 2px 4px rgba(0,0,0,0.05)'
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
           <div style={{
             width: '40px',
             height: '40px',
-            background: 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)',
+            background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
             borderRadius: '10px',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center'
           }}>
-            <Database size={24} color="#fff" />
+            <Zap size={24} color="white" />
           </div>
           <div>
-            <h1 style={{ margin: 0, fontSize: '18px', fontWeight: '700', color: '#fff' }}>
-              Dashboard Studio
+            <h1 style={{ margin: 0, fontSize: '18px', fontWeight: '700', color: '#111827' }}>
+              Miralys
             </h1>
             <p style={{ margin: 0, fontSize: '12px', color: '#6b7280' }}>
-              Real-time QuestDB monitoring
+              Real-Time Data Intelligence
             </p>
           </div>
         </div>
-
+        
         <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
           <button
             onClick={handleAddPanel}
             style={{
               padding: '10px 16px',
-              background: 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)',
+              background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
               border: 'none',
               borderRadius: '8px',
-              color: '#fff',
+              color: 'white',
               cursor: 'pointer',
               display: 'flex',
               alignItems: 'center',
@@ -1412,18 +1299,18 @@ export default function DashboardPage() {
             <Plus size={16} />
             Add Panel
           </button>
-
+          
           <div style={{
             padding: '8px 16px',
-            background: '#0f1117',
-            border: '1px solid #2d3139',
-            borderRadius: '8px',                
+            background: '#f9fafb',
+            border: '2px solid #e5e7eb',
+            borderRadius: '8px',
             display: 'flex',
             alignItems: 'center',
             gap: '12px'
           }}>
             <div style={{ textAlign: 'right' }}>
-              <div style={{ fontSize: '13px', fontWeight: '600', color: '#fff' }}>{user?.name}</div>
+              <div style={{ fontSize: '13px', fontWeight: '600', color: '#111827' }}>{user?.name}</div>
               <div style={{ fontSize: '11px', color: '#6b7280' }}>{user?.email}</div>
             </div>
             <button
@@ -1432,7 +1319,7 @@ export default function DashboardPage() {
                 padding: '8px',
                 background: 'transparent',
                 border: 'none',
-                color: '#9ca3af',
+                color: '#6b7280',
                 cursor: 'pointer',
                 borderRadius: '6px'
               }}
@@ -1448,40 +1335,40 @@ export default function DashboardPage() {
       <div style={{ padding: '24px' }}>
         {panels.length === 0 ? (
           <div style={{
-            background: '#1a1d23',
-            border: '2px dashed #2d3139',
+            background: 'white',
+            border: '2px dashed #d1d5db',
             borderRadius: '16px',
-            padding: '80px 40px',
+            padding: '60px 40px',
             textAlign: 'center',
             maxWidth: '600px',
-            margin: '80px auto'
+            margin: '60px auto'
           }}>
             <div style={{
               width: '80px',
               height: '80px',
-              background: 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)',
+              background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
               borderRadius: '20px',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
               margin: '0 auto 24px'
             }}>
-              <Database size={40} color="#fff" />
+              <Database size={40} color="white" />
             </div>
-            <h3 style={{ margin: '0 0 12px', color: '#fff', fontSize: '24px', fontWeight: '700' }}>
-              Welcome to Dashboard Studio
+            <h3 style={{ margin: '0 0 12px', color: '#111827', fontSize: '24px', fontWeight: '700' }}>
+              Create Your First Dashboard
             </h3>
-            <p style={{ margin: '0 0 32px', color: '#9ca3af', fontSize: '15px', lineHeight: '1.6' }}>
-              Create powerful visualizations from your QuestDB data. Click the button below to add your first panel and start monitoring your metrics in real-time.
+            <p style={{ margin: '0 0 32px', color: '#6b7280', fontSize: '15px', lineHeight: '1.6' }}>
+              Build powerful visualizations from your QuestDB data. Click the button below to add your first panel and start monitoring in real-time.
             </p>
             <button
               onClick={handleAddPanel}
               style={{
                 padding: '14px 28px',
-                background: 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)',
+                background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
                 border: 'none',
                 borderRadius: '10px',
-                color: '#fff',
+                color: 'white',
                 cursor: 'pointer',
                 fontSize: '15px',
                 fontWeight: '600',
@@ -1494,22 +1381,19 @@ export default function DashboardPage() {
               onMouseLeave={(e) => e.target.style.transform = 'translateY(0)'}
             >
               <Plus size={20} />
-              Create Your First Panel
+              Add Your First Panel
             </button>
           </div>
         ) : (
-          <GridLayout
-            className="layout"
-            layout={layout}
-            cols={12}
-            rowHeight={30}
-            width={1200}
-            onLayoutChange={setLayout}
-            draggableHandle=".drag-handle"
-            compactType="vertical"
-          >
+          <div style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fit, minmax(450px, 1fr))',
+            gap: '20px',
+            maxWidth: '1600px',
+            margin: '0 auto'
+          }}>
             {panels.map(panel => (
-              <div key={panel.id}>
+              <div key={panel.id} style={{ height: '350px' }}>
                 <QuestDBPanel
                   config={panel}
                   onEdit={handleEdit}
@@ -1518,7 +1402,7 @@ export default function DashboardPage() {
                 />
               </div>
             ))}
-          </GridLayout>
+          </div>
         )}
       </div>
 
@@ -1534,23 +1418,6 @@ export default function DashboardPage() {
           allTables={availableTables}
         />
       )}
-
-      <style>{`
-        @keyframes spin {
-          0% { transform: rotate(0deg); }
-          100% { transform: rotate(360deg); }
-        }
-
-        .layout {
-          margin: 0 auto;
-        }
-
-        .react-grid-item.react-grid-placeholder {
-          background: rgba(59, 130, 246, 0.2);
-          border-radius: 8px;
-        }
-      `}</style>
     </div>
   );
 }
- 
