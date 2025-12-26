@@ -1,6 +1,11 @@
 import { useState } from 'react';
 import Dashboard from './components/Dashboard';
 
+// ✅ Add API URL configuration
+const API_URL = import.meta.env.VITE_API_URL || 'https://reactback-production-6cd8.up.railway.app/api';
+
+console.log('🔍 App.jsx using API_URL:', API_URL);
+
 function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [email, setEmail] = useState('');
@@ -12,7 +17,11 @@ function App() {
     setError('');
 
     try {
-      const response = await fetch('/api/auth/login', {
+      // ✅ Use full backend URL instead of relative URL
+      const loginUrl = `${API_URL}/auth/login`;
+      console.log('🔍 Attempting login to:', loginUrl);
+
+      const response = await fetch(loginUrl, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -21,6 +30,8 @@ function App() {
       });
 
       const data = await response.json();
+
+      console.log('✅ Login response:', data);
 
       if (data.success) {
         localStorage.setItem('token', data.token);
@@ -31,7 +42,7 @@ function App() {
       }
     } catch (err) {
       setError('Login failed. Please try again.');
-      console.error('Login error:', err);
+      console.error('❌ Login error:', err);
     }
   };
 
