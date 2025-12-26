@@ -1,8 +1,13 @@
-// src/services/auth.js
 import axios from 'axios';
 
-// ✅ Use environment variable
 const API_URL = import.meta.env.VITE_API_URL || 'https://reactback-production-6cd8.up.railway.app/api';
+
+// 🔍 DEBUG: Check what URL is being used
+console.log('=================================');
+console.log('🔍 API_URL:', API_URL);
+console.log('🔍 VITE_API_URL env:', import.meta.env.VITE_API_URL);
+console.log('🔍 All env vars:', import.meta.env);
+console.log('=================================');
 
 class AuthService {
   constructor() {
