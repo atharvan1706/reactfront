@@ -1,7 +1,6 @@
 // src/pages/DashboardPage.jsx
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import GridLayout from 'react-grid-layout';
 import {
   LineChart, Line, BarChart, Bar, AreaChart, Area, PieChart, Pie, Cell,
   ScatterChart, Scatter, RadarChart, Radar, PolarGrid, PolarAngleAxis, PolarRadiusAxis,
@@ -9,15 +8,13 @@ import {
 } from 'recharts';
 import {
   Plus, LogOut, Database, Activity, TrendingUp, BarChart3, PieChart as PieIcon,
-  Edit2, Trash2, Copy, Play, RefreshCw, X, Gauge, Radar as RadarIcon,
-  CircleDot, Table as TableIcon, AlertCircle, Settings, Save, Eye
+  Trash2, Copy, Play, RefreshCw, X, Gauge, Radar as RadarIcon,
+  CircleDot, Table as TableIcon, AlertCircle, Settings, Save, Eye, Zap
 } from 'lucide-react';
 import authService from '../services/auth';
 import questdbService from '../services/questdb';
-import 'react-grid-layout/css/styles.css';
-import 'react-resizable/css/styles.css';
 
-const COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#14b8a6', '#f97316'];
+const COLORS = ['#667eea', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#14b8a6', '#f97316'];
 
 const VIZ_TYPES = [
   { id: 'line', name: 'Line Chart', icon: Activity, description: 'Time series line chart' },
@@ -119,7 +116,7 @@ function PanelConfigModal({ panel, onSave, onClose, allTables }) {
     if (previewLoading) {
       return (
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '200px' }}>
-          <RefreshCw size={24} color="#3b82f6" style={{ animation: 'spin 1s linear infinite' }} />
+          <RefreshCw size={24} color="#667eea" style={{ animation: 'spin 1s linear infinite' }} />
         </div>
       );
     }
@@ -163,28 +160,28 @@ function PanelConfigModal({ panel, onSave, onClose, allTables }) {
       <ResponsiveContainer width="100%" height={200}>
         {config.vizType === 'line' && (
           <LineChart {...chartProps}>
-            <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
-            <XAxis dataKey="_time" tick={{ fill: '#9ca3af', fontSize: 10 }} />
-            <YAxis tick={{ fill: '#9ca3af', fontSize: 10 }} />
-            <Tooltip contentStyle={{ background: '#1a1d23', border: '1px solid #2d3139' }} />
+            <CartesianGrid strokeDasharray="3 3" stroke="rgba(0,0,0,0.1)" />
+            <XAxis dataKey="_time" tick={{ fill: '#6b7280', fontSize: 10 }} />
+            <YAxis tick={{ fill: '#6b7280', fontSize: 10 }} />
+            <Tooltip contentStyle={{ background: 'white', border: '1px solid #e5e7eb' }} />
             <Line type="monotone" dataKey={config.yAxis} stroke={config.colors[0]} strokeWidth={config.lineWidth} dot={config.showDots} />
           </LineChart>
         )}
         {config.vizType === 'bar' && (
           <BarChart {...chartProps}>
-            <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
-            <XAxis dataKey="_time" tick={{ fill: '#9ca3af', fontSize: 10 }} />
-            <YAxis tick={{ fill: '#9ca3af', fontSize: 10 }} />
-            <Tooltip contentStyle={{ background: '#1a1d23', border: '1px solid #2d3139' }} />
+            <CartesianGrid strokeDasharray="3 3" stroke="rgba(0,0,0,0.1)" />
+            <XAxis dataKey="_time" tick={{ fill: '#6b7280', fontSize: 10 }} />
+            <YAxis tick={{ fill: '#6b7280', fontSize: 10 }} />
+            <Tooltip contentStyle={{ background: 'white', border: '1px solid #e5e7eb' }} />
             <Bar dataKey={config.yAxis} fill={config.colors[0]} />
           </BarChart>
         )}
         {config.vizType === 'area' && (
           <AreaChart {...chartProps}>
-            <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
-            <XAxis dataKey="_time" tick={{ fill: '#9ca3af', fontSize: 10 }} />
-            <YAxis tick={{ fill: '#9ca3af', fontSize: 10 }} />
-            <Tooltip contentStyle={{ background: '#1a1d23', border: '1px solid #2d3139' }} />
+            <CartesianGrid strokeDasharray="3 3" stroke="rgba(0,0,0,0.1)" />
+            <XAxis dataKey="_time" tick={{ fill: '#6b7280', fontSize: 10 }} />
+            <YAxis tick={{ fill: '#6b7280', fontSize: 10 }} />
+            <Tooltip contentStyle={{ background: 'white', border: '1px solid #e5e7eb' }} />
             <Area type="monotone" dataKey={config.yAxis} stroke={config.colors[0]} fill={config.colors[0]} fillOpacity={config.fillOpacity} />
           </AreaChart>
         )}
@@ -199,7 +196,7 @@ function PanelConfigModal({ panel, onSave, onClose, allTables }) {
       left: 0,
       right: 0,
       bottom: 0,
-      background: 'rgba(0,0,0,0.85)',
+      background: 'rgba(0,0,0,0.75)',
       display: 'flex',
       alignItems: 'center',
       justifyContent: 'center',
@@ -207,37 +204,37 @@ function PanelConfigModal({ panel, onSave, onClose, allTables }) {
       padding: '20px'
     }}>
       <div style={{
-        background: '#1a1d23',
+        background: 'white',
         borderRadius: '16px',
         width: '100%',
         maxWidth: '1000px',
         maxHeight: '90vh',
         overflow: 'hidden',
-        border: '1px solid #2d3139',
         display: 'flex',
-        flexDirection: 'column'
+        flexDirection: 'column',
+        boxShadow: '0 20px 60px rgba(0,0,0,0.3)'
       }}>
         {/* Header */}
         <div style={{
           padding: '20px 24px',
-          borderBottom: '1px solid #2d3139',
+          borderBottom: '1px solid #e5e7eb',
           display: 'flex',
           justifyContent: 'space-between',
           alignItems: 'center',
-          background: '#0f1117'
+          background: '#f9fafb'
         }}>
           <div>
-            <h2 style={{ margin: 0, fontSize: '20px', color: '#fff', fontWeight: '700' }}>
+            <h2 style={{ margin: 0, fontSize: '20px', color: '#111827', fontWeight: '700' }}>
               {panel ? 'Edit Panel' : 'Add New Panel'}
             </h2>
-            <p style={{ margin: '4px 0 0', fontSize: '13px', color: '#9ca3af' }}>
+            <p style={{ margin: '4px 0 0', fontSize: '13px', color: '#6b7280' }}>
               Configure your visualization settings
             </p>
           </div>
           <button onClick={onClose} style={{
             background: 'none',
             border: 'none',
-            color: '#9ca3af',
+            color: '#6b7280',
             cursor: 'pointer',
             padding: '8px'
           }}>
@@ -253,7 +250,7 @@ function PanelConfigModal({ panel, onSave, onClose, allTables }) {
             <div>
               {/* Panel Title */}
               <div style={{ marginBottom: '20px' }}>
-                <label style={{ display: 'block', marginBottom: '8px', fontSize: '13px', color: '#e5e7eb', fontWeight: '600' }}>
+                <label style={{ display: 'block', marginBottom: '8px', fontSize: '13px', color: '#374151', fontWeight: '600' }}>
                   Panel Title
                 </label>
                 <input
@@ -264,10 +261,10 @@ function PanelConfigModal({ panel, onSave, onClose, allTables }) {
                   style={{
                     width: '100%',
                     padding: '10px 12px',
-                    background: '#0f1117',
-                    border: '1px solid #2d3139',
+                    background: 'white',
+                    border: '2px solid #e5e7eb',
                     borderRadius: '8px',
-                    color: '#fff',
+                    color: '#111827',
                     fontSize: '14px'
                   }}
                 />
@@ -275,7 +272,7 @@ function PanelConfigModal({ panel, onSave, onClose, allTables }) {
 
               {/* Visualization Type */}
               <div style={{ marginBottom: '20px' }}>
-                <label style={{ display: 'block', marginBottom: '12px', fontSize: '13px', color: '#e5e7eb', fontWeight: '600' }}>
+                <label style={{ display: 'block', marginBottom: '12px', fontSize: '13px', color: '#374151', fontWeight: '600' }}>
                   Visualization Type
                 </label>
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
@@ -288,11 +285,11 @@ function PanelConfigModal({ panel, onSave, onClose, allTables }) {
                         onClick={() => setConfig({ ...config, vizType: type.id })}
                         style={{
                           padding: '12px',
-                          background: isSelected ? '#3b82f6' : '#0f1117',
-                          border: '1px solid',
-                          borderColor: isSelected ? '#3b82f6' : '#2d3139',
+                          background: isSelected ? '#667eea' : '#f9fafb',
+                          border: '2px solid',
+                          borderColor: isSelected ? '#667eea' : '#e5e7eb',
                           borderRadius: '8px',
-                          color: '#fff',
+                          color: isSelected ? 'white' : '#374151',
                           cursor: 'pointer',
                           display: 'flex',
                           alignItems: 'center',
@@ -315,7 +312,7 @@ function PanelConfigModal({ panel, onSave, onClose, allTables }) {
 
               {/* Data Source Selection */}
               <div style={{ marginBottom: '20px' }}>
-                <label style={{ display: 'block', marginBottom: '8px', fontSize: '13px', color: '#e5e7eb', fontWeight: '600' }}>
+                <label style={{ display: 'block', marginBottom: '8px', fontSize: '13px', color: '#374151', fontWeight: '600' }}>
                   Data Source
                 </label>
                 <div style={{ display: 'flex', gap: '8px', marginBottom: '12px' }}>
@@ -324,11 +321,11 @@ function PanelConfigModal({ panel, onSave, onClose, allTables }) {
                     style={{
                       flex: 1,
                       padding: '10px',
-                      background: config.dataSource === 'table' ? '#3b82f6' : '#0f1117',
-                      border: '1px solid',
-                      borderColor: config.dataSource === 'table' ? '#3b82f6' : '#2d3139',
+                      background: config.dataSource === 'table' ? '#667eea' : '#f9fafb',
+                      border: '2px solid',
+                      borderColor: config.dataSource === 'table' ? '#667eea' : '#e5e7eb',
                       borderRadius: '8px',
-                      color: '#fff',
+                      color: config.dataSource === 'table' ? 'white' : '#374151',
                       cursor: 'pointer',
                       fontSize: '13px',
                       fontWeight: '600'
@@ -342,11 +339,11 @@ function PanelConfigModal({ panel, onSave, onClose, allTables }) {
                     style={{
                       flex: 1,
                       padding: '10px',
-                      background: config.dataSource === 'custom' ? '#3b82f6' : '#0f1117',
-                      border: '1px solid',
-                      borderColor: config.dataSource === 'custom' ? '#3b82f6' : '#2d3139',
+                      background: config.dataSource === 'custom' ? '#667eea' : '#f9fafb',
+                      border: '2px solid',
+                      borderColor: config.dataSource === 'custom' ? '#667eea' : '#e5e7eb',
                       borderRadius: '8px',
-                      color: '#fff',
+                      color: config.dataSource === 'custom' ? 'white' : '#374151',
                       cursor: 'pointer',
                       fontSize: '13px',
                       fontWeight: '600'
@@ -363,10 +360,10 @@ function PanelConfigModal({ panel, onSave, onClose, allTables }) {
                     style={{
                       width: '100%',
                       padding: '10px 12px',
-                      background: '#0f1117',
-                      border: '1px solid #2d3139',
+                      background: 'white',
+                      border: '2px solid #e5e7eb',
                       borderRadius: '8px',
-                      color: '#fff',
+                      color: '#111827',
                       fontSize: '14px'
                     }}
                   >
@@ -384,10 +381,10 @@ function PanelConfigModal({ panel, onSave, onClose, allTables }) {
                     style={{
                       width: '100%',
                       padding: '10px 12px',
-                      background: '#0f1117',
-                      border: '1px solid #2d3139',
+                      background: 'white',
+                      border: '2px solid #e5e7eb',
                       borderRadius: '8px',
-                      color: '#fff',
+                      color: '#111827',
                       fontSize: '13px',
                       fontFamily: 'monospace',
                       resize: 'vertical'
@@ -398,12 +395,12 @@ function PanelConfigModal({ panel, onSave, onClose, allTables }) {
 
               {/* Field Configuration */}
               <div style={{ marginBottom: '20px' }}>
-                <label style={{ display: 'block', marginBottom: '12px', fontSize: '13px', color: '#e5e7eb', fontWeight: '600' }}>
+                <label style={{ display: 'block', marginBottom: '12px', fontSize: '13px', color: '#374151', fontWeight: '600' }}>
                   Field Configuration
                 </label>
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
                   <div>
-                    <label style={{ display: 'block', marginBottom: '6px', fontSize: '12px', color: '#9ca3af' }}>
+                    <label style={{ display: 'block', marginBottom: '6px', fontSize: '12px', color: '#6b7280' }}>
                       Timestamp Field
                     </label>
                     {availableFields.length > 0 ? (
@@ -413,10 +410,10 @@ function PanelConfigModal({ panel, onSave, onClose, allTables }) {
                         style={{
                           width: '100%',
                           padding: '8px',
-                          background: '#0f1117',
-                          border: '1px solid #2d3139',
+                          background: 'white',
+                          border: '2px solid #e5e7eb',
                           borderRadius: '6px',
-                          color: '#fff',
+                          color: '#111827',
                           fontSize: '13px'
                         }}
                       >
@@ -433,17 +430,17 @@ function PanelConfigModal({ panel, onSave, onClose, allTables }) {
                         style={{
                           width: '100%',
                           padding: '8px',
-                          background: '#0f1117',
-                          border: '1px solid #2d3139',
+                          background: 'white',
+                          border: '2px solid #e5e7eb',
                           borderRadius: '6px',
-                          color: '#fff',
+                          color: '#111827',
                           fontSize: '13px'
                         }}
                       />
                     )}
                   </div>
                   <div>
-                    <label style={{ display: 'block', marginBottom: '6px', fontSize: '12px', color: '#9ca3af' }}>
+                    <label style={{ display: 'block', marginBottom: '6px', fontSize: '12px', color: '#6b7280' }}>
                       Value Field (Y-Axis)
                     </label>
                     {availableFields.length > 0 ? (
@@ -453,10 +450,10 @@ function PanelConfigModal({ panel, onSave, onClose, allTables }) {
                         style={{
                           width: '100%',
                           padding: '8px',
-                          background: '#0f1117',
-                          border: '1px solid #2d3139',
+                          background: 'white',
+                          border: '2px solid #e5e7eb',
                           borderRadius: '6px',
-                          color: '#fff',
+                          color: '#111827',
                           fontSize: '13px'
                         }}
                       >
@@ -474,10 +471,10 @@ function PanelConfigModal({ panel, onSave, onClose, allTables }) {
                         style={{
                           width: '100%',
                           padding: '8px',
-                          background: '#0f1117',
-                          border: '1px solid #2d3139',
+                          background: 'white',
+                          border: '2px solid #e5e7eb',
                           borderRadius: '6px',
-                          color: '#fff',
+                          color: '#111827',
                           fontSize: '13px'
                         }}
                       />
@@ -488,7 +485,7 @@ function PanelConfigModal({ panel, onSave, onClose, allTables }) {
 
               {/* Limit */}
               <div style={{ marginBottom: '20px' }}>
-                <label style={{ display: 'block', marginBottom: '8px', fontSize: '13px', color: '#e5e7eb', fontWeight: '600' }}>
+                <label style={{ display: 'block', marginBottom: '8px', fontSize: '13px', color: '#374151', fontWeight: '600' }}>
                   Data Point Limit
                 </label>
                 <input
@@ -500,10 +497,10 @@ function PanelConfigModal({ panel, onSave, onClose, allTables }) {
                   style={{
                     width: '100%',
                     padding: '10px 12px',
-                    background: '#0f1117',
-                    border: '1px solid #2d3139',
+                    background: 'white',
+                    border: '2px solid #e5e7eb',
                     borderRadius: '8px',
-                    color: '#fff',
+                    color: '#111827',
                     fontSize: '14px'
                   }}
                 />
@@ -511,7 +508,7 @@ function PanelConfigModal({ panel, onSave, onClose, allTables }) {
 
               {/* Refresh Interval */}
               <div style={{ marginBottom: '20px' }}>
-                <label style={{ display: 'block', marginBottom: '8px', fontSize: '13px', color: '#e5e7eb', fontWeight: '600' }}>
+                <label style={{ display: 'block', marginBottom: '8px', fontSize: '13px', color: '#374151', fontWeight: '600' }}>
                   Auto Refresh Interval
                 </label>
                 <select
@@ -520,10 +517,10 @@ function PanelConfigModal({ panel, onSave, onClose, allTables }) {
                   style={{
                     width: '100%',
                     padding: '10px 12px',
-                    background: '#0f1117',
-                    border: '1px solid #2d3139',
+                    background: 'white',
+                    border: '2px solid #e5e7eb',
                     borderRadius: '8px',
-                    color: '#fff',
+                    color: '#111827',
                     fontSize: '14px'
                   }}
                 >
@@ -544,7 +541,7 @@ function PanelConfigModal({ panel, onSave, onClose, allTables }) {
               {/* Preview */}
               <div style={{ marginBottom: '20px' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
-                  <label style={{ fontSize: '13px', color: '#e5e7eb', fontWeight: '600' }}>
+                  <label style={{ fontSize: '13px', color: '#374151', fontWeight: '600' }}>
                     Preview
                   </label>
                   <button
@@ -552,10 +549,10 @@ function PanelConfigModal({ panel, onSave, onClose, allTables }) {
                     disabled={previewLoading}
                     style={{
                       padding: '6px 12px',
-                      background: '#3b82f6',
+                      background: '#667eea',
                       border: 'none',
                       borderRadius: '6px',
-                      color: '#fff',
+                      color: 'white',
                       cursor: previewLoading ? 'not-allowed' : 'pointer',
                       fontSize: '12px',
                       fontWeight: '600',
@@ -569,8 +566,8 @@ function PanelConfigModal({ panel, onSave, onClose, allTables }) {
                   </button>
                 </div>
                 <div style={{
-                  background: '#0f1117',
-                  border: '1px solid #2d3139',
+                  background: '#f9fafb',
+                  border: '2px solid #e5e7eb',
                   borderRadius: '8px',
                   padding: '16px',
                   minHeight: '200px'
@@ -578,7 +575,7 @@ function PanelConfigModal({ panel, onSave, onClose, allTables }) {
                   {renderPreviewChart()}
                 </div>
                 {previewData.length > 0 && (
-                  <div style={{ marginTop: '8px', fontSize: '12px', color: '#9ca3af' }}>
+                  <div style={{ marginTop: '8px', fontSize: '12px', color: '#6b7280' }}>
                     {previewData.length} data points loaded
                   </div>
                 )}
@@ -586,28 +583,27 @@ function PanelConfigModal({ panel, onSave, onClose, allTables }) {
 
               {/* Style Options */}
               <div style={{ marginBottom: '20px' }}>
-                <label style={{ display: 'block', marginBottom: '12px', fontSize: '13px', color: '#e5e7eb', fontWeight: '600' }}>
+                <label style={{ display: 'block', marginBottom: '12px', fontSize: '13px', color: '#374151', fontWeight: '600' }}>
                   Style Options
                 </label>
                 
                 {/* Color Picker */}
                 <div style={{ marginBottom: '12px' }}>
-                  <label style={{ display: 'block', marginBottom: '6px', fontSize: '12px', color: '#9ca3af' }}>
+                  <label style={{ display: 'block', marginBottom: '6px', fontSize: '12px', color: '#6b7280' }}>
                     Chart Color
                   </label>
-                  <div style={{ display: 'flex', gap: '8px' }}>
+                  <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
                     {COLORS.map(color => (
                       <button
                         key={color}
                         onClick={() => setConfig({ ...config, colors: [color] })}
                         style={{
-                          width: '32px',
-                          height: '32px',
+                          width: '36px',
+                          height: '36px',
                           background: color,
-                          border: config.colors[0] === color ? '2px solid #fff' : '1px solid #2d3139',
-                          borderRadius: '6px',
-                          cursor: 'pointer',
-                          boxShadow: config.colors[0] === color ? '0 0 0 2px #3b82f6' : 'none'
+                          border: config.colors[0] === color ? '3px solid #374151' : '2px solid #e5e7eb',
+                          borderRadius: '8px',
+                          cursor: 'pointer'
                         }}
                       />
                     ))}
@@ -617,7 +613,7 @@ function PanelConfigModal({ panel, onSave, onClose, allTables }) {
                 {/* Line Width (for line/area charts) */}
                 {(config.vizType === 'line' || config.vizType === 'area') && (
                   <div style={{ marginBottom: '12px' }}>
-                    <label style={{ display: 'block', marginBottom: '6px', fontSize: '12px', color: '#9ca3af' }}>
+                    <label style={{ display: 'block', marginBottom: '6px', fontSize: '12px', color: '#6b7280' }}>
                       Line Width: {config.lineWidth}px
                     </label>
                     <input
@@ -634,7 +630,7 @@ function PanelConfigModal({ panel, onSave, onClose, allTables }) {
                 {/* Fill Opacity (for area charts) */}
                 {config.vizType === 'area' && (
                   <div style={{ marginBottom: '12px' }}>
-                    <label style={{ display: 'block', marginBottom: '6px', fontSize: '12px', color: '#9ca3af' }}>
+                    <label style={{ display: 'block', marginBottom: '6px', fontSize: '12px', color: '#6b7280' }}>
                       Fill Opacity: {Math.round(config.fillOpacity * 100)}%
                     </label>
                     <input
@@ -651,7 +647,7 @@ function PanelConfigModal({ panel, onSave, onClose, allTables }) {
 
                 {/* Display Options */}
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                  <label style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#e5e7eb', fontSize: '13px', cursor: 'pointer' }}>
+                  <label style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#374151', fontSize: '13px', cursor: 'pointer' }}>
                     <input
                       type="checkbox"
                       checked={config.showLegend}
@@ -660,7 +656,7 @@ function PanelConfigModal({ panel, onSave, onClose, allTables }) {
                     />
                     Show Legend
                   </label>
-                  <label style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#e5e7eb', fontSize: '13px', cursor: 'pointer' }}>
+                  <label style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#374151', fontSize: '13px', cursor: 'pointer' }}>
                     <input
                       type="checkbox"
                       checked={config.showGrid}
@@ -670,7 +666,7 @@ function PanelConfigModal({ panel, onSave, onClose, allTables }) {
                     Show Grid Lines
                   </label>
                   {(config.vizType === 'line' || config.vizType === 'area') && (
-                    <label style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#e5e7eb', fontSize: '13px', cursor: 'pointer' }}>
+                    <label style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#374151', fontSize: '13px', cursor: 'pointer' }}>
                       <input
                         type="checkbox"
                         checked={config.showDots}
@@ -689,20 +685,20 @@ function PanelConfigModal({ panel, onSave, onClose, allTables }) {
         {/* Footer */}
         <div style={{
           padding: '16px 24px',
-          borderTop: '1px solid #2d3139',
+          borderTop: '1px solid #e5e7eb',
           display: 'flex',
           justifyContent: 'flex-end',
           gap: '12px',
-          background: '#0f1117'
+          background: '#f9fafb'
         }}>
           <button
             onClick={onClose}
             style={{
               padding: '10px 20px',
-              background: '#2d3139',
-              border: 'none',
+              background: 'white',
+              border: '2px solid #e5e7eb',
               borderRadius: '8px',
-              color: '#9ca3af',
+              color: '#6b7280',
               cursor: 'pointer',
               fontSize: '14px',
               fontWeight: '600'
@@ -714,10 +710,10 @@ function PanelConfigModal({ panel, onSave, onClose, allTables }) {
             onClick={() => onSave(config)}
             style={{
               padding: '10px 20px',
-              background: 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)',
+              background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
               border: 'none',
               borderRadius: '8px',
-              color: '#fff',
+              color: 'white',
               cursor: 'pointer',
               fontSize: '14px',
               fontWeight: '600',
@@ -792,8 +788,8 @@ function QuestDBPanel({ config, onEdit, onDelete, onDuplicate }) {
       return (
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%' }}>
           <div style={{ textAlign: 'center' }}>
-            <RefreshCw size={32} color="#3b82f6" style={{ animation: 'spin 1s linear infinite' }} />
-            <p style={{ color: '#9ca3af', marginTop: '12px', fontSize: '13px' }}>Loading data...</p>
+            <RefreshCw size={32} color="#667eea" style={{ animation: 'spin 1s linear infinite' }} />
+            <p style={{ color: '#6b7280', marginTop: '12px', fontSize: '13px' }}>Loading data...</p>
           </div>
         </div>
       );
@@ -831,7 +827,7 @@ function QuestDBPanel({ config, onEdit, onDelete, onDuplicate }) {
 
     const chartProps = {
       data,
-      margin: { top: 10, right: 30, left: 0, bottom: 0 }
+      margin: { top: 10, right: 20, left: 10, bottom: 5 }
     };
 
     switch (config.vizType) {
@@ -839,10 +835,10 @@ function QuestDBPanel({ config, onEdit, onDelete, onDuplicate }) {
         return (
           <ResponsiveContainer width="100%" height="100%">
             <LineChart {...chartProps}>
-              {config.showGrid && <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />}
-              <XAxis dataKey="_time" tick={{ fill: '#9ca3af', fontSize: 11 }} stroke="#2d3139" />
-              <YAxis tick={{ fill: '#9ca3af', fontSize: 11 }} stroke="#2d3139" />
-              <Tooltip contentStyle={{ background: '#1a1d23', border: '1px solid #2d3139' }} />
+              {config.showGrid && <CartesianGrid strokeDasharray="3 3" stroke="rgba(0,0,0,0.1)" />}
+              <XAxis dataKey="_time" tick={{ fill: '#6b7280', fontSize: 11 }} stroke="#e5e7eb" />
+              <YAxis tick={{ fill: '#6b7280', fontSize: 11 }} stroke="#e5e7eb" />
+              <Tooltip contentStyle={{ background: 'white', border: '1px solid #e5e7eb', borderRadius: '6px' }} />
               {config.showLegend && <Legend />}
               <Line 
                 type="monotone" 
@@ -859,10 +855,10 @@ function QuestDBPanel({ config, onEdit, onDelete, onDuplicate }) {
         return (
           <ResponsiveContainer width="100%" height="100%">
             <AreaChart {...chartProps}>
-              {config.showGrid && <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />}
-              <XAxis dataKey="_time" tick={{ fill: '#9ca3af', fontSize: 11 }} stroke="#2d3139" />
-              <YAxis tick={{ fill: '#9ca3af', fontSize: 11 }} stroke="#2d3139" />
-              <Tooltip contentStyle={{ background: '#1a1d23', border: '1px solid #2d3139' }} />
+              {config.showGrid && <CartesianGrid strokeDasharray="3 3" stroke="rgba(0,0,0,0.1)" />}
+              <XAxis dataKey="_time" tick={{ fill: '#6b7280', fontSize: 11 }} stroke="#e5e7eb" />
+              <YAxis tick={{ fill: '#6b7280', fontSize: 11 }} stroke="#e5e7eb" />
+              <Tooltip contentStyle={{ background: 'white', border: '1px solid #e5e7eb', borderRadius: '6px' }} />
               {config.showLegend && <Legend />}
               <Area 
                 type="monotone" 
@@ -880,10 +876,10 @@ function QuestDBPanel({ config, onEdit, onDelete, onDuplicate }) {
         return (
           <ResponsiveContainer width="100%" height="100%">
             <BarChart {...chartProps}>
-              {config.showGrid && <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />}
-              <XAxis dataKey="_time" tick={{ fill: '#9ca3af', fontSize: 11 }} stroke="#2d3139" />
-              <YAxis tick={{ fill: '#9ca3af', fontSize: 11 }} stroke="#2d3139" />
-              <Tooltip contentStyle={{ background: '#1a1d23', border: '1px solid #2d3139' }} />
+              {config.showGrid && <CartesianGrid strokeDasharray="3 3" stroke="rgba(0,0,0,0.1)" />}
+              <XAxis dataKey="_time" tick={{ fill: '#6b7280', fontSize: 11 }} stroke="#e5e7eb" />
+              <YAxis tick={{ fill: '#6b7280', fontSize: 11 }} stroke="#e5e7eb" />
+              <Tooltip contentStyle={{ background: 'white', border: '1px solid #e5e7eb', borderRadius: '6px' }} />
               {config.showLegend && <Legend />}
               <Bar dataKey={config.yAxis} fill={config.colors[0]} />
             </BarChart>
@@ -907,7 +903,7 @@ function QuestDBPanel({ config, onEdit, onDelete, onDuplicate }) {
                   <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                 ))}
               </Pie>
-              <Tooltip contentStyle={{ background: '#1a1d23', border: '1px solid #2d3139' }} />
+              <Tooltip contentStyle={{ background: 'white', border: '1px solid #e5e7eb', borderRadius: '6px' }} />
               {config.showLegend && <Legend />}
             </PieChart>
           </ResponsiveContainer>
@@ -917,10 +913,10 @@ function QuestDBPanel({ config, onEdit, onDelete, onDuplicate }) {
         return (
           <ResponsiveContainer width="100%" height="100%">
             <ScatterChart {...chartProps}>
-              {config.showGrid && <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />}
-              <XAxis dataKey="_time" tick={{ fill: '#9ca3af', fontSize: 11 }} stroke="#2d3139" />
-              <YAxis dataKey={config.yAxis} tick={{ fill: '#9ca3af', fontSize: 11 }} stroke="#2d3139" />
-              <Tooltip contentStyle={{ background: '#1a1d23', border: '1px solid #2d3139' }} />
+              {config.showGrid && <CartesianGrid strokeDasharray="3 3" stroke="rgba(0,0,0,0.1)" />}
+              <XAxis dataKey="_time" tick={{ fill: '#6b7280', fontSize: 11 }} stroke="#e5e7eb" />
+              <YAxis dataKey={config.yAxis} tick={{ fill: '#6b7280', fontSize: 11 }} stroke="#e5e7eb" />
+              <Tooltip contentStyle={{ background: 'white', border: '1px solid #e5e7eb', borderRadius: '6px' }} />
               {config.showLegend && <Legend />}
               <Scatter dataKey={config.yAxis} fill={config.colors[0]} />
             </ScatterChart>
@@ -931,9 +927,9 @@ function QuestDBPanel({ config, onEdit, onDelete, onDuplicate }) {
         return (
           <ResponsiveContainer width="100%" height="100%">
             <RadarChart data={data.slice(0, 8)}>
-              <PolarGrid stroke="rgba(255,255,255,0.1)" />
-              <PolarAngleAxis dataKey="_time" tick={{ fill: '#9ca3af', fontSize: 11 }} />
-              <PolarRadiusAxis tick={{ fill: '#9ca3af', fontSize: 11 }} />
+              <PolarGrid stroke="rgba(0,0,0,0.1)" />
+              <PolarAngleAxis dataKey="_time" tick={{ fill: '#6b7280', fontSize: 11 }} />
+              <PolarRadiusAxis tick={{ fill: '#6b7280', fontSize: 11 }} />
               <Radar 
                 dataKey={config.yAxis} 
                 stroke={config.colors[0]} 
@@ -960,7 +956,7 @@ function QuestDBPanel({ config, onEdit, onDelete, onDuplicate }) {
             justifyContent: 'center',
             height: '100%'
           }}>
-            <div style={{ fontSize: '56px', fontWeight: 'bold', color: '#fff', marginBottom: '8px' }}>
+            <div style={{ fontSize: '48px', fontWeight: 'bold', color: config.colors[0], marginBottom: '8px' }}>
               {latest.toFixed(2)}
             </div>
             <div style={{
@@ -971,10 +967,10 @@ function QuestDBPanel({ config, onEdit, onDelete, onDuplicate }) {
             }}>
               {change >= 0 ? '↑' : '↓'} {Math.abs(change).toFixed(2)} ({((change / previous) * 100).toFixed(1)}%)
             </div>
-            <div style={{ display: 'flex', gap: '24px', fontSize: '14px', color: '#9ca3af' }}>
-              <div>Min: <span style={{ color: '#fff', fontWeight: '600' }}>{Math.min(...values).toFixed(2)}</span></div>
-              <div>Max: <span style={{ color: '#fff', fontWeight: '600' }}>{Math.max(...values).toFixed(2)}</span></div>
-              <div>Avg: <span style={{ color: '#fff', fontWeight: '600' }}>{avg.toFixed(2)}</span></div>
+            <div style={{ display: 'flex', gap: '24px', fontSize: '14px', color: '#6b7280' }}>
+              <div>Min: <span style={{ color: '#111827', fontWeight: '600' }}>{Math.min(...values).toFixed(2)}</span></div>
+              <div>Max: <span style={{ color: '#111827', fontWeight: '600' }}>{Math.max(...values).toFixed(2)}</span></div>
+              <div>Avg: <span style={{ color: '#111827', fontWeight: '600' }}>{avg.toFixed(2)}</span></div>
             </div>
           </div>
         );
@@ -985,13 +981,13 @@ function QuestDBPanel({ config, onEdit, onDelete, onDuplicate }) {
           <div style={{ height: '100%', overflow: 'auto' }}>
             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px' }}>
               <thead>
-                <tr style={{ background: '#0f1117', position: 'sticky', top: 0, zIndex: 1 }}>
+                <tr style={{ background: '#f9fafb', position: 'sticky', top: 0, zIndex: 1 }}>
                   {columns.map(col => (
                     <th key={col} style={{ 
                       padding: '10px', 
                       textAlign: 'left', 
-                      borderBottom: '1px solid #2d3139', 
-                      color: '#9ca3af', 
+                      borderBottom: '2px solid #e5e7eb', 
+                      color: '#374151', 
                       fontWeight: '600',
                       fontSize: '12px'
                     }}>
@@ -1002,9 +998,9 @@ function QuestDBPanel({ config, onEdit, onDelete, onDuplicate }) {
               </thead>
               <tbody>
                 {data.map((row, i) => (
-                  <tr key={i} style={{ borderBottom: '1px solid #2d3139' }}>
+                  <tr key={i} style={{ borderBottom: '1px solid #e5e7eb' }}>
                     {columns.map(col => (
-                      <td key={col} style={{ padding: '10px', color: '#e5e7eb' }}>
+                      <td key={col} style={{ padding: '10px', color: '#111827' }}>
                         {typeof row[col] === 'number' ? row[col].toFixed(2) : row[col]}
                       </td>
                     ))}
@@ -1016,7 +1012,7 @@ function QuestDBPanel({ config, onEdit, onDelete, onDuplicate }) {
         );
 
       default:
-        return <div style={{ textAlign: 'center', color: '#9ca3af' }}>Unsupported chart type</div>;
+        return <div style={{ textAlign: 'center', color: '#6b7280' }}>Unsupported chart type</div>;
     }
   };
 
@@ -1025,31 +1021,40 @@ function QuestDBPanel({ config, onEdit, onDelete, onDuplicate }) {
       height: '100%',
       display: 'flex',
       flexDirection: 'column',
-      background: '#1a1d23',
-      border: '1px solid #2d3139',
-      borderRadius: '8px',
-      overflow: 'hidden'
-    }}>
+      background: 'white',
+      border: '2px solid #e5e7eb',
+      borderRadius: '12px',
+      overflow: 'hidden',
+      boxShadow: '0 4px 6px rgba(0,0,0,0.05)',
+      transition: 'box-shadow 0.2s'
+    }}
+    onMouseEnter={(e) => e.currentTarget.style.boxShadow = '0 8px 12px rgba(0,0,0,0.1)'}
+    onMouseLeave={(e) => e.currentTarget.style.boxShadow = '0 4px 6px rgba(0,0,0,0.05)'}
+    >
       {/* Header */}
       <div style={{
         padding: '12px 16px',
-        background: '#0f1117',
-        borderBottom: '1px solid #2d3139',
+        background: '#f9fafb',
+        borderBottom: '2px solid #e5e7eb',
         display: 'flex',
         justifyContent: 'space-between',
         alignItems: 'center'
       }}>
-        <div className="drag-handle" style={{
-          cursor: 'move',
+        <div style={{
           fontWeight: '600',
-          color: '#fff',
+          color: '#111827',
           fontSize: '14px',
           flex: 1,
           display: 'flex',
           alignItems: 'center',
           gap: '8px'
         }}>
-          <Database size={16} color={config.colors[0]} />
+          <div style={{
+            width: '8px',
+            height: '8px',
+            borderRadius: '50%',
+            background: config.colors[0]
+          }} />
           {config.title}
         </div>
         <div style={{ display: 'flex', gap: '4px' }}>
@@ -1057,12 +1062,12 @@ function QuestDBPanel({ config, onEdit, onDelete, onDuplicate }) {
             padding: '6px',
             background: 'transparent',
             border: 'none',
-            color: '#9ca3af',
+            color: '#6b7280',
             cursor: 'pointer',
             borderRadius: '4px',
             transition: 'background 0.2s'
           }} 
-          onMouseEnter={(e) => e.target.style.background = '#2d3139'}
+          onMouseEnter={(e) => e.target.style.background = '#e5e7eb'}
           onMouseLeave={(e) => e.target.style.background = 'transparent'}
           title="Refresh">
             <RefreshCw size={14} />
@@ -1071,12 +1076,12 @@ function QuestDBPanel({ config, onEdit, onDelete, onDuplicate }) {
             padding: '6px',
             background: 'transparent',
             border: 'none',
-            color: '#9ca3af',
+            color: '#6b7280',
             cursor: 'pointer',
             borderRadius: '4px',
             transition: 'background 0.2s'
           }}
-          onMouseEnter={(e) => e.target.style.background = '#2d3139'}
+          onMouseEnter={(e) => e.target.style.background = '#e5e7eb'}
           onMouseLeave={(e) => e.target.style.background = 'transparent'}
           title="Duplicate">
             <Copy size={14} />
@@ -1085,12 +1090,12 @@ function QuestDBPanel({ config, onEdit, onDelete, onDuplicate }) {
             padding: '6px',
             background: 'transparent',
             border: 'none',
-            color: '#9ca3af',
+            color: '#6b7280',
             cursor: 'pointer',
             borderRadius: '4px',
             transition: 'background 0.2s'
           }}
-          onMouseEnter={(e) => e.target.style.background = '#2d3139'}
+          onMouseEnter={(e) => e.target.style.background = '#e5e7eb'}
           onMouseLeave={(e) => e.target.style.background = 'transparent'}
           title="Edit">
             <Settings size={14} />
@@ -1113,19 +1118,19 @@ function QuestDBPanel({ config, onEdit, onDelete, onDuplicate }) {
       </div>
 
       {/* Body */}
-      <div style={{ flex: 1, minHeight: 0, padding: '12px' }}>
+      <div style={{ flex: 1, minHeight: 0, padding: '16px' }}>
         {renderChart()}
       </div>
 
       {/* Footer */}
       <div style={{
         padding: '8px 12px',
-        borderTop: '1px solid #2d3139',
+        borderTop: '1px solid #e5e7eb',
         display: 'flex',
         justifyContent: 'space-between',
         fontSize: '11px',
         color: '#6b7280',
-        background: '#0f1117'
+        background: '#f9fafb'
       }}>
         <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
           <div style={{ display: 'flex', gap: '4px', alignItems: 'center' }}>
@@ -1133,10 +1138,17 @@ function QuestDBPanel({ config, onEdit, onDelete, onDuplicate }) {
             <span>{config.refreshInterval > 0 ? `${config.refreshInterval / 1000}s` : 'Manual'}</span>
           </div>
           <div>•</div>
-          <div>{config.vizType}</div>
+          <div style={{ textTransform: 'capitalize' }}>{config.vizType}</div>
         </div>
         <div>{data.length} pts</div>
       </div>
+
+      <style>{`
+        @keyframes spin {
+          0% { transform: rotate(0deg); }
+          100% { transform: rotate(360deg); }
+        }
+      `}</style>
     </div>
   );
 }
@@ -1146,7 +1158,6 @@ export default function DashboardPage() {
   const navigate = useNavigate();
   const user = authService.getUser();
   const [panels, setPanels] = useState([]);
-  const [layout, setLayout] = useState([]);
   const [showConfigModal, setShowConfigModal] = useState(false);
   const [editingPanel, setEditingPanel] = useState(null);
   const [availableTables, setAvailableTables] = useState([]);
@@ -1167,12 +1178,11 @@ export default function DashboardPage() {
 
   // Load saved dashboard from localStorage
   useEffect(() => {
-    const saved = localStorage.getItem('dashboard_panels');
+    const saved = localStorage.getItem('miralys_dashboard_panels');
     if (saved) {
       try {
         const parsed = JSON.parse(saved);
-        setPanels(parsed.panels || []);
-        setLayout(parsed.layout || []);
+        setPanels(parsed || []);
       } catch (e) {
         console.error('Error loading dashboard:', e);
       }
@@ -1182,9 +1192,9 @@ export default function DashboardPage() {
   // Save dashboard to localStorage
   useEffect(() => {
     if (panels.length > 0) {
-      localStorage.setItem('dashboard_panels', JSON.stringify({ panels, layout }));
+      localStorage.setItem('miralys_dashboard_panels', JSON.stringify(panels));
     }
-  }, [panels, layout]);
+  }, [panels]);
 
   const handleLogout = () => {
     authService.logout();
@@ -1203,15 +1213,6 @@ export default function DashboardPage() {
       setPanels(panels.map(p => p.id === config.id ? config : p));
     } else {
       setPanels([...panels, config]);
-      setLayout([...layout, {
-        i: config.id,
-        x: (layout.length * 6) % 12,
-        y: Infinity,
-        w: 6,
-        h: 12,
-        minH: 8,
-        minW: 3
-      }]);
     }
     
     setShowConfigModal(false);
@@ -1224,9 +1225,8 @@ export default function DashboardPage() {
   };
 
   const handleDelete = (panelId) => {
-    if (confirm('Are you sure you want to delete this panel?')) {
+    if (window.confirm('Are you sure you want to delete this panel?')) {
       setPanels(panels.filter(p => p.id !== panelId));
-      setLayout(layout.filter(l => l.i !== panelId));
     }
   };
 
@@ -1237,53 +1237,41 @@ export default function DashboardPage() {
       title: `${panel.title} (Copy)`
     };
     setPanels([...panels, newPanel]);
-    setLayout([...layout, {
-      i: newPanel.id,
-      x: (layout.length * 6) % 12,
-      y: Infinity,
-      w: 6,
-      h: 12,
-      minH: 8,
-      minW: 3
-    }]);
   };
 
   return (
-    <div style={{
-      minHeight: '100vh',
-      background: 'linear-gradient(180deg, #0a0e1a 0%, #080b14 100%)',
-      color: '#e5e7eb'
-    }}>
+    <div style={{ minHeight: '100vh', background: '#f3f4f6' }}>
       {/* Top Navigation Bar */}
       <div style={{
-        background: '#1a1d23',
-        borderBottom: '1px solid #2d3139',
+        background: 'white',
+        borderBottom: '2px solid #e5e7eb',
         padding: '12px 24px',
         display: 'flex',
         justifyContent: 'space-between',
         alignItems: 'center',
         position: 'sticky',
         top: 0,
-        zIndex: 100
+        zIndex: 100,
+        boxShadow: '0 2px 4px rgba(0,0,0,0.05)'
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
           <div style={{
             width: '40px',
             height: '40px',
-            background: 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)',
+            background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
             borderRadius: '10px',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center'
           }}>
-            <Database size={24} color="#fff" />
+            <Zap size={24} color="white" />
           </div>
           <div>
-            <h1 style={{ margin: 0, fontSize: '18px', fontWeight: '700', color: '#fff' }}>
-              Dashboard Studio
+            <h1 style={{ margin: 0, fontSize: '18px', fontWeight: '700', color: '#111827' }}>
+              Miralys
             </h1>
             <p style={{ margin: 0, fontSize: '12px', color: '#6b7280' }}>
-              Real-time QuestDB monitoring
+              Real-Time Data Intelligence
             </p>
           </div>
         </div>
@@ -1293,10 +1281,10 @@ export default function DashboardPage() {
             onClick={handleAddPanel}
             style={{
               padding: '10px 16px',
-              background: 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)',
+              background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
               border: 'none',
               borderRadius: '8px',
-              color: '#fff',
+              color: 'white',
               cursor: 'pointer',
               display: 'flex',
               alignItems: 'center',
@@ -1314,15 +1302,15 @@ export default function DashboardPage() {
           
           <div style={{
             padding: '8px 16px',
-            background: '#0f1117',
-            border: '1px solid #2d3139',
+            background: '#f9fafb',
+            border: '2px solid #e5e7eb',
             borderRadius: '8px',
             display: 'flex',
             alignItems: 'center',
             gap: '12px'
           }}>
             <div style={{ textAlign: 'right' }}>
-              <div style={{ fontSize: '13px', fontWeight: '600', color: '#fff' }}>{user?.name}</div>
+              <div style={{ fontSize: '13px', fontWeight: '600', color: '#111827' }}>{user?.name}</div>
               <div style={{ fontSize: '11px', color: '#6b7280' }}>{user?.email}</div>
             </div>
             <button
@@ -1331,7 +1319,7 @@ export default function DashboardPage() {
                 padding: '8px',
                 background: 'transparent',
                 border: 'none',
-                color: '#9ca3af',
+                color: '#6b7280',
                 cursor: 'pointer',
                 borderRadius: '6px'
               }}
@@ -1347,40 +1335,40 @@ export default function DashboardPage() {
       <div style={{ padding: '24px' }}>
         {panels.length === 0 ? (
           <div style={{
-            background: '#1a1d23',
-            border: '2px dashed #2d3139',
+            background: 'white',
+            border: '2px dashed #d1d5db',
             borderRadius: '16px',
-            padding: '80px 40px',
+            padding: '60px 40px',
             textAlign: 'center',
             maxWidth: '600px',
-            margin: '80px auto'
+            margin: '60px auto'
           }}>
             <div style={{
               width: '80px',
               height: '80px',
-              background: 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)',
+              background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
               borderRadius: '20px',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
               margin: '0 auto 24px'
             }}>
-              <Database size={40} color="#fff" />
+              <Database size={40} color="white" />
             </div>
-            <h3 style={{ margin: '0 0 12px', color: '#fff', fontSize: '24px', fontWeight: '700' }}>
-              Welcome to Dashboard Studio
+            <h3 style={{ margin: '0 0 12px', color: '#111827', fontSize: '24px', fontWeight: '700' }}>
+              Create Your First Dashboard
             </h3>
-            <p style={{ margin: '0 0 32px', color: '#9ca3af', fontSize: '15px', lineHeight: '1.6' }}>
-              Create powerful visualizations from your QuestDB data. Click the button below to add your first panel and start monitoring your metrics in real-time.
+            <p style={{ margin: '0 0 32px', color: '#6b7280', fontSize: '15px', lineHeight: '1.6' }}>
+              Build powerful visualizations from your QuestDB data. Click the button below to add your first panel and start monitoring in real-time.
             </p>
             <button
               onClick={handleAddPanel}
               style={{
                 padding: '14px 28px',
-                background: 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)',
+                background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
                 border: 'none',
                 borderRadius: '10px',
-                color: '#fff',
+                color: 'white',
                 cursor: 'pointer',
                 fontSize: '15px',
                 fontWeight: '600',
@@ -1393,22 +1381,19 @@ export default function DashboardPage() {
               onMouseLeave={(e) => e.target.style.transform = 'translateY(0)'}
             >
               <Plus size={20} />
-              Create Your First Panel
+              Add Your First Panel
             </button>
           </div>
         ) : (
-          <GridLayout
-            className="layout"
-            layout={layout}
-            cols={12}
-            rowHeight={30}
-            width={1200}
-            onLayoutChange={setLayout}
-            draggableHandle=".drag-handle"
-            compactType="vertical"
-          >
+          <div style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fit, minmax(450px, 1fr))',
+            gap: '20px',
+            maxWidth: '1600px',
+            margin: '0 auto'
+          }}>
             {panels.map(panel => (
-              <div key={panel.id}>
+              <div key={panel.id} style={{ height: '350px' }}>
                 <QuestDBPanel
                   config={panel}
                   onEdit={handleEdit}
@@ -1417,7 +1402,7 @@ export default function DashboardPage() {
                 />
               </div>
             ))}
-          </GridLayout>
+          </div>
         )}
       </div>
 
@@ -1433,22 +1418,6 @@ export default function DashboardPage() {
           allTables={availableTables}
         />
       )}
-
-      <style>{`
-        @keyframes spin {
-          0% { transform: rotate(0deg); }
-          100% { transform: rotate(360deg); }
-        }
-        
-        .layout {
-          margin: 0 auto;
-        }
-        
-        .react-grid-item.react-grid-placeholder {
-          background: rgba(59, 130, 246, 0.2);
-          border-radius: 8px;
-        }
-      `}</style>
     </div>
   );
 }
