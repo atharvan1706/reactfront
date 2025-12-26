@@ -1,15 +1,11 @@
-// src/pages/Login.jsx
 import React, { useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
+import { Mail, Lock, ArrowRight, AlertCircle, Zap, BarChart2, Database, Shield } from 'lucide-react';
 import authService from '../services/auth';
-import { Database, Lock, Mail, AlertCircle } from 'lucide-react';
 
-export default function Login() {
+export default function LoginPage({ onLogin }) {
   const navigate = useNavigate();
-  const [formData, setFormData] = useState({
-    email: '',
-    password: ''
-  });
+  const [formData, setFormData] = useState({ email: '', password: '' });
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
@@ -18,250 +14,227 @@ export default function Login() {
     setError('');
     setLoading(true);
 
-    const result = await authService.login(formData.email, formData.password);
-
-    if (result.success) {
-      navigate('/dashboard');
-    } else {
-      setError(result.message);
+    try {
+      const response = await authService.login(formData.email, formData.password);
+      
+      if (response.success) {
+        onLogin(response.user);
+        navigate('/dashboard');
+      } else {
+        setError(response.message || 'Invalid credentials');
+      }
+    } catch (err) {
+      setError('Login failed. Please try again.');
+    } finally {
+      setLoading(false);
     }
-    
-    setLoading(false);
-  };
-
-  const handleChange = (e) => {
-    setFormData({
-      ...formData,
-      [e.target.name]: e.target.value
-    });
   };
 
   return (
     <div style={{
       minHeight: '100vh',
-      background: 'linear-gradient(180deg, #0a0e1a 0%, #080b14 100%)',
+      background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
       display: 'flex',
       alignItems: 'center',
       justifyContent: 'center',
-      padding: '20px'
+      padding: '20px',
+      position: 'relative',
+      overflow: 'hidden'
     }}>
       <div style={{
+        position: 'absolute',
+        top: '-50%',
+        left: '-50%',
+        width: '200%',
+        height: '200%',
+        background: 'radial-gradient(circle, rgba(255,255,255,0.1) 1px, transparent 1px)',
+        backgroundSize: '50px 50px',
+        animation: 'drift 20s linear infinite'
+      }} />
+
+      <div style={{
         width: '100%',
-        maxWidth: '420px'
+        maxWidth: '1100px',
+        display: 'grid',
+        gridTemplateColumns: '1fr 1fr',
+        gap: '60px',
+        alignItems: 'center',
+        position: 'relative',
+        zIndex: 1
       }}>
-        {/* Logo/Header */}
-        <div style={{ textAlign: 'center', marginBottom: '32px' }}>
-          <div style={{
-            display: 'inline-flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            width: '64px',
-            height: '64px',
-            background: 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)',
-            borderRadius: '16px',
-            marginBottom: '16px'
-          }}>
-            <Database size={32} color="#fff" />
+        <div style={{ color: 'white', padding: '40px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginBottom: '32px' }}>
+            <div style={{
+              width: '60px',
+              height: '60px',
+              background: 'rgba(255,255,255,0.2)',
+              backdropFilter: 'blur(10px)',
+              borderRadius: '16px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              border: '1px solid rgba(255,255,255,0.3)'
+            }}>
+              <Zap size={32} />
+            </div>
+            <div>
+              <h1 style={{ margin: 0, fontSize: '40px', fontWeight: '800' }}>Miralys</h1>
+              <p style={{ margin: '4px 0 0', fontSize: '18px', opacity: 0.9 }}>Real-Time Data Intelligence</p>
+            </div>
           </div>
-          <h1 style={{
-            margin: '0 0 8px',
-            fontSize: '28px',
-            fontWeight: '700',
-            color: '#fff'
-          }}>
-            Welcome Back
-          </h1>
-          <p style={{
-            margin: 0,
-            fontSize: '14px',
-            color: '#9ca3af'
-          }}>
-            Sign in to access your dashboard
+
+          <p style={{ fontSize: '18px', lineHeight: '1.8', marginBottom: '40px' }}>
+            Transform your industrial data into actionable insights with powerful real-time analytics and beautiful visualizations.
           </p>
+
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+            {[
+              { icon: BarChart2, title: 'Live Dashboards', desc: 'Real-time data visualization' },
+              { icon: Database, title: 'QuestDB Integration', desc: 'High-performance time-series' },
+              { icon: Shield, title: 'Enterprise Security', desc: 'Your data, protected' }
+            ].map((feature, i) => (
+              <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+                <div style={{
+                  width: '48px',
+                  height: '48px',
+                  background: 'rgba(255,255,255,0.2)',
+                  borderRadius: '12px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center'
+                }}>
+                  <feature.icon size={24} />
+                </div>
+                <div>
+                  <div style={{ fontWeight: '600', fontSize: '16px' }}>{feature.title}</div>
+                  <div style={{ fontSize: '14px', opacity: 0.8 }}>{feature.desc}</div>
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
 
-        {/* Login Form */}
         <div style={{
-          background: '#1a1d23',
-          border: '1px solid #2d3139',
-          borderRadius: '16px',
-          padding: '32px'
+          background: 'white',
+          borderRadius: '24px',
+          padding: '48px',
+          boxShadow: '0 20px 60px rgba(0,0,0,0.3)'
         }}>
+          <div style={{ marginBottom: '32px', textAlign: 'center' }}>
+            <h2 style={{ margin: '0 0 8px', fontSize: '28px', fontWeight: '700' }}>Welcome Back</h2>
+            <p style={{ margin: 0, color: '#6b7280', fontSize: '14px' }}>Sign in to access your dashboard</p>
+          </div>
+
           {error && (
             <div style={{
               padding: '12px 16px',
-              background: 'rgba(239, 68, 68, 0.1)',
-              border: '1px solid rgba(239, 68, 68, 0.3)',
+              background: '#fee2e2',
+              border: '1px solid #fecaca',
               borderRadius: '8px',
+              color: '#dc2626',
+              fontSize: '14px',
               marginBottom: '24px',
               display: 'flex',
               alignItems: 'center',
-              gap: '12px',
-              color: '#ef4444'
+              gap: '8px'
             }}>
-              <AlertCircle size={20} />
-              <span style={{ fontSize: '14px' }}>{error}</span>
+              <AlertCircle size={16} />
+              {error}
             </div>
           )}
 
           <form onSubmit={handleSubmit}>
-            {/* Email Field */}
             <div style={{ marginBottom: '20px' }}>
-              <label style={{
-                display: 'block',
-                marginBottom: '8px',
-                fontSize: '14px',
-                fontWeight: '600',
-                color: '#e5e7eb'
-              }}>
-                Email
+              <label style={{ display: 'block', marginBottom: '8px', fontSize: '14px', fontWeight: '600' }}>
+                Email Address
               </label>
               <div style={{ position: 'relative' }}>
-                <Mail size={18} style={{
-                  position: 'absolute',
-                  left: '14px',
-                  top: '50%',
-                  transform: 'translateY(-50%)',
-                  color: '#6b7280'
-                }} />
+                <Mail size={18} style={{ position: 'absolute', left: '14px', top: '50%', transform: 'translateY(-50%)', color: '#9ca3af' }} />
                 <input
                   type="email"
-                  name="email"
                   value={formData.email}
-                  onChange={handleChange}
-                  placeholder="admin@example.com"
+                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                  placeholder="you@example.com"
                   required
                   style={{
                     width: '100%',
                     padding: '12px 12px 12px 44px',
-                    background: '#0f1117',
-                    border: '1px solid #2d3139',
-                    borderRadius: '8px',
-                    color: '#fff',
+                    border: '2px solid #e5e7eb',
+                    borderRadius: '10px',
                     fontSize: '14px',
-                    outline: 'none',
-                    transition: 'border-color 0.2s'
+                    outline: 'none'
                   }}
-                  onFocus={(e) => e.target.style.borderColor = '#3b82f6'}
-                  onBlur={(e) => e.target.style.borderColor = '#2d3139'}
                 />
               </div>
             </div>
 
-            {/* Password Field */}
             <div style={{ marginBottom: '24px' }}>
-              <label style={{
-                display: 'block',
-                marginBottom: '8px',
-                fontSize: '14px',
-                fontWeight: '600',
-                color: '#e5e7eb'
-              }}>
+              <label style={{ display: 'block', marginBottom: '8px', fontSize: '14px', fontWeight: '600' }}>
                 Password
               </label>
               <div style={{ position: 'relative' }}>
-                <Lock size={18} style={{
-                  position: 'absolute',
-                  left: '14px',
-                  top: '50%',
-                  transform: 'translateY(-50%)',
-                  color: '#6b7280'
-                }} />
+                <Lock size={18} style={{ position: 'absolute', left: '14px', top: '50%', transform: 'translateY(-50%)', color: '#9ca3af' }} />
                 <input
                   type="password"
-                  name="password"
                   value={formData.password}
-                  onChange={handleChange}
-                  placeholder="Enter your password"
+                  onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                  placeholder="••••••••"
                   required
                   style={{
                     width: '100%',
                     padding: '12px 12px 12px 44px',
-                    background: '#0f1117',
-                    border: '1px solid #2d3139',
-                    borderRadius: '8px',
-                    color: '#fff',
+                    border: '2px solid #e5e7eb',
+                    borderRadius: '10px',
                     fontSize: '14px',
-                    outline: 'none',
-                    transition: 'border-color 0.2s'
+                    outline: 'none'
                   }}
-                  onFocus={(e) => e.target.style.borderColor = '#3b82f6'}
-                  onBlur={(e) => e.target.style.borderColor = '#2d3139'}
                 />
               </div>
             </div>
 
-            {/* Submit Button */}
             <button
               type="submit"
               disabled={loading}
               style={{
                 width: '100%',
                 padding: '14px',
-                background: loading ? '#6b7280' : 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)',
+                background: loading ? '#9ca3af' : 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
                 border: 'none',
-                borderRadius: '8px',
-                color: '#fff',
-                fontSize: '15px',
+                borderRadius: '10px',
+                color: 'white',
+                fontSize: '16px',
                 fontWeight: '600',
                 cursor: loading ? 'not-allowed' : 'pointer',
-                transition: 'transform 0.2s',
-                marginBottom: '16px'
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '8px'
               }}
-              onMouseEnter={(e) => !loading && (e.target.style.transform = 'translateY(-1px)')}
-              onMouseLeave={(e) => e.target.style.transform = 'translateY(0)'}
             >
               {loading ? 'Signing in...' : 'Sign In'}
+              {!loading && <ArrowRight size={20} />}
             </button>
-
-            {/* Demo Credentials */}
-            <div style={{
-              padding: '12px',
-              background: 'rgba(59, 130, 246, 0.1)',
-              border: '1px solid rgba(59, 130, 246, 0.2)',
-              borderRadius: '8px',
-              fontSize: '12px',
-              color: '#9ca3af',
-              marginBottom: '16px'
-            }}>
-              <div style={{ fontWeight: '600', marginBottom: '4px', color: '#3b82f6' }}>
-                Demo Credentials:
-              </div>
-              <div>Email: admin@example.com</div>
-              <div>Password: admin123</div>
-            </div>
-
-            {/* Register Link */}
-            <div style={{
-              textAlign: 'center',
-              fontSize: '14px',
-              color: '#9ca3af'
-            }}>
-              Don't have an account?{' '}
-              <Link
-                to="/register"
-                style={{
-                  color: '#3b82f6',
-                  textDecoration: 'none',
-                  fontWeight: '600'
-                }}
-              >
-                Sign up
-              </Link>
-            </div>
           </form>
-        </div>
 
-        {/* Footer */}
-        <div style={{
-          textAlign: 'center',
-          marginTop: '24px',
-          fontSize: '13px',
-          color: '#6b7280'
-        }}>
-          © 2024 Dashboard Studio. All rights reserved.
+          <div style={{ marginTop: '24px', textAlign: 'center' }}>
+            <Link to="/register" style={{
+              color: '#667eea',
+              fontSize: '14px',
+              fontWeight: '600',
+              textDecoration: 'none'
+            }}>
+              Don't have an account? Sign up
+            </Link>
+          </div>
         </div>
       </div>
+
+      <style>{`
+        @keyframes drift {
+          0% { transform: translate(0, 0); }
+          100% { transform: translate(-50px, -50px); }
+        }
+      `}</style>
     </div>
   );
 }
