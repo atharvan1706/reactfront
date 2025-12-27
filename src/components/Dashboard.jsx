@@ -1112,7 +1112,7 @@ function QuestDBPanel({ config, onEdit, onDelete, onDuplicate }) {
           }}>
             <AlertCircle size={32} style={{ marginBottom: '8px' }} />
             <div style={{ fontSize: '14px', fontWeight: '600' }}>Error loading data</div>
-            <div style={{ fontSize: '12px', marginTop: '4px', opacity: 0.8' }}>{error}</div>
+            <div style={{ fontSize: '12px', marginTop: '4px', opacity: 0.8 }}>{error}</div>
           </div>
         </div>
       );
