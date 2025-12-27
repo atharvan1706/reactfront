@@ -311,17 +311,19 @@ const styles = {
     marginBottom: 16
   },
 
-  inputGroup: {
-    position: 'relative',
-    display: 'flex',
-    alignItems: 'center',
-    gap: 10,
-    marginBottom: 16,
-    background: '#020617',
-    borderRadius: 12,
-    padding: '14px 16px',
-    border: '1px solid #1e293b'
-  },
+ inputGroup: {
+  position: 'relative',
+  display: 'flex',
+  alignItems: 'center',
+  gap: 10,
+  marginBottom: 16,
+  background: '#020617',
+  borderRadius: 12,
+  padding: '14px 16px',
+  border: '1px solid #1e293b',
+  color: '#e5e7eb'
+},
+
 
   eyeBtn: {
     background: 'none',
@@ -373,12 +375,32 @@ const globalStyles = `
   to { opacity: 1; transform: translateX(0); }
 }
 
-input, select {
+/* Inputs */
+input {
   background: transparent;
   border: none;
   outline: none;
-  color: white;
+  color: #e5e7eb;
   width: 100%;
   font-size: 15px;
+}
+
+/* Select dropdown */
+select {
+  background-color: #020617;
+  color: #e5e7eb;
+  border: none;
+  outline: none;
+  width: 100%;
+  font-size: 15px;
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+}
+
+/* Dropdown options */
+option {
+  background-color: #020617;
+  color: #e5e7eb;
 }
 `;
