@@ -53,99 +53,90 @@ export default function AuthPage({ onAuth }) {
   };
 
   return (
-    <div className="min-h-screen flex">
-      {/* Left Side - Branding */}
-      <div className="hidden lg:flex lg:w-1/2 bg-gradient-to-br from-violet-600 via-purple-600 to-fuchsia-600 p-12 flex-col justify-between relative overflow-hidden">
-        {/* Animated Background Elements */}
-        <div className="absolute inset-0 overflow-hidden pointer-events-none">
-          <div className="absolute top-0 left-0 w-96 h-96 bg-white/10 rounded-full blur-3xl animate-pulse"></div>
-          <div className="absolute bottom-0 right-0 w-96 h-96 bg-fuchsia-300/20 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '1s' }}></div>
-          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-72 h-72 bg-violet-300/10 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '2s' }}></div>
-        </div>
+    <div style={styles.container}>
+      {/* Left Panel */}
+      <div style={styles.leftPanel}>
+        <div style={{...styles.bgOrb, ...styles.orb1}}></div>
+        <div style={{...styles.bgOrb, ...styles.orb2}}></div>
+        <div style={{...styles.bgOrb, ...styles.orb3}}></div>
 
-        <div className="relative z-10">
-          {/* Logo */}
-          <div className="flex items-center gap-3 mb-12">
-            <div className="w-14 h-14 bg-white/20 backdrop-blur-xl rounded-2xl flex items-center justify-center border border-white/30 shadow-2xl">
-              <Sparkles className="text-white" size={28} />
+        <div style={styles.content}>
+          <div style={styles.logo}>
+            <div style={styles.logoIcon}>
+              <Sparkles style={styles.logoIconSvg} />
             </div>
-            <span className="text-5xl font-bold text-white tracking-tight">Miralys</span>
+            <span style={styles.logoText}>Miralys</span>
           </div>
 
-          {/* Hero Content */}
-          <div className="mt-20">
-            <h1 className="text-6xl font-bold text-white mb-6 leading-tight">
+          <div style={styles.heroContent}>
+            <h1 style={styles.heroTitle}>
               Transform Your
-              <span className="block mt-2 bg-gradient-to-r from-yellow-200 via-pink-200 to-purple-200 bg-clip-text text-transparent">
+              <span style={styles.heroGradient}>
                 Manufacturing Operations
               </span>
             </h1>
-            <p className="text-xl text-purple-100 mb-16 leading-relaxed max-w-xl">
+            <p style={styles.heroSubtitle}>
               Real-time insights, seamless collaboration, and intelligent automation for modern plants.
             </p>
 
-            {/* Feature Pills */}
-            <div className="space-y-5">
-              <div className="flex items-center gap-4 bg-white/10 backdrop-blur-xl rounded-2xl p-5 border border-white/20 hover:bg-white/15 transition-all">
-                <div className="w-12 h-12 bg-gradient-to-br from-yellow-400 to-orange-500 rounded-xl flex items-center justify-center flex-shrink-0 shadow-lg">
-                  <Zap className="text-white" size={24} />
+            <div style={styles.featureList}>
+              <div style={styles.featureCard}>
+                <div style={{...styles.featureIcon, ...styles.iconYellow}}>
+                  <Zap style={styles.featureIconSvg} />
                 </div>
                 <div>
-                  <div className="text-white font-bold text-lg">Lightning Fast</div>
-                  <div className="text-purple-200 text-sm">Real-time data sync across all plants</div>
+                  <div style={styles.featureTitle}>Lightning Fast</div>
+                  <div style={styles.featureDesc}>Real-time data sync across all plants</div>
                 </div>
               </div>
 
-              <div className="flex items-center gap-4 bg-white/10 backdrop-blur-xl rounded-2xl p-5 border border-white/20 hover:bg-white/15 transition-all">
-                <div className="w-12 h-12 bg-gradient-to-br from-emerald-400 to-teal-500 rounded-xl flex items-center justify-center flex-shrink-0 shadow-lg">
-                  <Shield className="text-white" size={24} />
+              <div style={styles.featureCard}>
+                <div style={{...styles.featureIcon, ...styles.iconGreen}}>
+                  <Shield style={styles.featureIconSvg} />
                 </div>
                 <div>
-                  <div className="text-white font-bold text-lg">Enterprise Security</div>
-                  <div className="text-purple-200 text-sm">Bank-level encryption & compliance</div>
+                  <div style={styles.featureTitle}>Enterprise Security</div>
+                  <div style={styles.featureDesc}>Bank-level encryption & compliance</div>
                 </div>
               </div>
 
-              <div className="flex items-center gap-4 bg-white/10 backdrop-blur-xl rounded-2xl p-5 border border-white/20 hover:bg-white/15 transition-all">
-                <div className="w-12 h-12 bg-gradient-to-br from-blue-400 to-indigo-500 rounded-xl flex items-center justify-center flex-shrink-0 shadow-lg">
-                  <Sparkles className="text-white" size={24} />
+              <div style={styles.featureCard}>
+                <div style={{...styles.featureIcon, ...styles.iconBlue}}>
+                  <Sparkles style={styles.featureIconSvg} />
                 </div>
                 <div>
-                  <div className="text-white font-bold text-lg">AI-Powered Insights</div>
-                  <div className="text-purple-200 text-sm">Smart predictions and recommendations</div>
+                  <div style={styles.featureTitle}>AI-Powered Insights</div>
+                  <div style={styles.featureDesc}>Smart predictions and recommendations</div>
                 </div>
               </div>
             </div>
           </div>
         </div>
 
-        {/* Bottom Brand Text */}
-        <div className="relative z-10 text-purple-200 text-sm">
+        <div style={styles.footerText}>
           © 2024 Miralys. Trusted by leading manufacturers worldwide.
         </div>
       </div>
 
-      {/* Right Side - Auth Form */}
-      <div className="w-full lg:w-1/2 bg-gradient-to-br from-slate-50 to-gray-100 flex items-center justify-center p-6 lg:p-12">
-        <div className="w-full max-w-lg">
-          {/* Mobile Logo */}
-          <div className="lg:hidden flex items-center justify-center gap-3 mb-8">
-            <div className="w-12 h-12 bg-gradient-to-br from-violet-600 to-fuchsia-600 rounded-2xl flex items-center justify-center shadow-xl">
-              <Sparkles className="text-white" size={24} />
+      {/* Right Panel */}
+      <div style={styles.rightPanel}>
+        <div style={styles.formContainer}>
+          <div style={styles.mobileLogoContainer}>
+            <div style={styles.mobileLogoIcon}>
+              <Sparkles style={styles.mobileLogoSvg} />
             </div>
-            <span className="text-4xl font-bold bg-gradient-to-r from-violet-600 to-fuchsia-600 bg-clip-text text-transparent">Miralys</span>
+            <span style={styles.mobileLogoText}>Miralys</span>
           </div>
 
-          <div className="bg-white rounded-3xl shadow-2xl p-10 border border-gray-100">
-            {/* Form Header */}
-            <div className="text-center mb-10">
-              <div className="inline-flex items-center justify-center w-20 h-20 bg-gradient-to-br from-violet-500 to-fuchsia-500 rounded-2xl mb-5 shadow-2xl shadow-purple-500/30">
-                <Lock className="text-white" size={36} />
+          <div style={styles.formCard}>
+            <div style={styles.formHeader}>
+              <div style={styles.formIcon}>
+                <Lock style={styles.formIconSvg} />
               </div>
-              <h2 className="text-4xl font-bold text-gray-900 mb-3">
+              <h2 style={styles.formTitle}>
                 {mode === 'login' ? 'Welcome back' : 'Create account'}
               </h2>
-              <p className="text-gray-600 text-lg">
+              <p style={styles.formSubtitle}>
                 {mode === 'login'
                   ? 'Enter your credentials to continue'
                   : 'Join thousands of smart manufacturers'}
@@ -153,17 +144,19 @@ export default function AuthPage({ onAuth }) {
             </div>
 
             {error && (
-              <div className="mb-6 p-4 bg-red-50 border-l-4 border-red-500 rounded-xl">
-                <p className="text-red-700 text-sm font-medium">{error}</p>
+              <div style={styles.errorBox}>
+                <p style={styles.errorText}>{error}</p>
               </div>
             )}
 
-            <div className="space-y-5">
+            <div style={styles.formFields}>
               {mode === 'register' && (
-                <div className="relative">
-                  <div className={`absolute left-5 top-1/2 -translate-y-1/2 transition-all duration-200 ${
-                    focusedField === 'name' ? 'text-violet-600 scale-110' : 'text-gray-400'
-                  }`}>
+                <div style={styles.inputGroup}>
+                  <div style={{
+                    ...styles.inputIcon,
+                    color: focusedField === 'name' ? '#8b5cf6' : '#9ca3af',
+                    transform: focusedField === 'name' ? 'translateY(-50%) scale(1.1)' : 'translateY(-50%)'
+                  }}>
                     <User size={22} />
                   </div>
                   <input
@@ -171,11 +164,10 @@ export default function AuthPage({ onAuth }) {
                     name="name"
                     placeholder="Full Name"
                     value={form.name}
-                    className={`w-full pl-14 pr-5 py-4 border-2 rounded-xl transition-all outline-none text-base font-medium ${
-                      focusedField === 'name'
-                        ? 'border-violet-500 bg-violet-50/50 shadow-lg shadow-violet-100'
-                        : 'border-gray-200 bg-white hover:border-gray-300'
-                    }`}
+                    style={{
+                      ...styles.inputField,
+                      ...(focusedField === 'name' ? styles.inputFieldFocused : {})
+                    }}
                     onChange={handleChange}
                     onFocus={() => setFocusedField('name')}
                     onBlur={() => setFocusedField('')}
@@ -184,10 +176,12 @@ export default function AuthPage({ onAuth }) {
                 </div>
               )}
 
-              <div className="relative">
-                <div className={`absolute left-5 top-1/2 -translate-y-1/2 transition-all duration-200 ${
-                  focusedField === 'email' ? 'text-violet-600 scale-110' : 'text-gray-400'
-                }`}>
+              <div style={styles.inputGroup}>
+                <div style={{
+                  ...styles.inputIcon,
+                  color: focusedField === 'email' ? '#8b5cf6' : '#9ca3af',
+                  transform: focusedField === 'email' ? 'translateY(-50%) scale(1.1)' : 'translateY(-50%)'
+                }}>
                   <Mail size={22} />
                 </div>
                 <input
@@ -195,11 +189,10 @@ export default function AuthPage({ onAuth }) {
                   name="email"
                   placeholder="Email Address"
                   value={form.email}
-                  className={`w-full pl-14 pr-5 py-4 border-2 rounded-xl transition-all outline-none text-base font-medium ${
-                    focusedField === 'email'
-                      ? 'border-violet-500 bg-violet-50/50 shadow-lg shadow-violet-100'
-                      : 'border-gray-200 bg-white hover:border-gray-300'
-                  }`}
+                  style={{
+                    ...styles.inputField,
+                    ...(focusedField === 'email' ? styles.inputFieldFocused : {})
+                  }}
                   onChange={handleChange}
                   onFocus={() => setFocusedField('email')}
                   onBlur={() => setFocusedField('')}
@@ -207,10 +200,12 @@ export default function AuthPage({ onAuth }) {
                 />
               </div>
 
-              <div className="relative">
-                <div className={`absolute left-5 top-1/2 -translate-y-1/2 transition-all duration-200 ${
-                  focusedField === 'password' ? 'text-violet-600 scale-110' : 'text-gray-400'
-                }`}>
+              <div style={styles.inputGroup}>
+                <div style={{
+                  ...styles.inputIcon,
+                  color: focusedField === 'password' ? '#8b5cf6' : '#9ca3af',
+                  transform: focusedField === 'password' ? 'translateY(-50%) scale(1.1)' : 'translateY(-50%)'
+                }}>
                   <Lock size={22} />
                 </div>
                 <input
@@ -218,11 +213,11 @@ export default function AuthPage({ onAuth }) {
                   name="password"
                   placeholder="Password"
                   value={form.password}
-                  className={`w-full pl-14 pr-14 py-4 border-2 rounded-xl transition-all outline-none text-base font-medium ${
-                    focusedField === 'password'
-                      ? 'border-violet-500 bg-violet-50/50 shadow-lg shadow-violet-100'
-                      : 'border-gray-200 bg-white hover:border-gray-300'
-                  }`}
+                  style={{
+                    ...styles.inputField,
+                    paddingRight: '56px',
+                    ...(focusedField === 'password' ? styles.inputFieldFocused : {})
+                  }}
                   onChange={handleChange}
                   onFocus={() => setFocusedField('password')}
                   onBlur={() => setFocusedField('')}
@@ -230,7 +225,7 @@ export default function AuthPage({ onAuth }) {
                 />
                 <button
                   type="button"
-                  className="absolute right-5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-violet-600 transition-all hover:scale-110"
+                  style={styles.passwordToggle}
                   onClick={() => setShowPassword(!showPassword)}
                 >
                   {showPassword ? <EyeOff size={22} /> : <Eye size={22} />}
@@ -238,20 +233,21 @@ export default function AuthPage({ onAuth }) {
               </div>
 
               {mode === 'register' && (
-                <div className="relative">
-                  <div className={`absolute left-5 top-1/2 -translate-y-1/2 transition-all duration-200 ${
-                    focusedField === 'plantId' ? 'text-violet-600 scale-110' : 'text-gray-400'
-                  }`}>
+                <div style={styles.inputGroup}>
+                  <div style={{
+                    ...styles.inputIcon,
+                    color: focusedField === 'plantId' ? '#8b5cf6' : '#9ca3af',
+                    transform: focusedField === 'plantId' ? 'translateY(-50%) scale(1.1)' : 'translateY(-50%)'
+                  }}>
                     <Building2 size={22} />
                   </div>
                   <select
                     name="plantId"
                     value={form.plantId}
-                    className={`w-full pl-14 pr-5 py-4 border-2 rounded-xl transition-all outline-none appearance-none cursor-pointer text-base font-medium ${
-                      focusedField === 'plantId'
-                        ? 'border-violet-500 bg-violet-50/50 shadow-lg shadow-violet-100'
-                        : 'border-gray-200 bg-white hover:border-gray-300'
-                    }`}
+                    style={{
+                      ...styles.inputField,
+                      ...(focusedField === 'plantId' ? styles.inputFieldFocused : {})
+                    }}
                     onChange={handleChange}
                     onFocus={() => setFocusedField('plantId')}
                     onBlur={() => setFocusedField('')}
@@ -267,19 +263,18 @@ export default function AuthPage({ onAuth }) {
                 type="button"
                 onClick={handleSubmit}
                 disabled={loading}
-                className={`w-full py-5 rounded-xl font-bold text-white text-lg transition-all transform shadow-2xl mt-8 ${
-                  loading
-                    ? 'bg-gray-400 cursor-not-allowed'
-                    : 'bg-gradient-to-r from-violet-600 via-purple-600 to-fuchsia-600 hover:shadow-2xl hover:shadow-purple-500/50 hover:-translate-y-1 active:translate-y-0'
-                }`}
+                style={{
+                  ...styles.submitBtn,
+                  ...(loading ? styles.submitBtnDisabled : {})
+                }}
               >
                 {loading ? (
-                  <span className="flex items-center justify-center gap-3">
-                    <div className="w-6 h-6 border-3 border-white/30 border-t-white rounded-full animate-spin"></div>
+                  <span style={styles.submitBtnContent}>
+                    <div style={styles.spinner}></div>
                     Processing...
                   </span>
                 ) : (
-                  <span className="flex items-center justify-center gap-2">
+                  <span style={styles.submitBtnContent}>
                     {mode === 'login' ? 'Sign In' : 'Create Account'}
                     <ArrowRight size={22} />
                   </span>
@@ -288,27 +283,21 @@ export default function AuthPage({ onAuth }) {
             </div>
 
             {mode === 'login' && (
-              <div className="mt-6 text-center">
-                <button className="text-sm text-violet-600 hover:text-violet-700 font-semibold hover:underline">
-                  Forgot password?
-                </button>
+              <div style={styles.forgotPassword}>
+                <button style={styles.forgotLink}>Forgot password?</button>
               </div>
             )}
 
-            <div className="mt-10 relative">
-              <div className="absolute inset-0 flex items-center">
-                <div className="w-full border-t border-gray-300"></div>
-              </div>
-              <div className="relative flex justify-center text-sm">
-                <span className="px-4 bg-white text-gray-500 font-medium">
-                  {mode === 'login' ? 'New to Miralys?' : 'Already have an account?'}
-                </span>
-              </div>
+            <div style={styles.divider}>
+              <div style={styles.dividerLine}></div>
+              <span style={styles.dividerText}>
+                {mode === 'login' ? 'New to Miralys?' : 'Already have an account?'}
+              </span>
             </div>
 
             <button
               type="button"
-              className="mt-6 w-full py-4 rounded-xl font-bold text-violet-600 bg-violet-50 hover:bg-violet-100 transition-all border-2 border-violet-200 hover:border-violet-300 text-base"
+              style={styles.switchBtn}
               onClick={() => {
                 setMode(mode === 'login' ? 'register' : 'login');
                 setError('');
@@ -318,7 +307,7 @@ export default function AuthPage({ onAuth }) {
             </button>
           </div>
 
-          <p className="text-center text-sm text-gray-500 mt-8">
+          <p style={styles.termsText}>
             By continuing, you agree to Miralys's Terms of Service and Privacy Policy
           </p>
         </div>
@@ -326,3 +315,359 @@ export default function AuthPage({ onAuth }) {
     </div>
   );
 }
+
+const styles = {
+  container: {
+    display: 'flex',
+    minHeight: '100vh',
+    fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif'
+  },
+  leftPanel: {
+    width: '50%',
+    background: 'linear-gradient(135deg, #7c3aed 0%, #a855f7 50%, #d946ef 100%)',
+    padding: '48px',
+    display: 'flex',
+    flexDirection: 'column',
+    justifyContent: 'space-between',
+    position: 'relative',
+    overflow: 'hidden'
+  },
+  bgOrb: {
+    position: 'absolute',
+    borderRadius: '50%',
+    filter: 'blur(80px)',
+    opacity: 0.3,
+    animation: 'pulse 3s ease-in-out infinite'
+  },
+  orb1: {
+    top: 0,
+    left: 0,
+    width: '384px',
+    height: '384px',
+    background: 'rgba(255, 255, 255, 0.1)'
+  },
+  orb2: {
+    bottom: 0,
+    right: 0,
+    width: '384px',
+    height: '384px',
+    background: 'rgba(244, 114, 182, 0.2)',
+    animationDelay: '1s'
+  },
+  orb3: {
+    top: '50%',
+    left: '50%',
+    transform: 'translate(-50%, -50%)',
+    width: '288px',
+    height: '288px',
+    background: 'rgba(196, 181, 253, 0.1)',
+    animationDelay: '2s'
+  },
+  content: {
+    position: 'relative',
+    zIndex: 10
+  },
+  logo: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '12px',
+    marginBottom: '48px'
+  },
+  logoIcon: {
+    width: '56px',
+    height: '56px',
+    background: 'rgba(255, 255, 255, 0.2)',
+    backdropFilter: 'blur(20px)',
+    borderRadius: '16px',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    border: '1px solid rgba(255, 255, 255, 0.3)',
+    boxShadow: '0 20px 40px rgba(0, 0, 0, 0.2)'
+  },
+  logoIconSvg: {
+    color: 'white',
+    width: '28px',
+    height: '28px'
+  },
+  logoText: {
+    fontSize: '48px',
+    fontWeight: 'bold',
+    color: 'white',
+    letterSpacing: '-0.02em'
+  },
+  heroContent: {
+    marginTop: '80px'
+  },
+  heroTitle: {
+    fontSize: '60px',
+    fontWeight: 'bold',
+    color: 'white',
+    lineHeight: '1.1',
+    marginBottom: '24px'
+  },
+  heroGradient: {
+    display: 'block',
+    marginTop: '8px',
+    background: 'linear-gradient(90deg, #fef08a 0%, #fbcfe8 50%, #e9d5ff 100%)',
+    WebkitBackgroundClip: 'text',
+    WebkitTextFillColor: 'transparent',
+    backgroundClip: 'text'
+  },
+  heroSubtitle: {
+    fontSize: '20px',
+    color: '#e9d5ff',
+    lineHeight: '1.6',
+    maxWidth: '560px',
+    marginBottom: '64px'
+  },
+  featureList: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '20px'
+  },
+  featureCard: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '16px',
+    background: 'rgba(255, 255, 255, 0.1)',
+    backdropFilter: 'blur(20px)',
+    borderRadius: '16px',
+    padding: '20px',
+    border: '1px solid rgba(255, 255, 255, 0.2)',
+    transition: 'all 0.3s ease'
+  },
+  featureIcon: {
+    width: '48px',
+    height: '48px',
+    borderRadius: '12px',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexShrink: 0,
+    boxShadow: '0 4px 12px rgba(0, 0, 0, 0.2)'
+  },
+  iconYellow: {
+    background: 'linear-gradient(135deg, #facc15 0%, #f97316 100%)'
+  },
+  iconGreen: {
+    background: 'linear-gradient(135deg, #34d399 0%, #14b8a6 100%)'
+  },
+  iconBlue: {
+    background: 'linear-gradient(135deg, #60a5fa 0%, #6366f1 100%)'
+  },
+  featureIconSvg: {
+    color: 'white',
+    width: '24px',
+    height: '24px'
+  },
+  featureTitle: {
+    color: 'white',
+    fontSize: '18px',
+    fontWeight: 'bold',
+    marginBottom: '4px'
+  },
+  featureDesc: {
+    color: '#e9d5ff',
+    fontSize: '14px'
+  },
+  footerText: {
+    position: 'relative',
+    zIndex: 10,
+    color: '#e9d5ff',
+    fontSize: '14px'
+  },
+  rightPanel: {
+    width: '50%',
+    background: 'linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%)',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: '48px'
+  },
+  formContainer: {
+    width: '100%',
+    maxWidth: '512px'
+  },
+  mobileLogoContainer: {
+    display: 'none'
+  },
+  formCard: {
+    background: 'white',
+    borderRadius: '24px',
+    boxShadow: '0 20px 60px rgba(0, 0, 0, 0.1)',
+    padding: '40px',
+    border: '1px solid #f1f5f9'
+  },
+  formHeader: {
+    textAlign: 'center',
+    marginBottom: '40px'
+  },
+  formIcon: {
+    width: '80px',
+    height: '80px',
+    background: 'linear-gradient(135deg, #8b5cf6 0%, #d946ef 100%)',
+    borderRadius: '16px',
+    display: 'inline-flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: '20px',
+    boxShadow: '0 10px 30px rgba(139, 92, 246, 0.3)'
+  },
+  formIconSvg: {
+    color: 'white',
+    width: '36px',
+    height: '36px'
+  },
+  formTitle: {
+    fontSize: '36px',
+    fontWeight: 'bold',
+    color: '#111827',
+    marginBottom: '12px'
+  },
+  formSubtitle: {
+    fontSize: '18px',
+    color: '#6b7280'
+  },
+  errorBox: {
+    background: '#fef2f2',
+    borderLeft: '4px solid #ef4444',
+    borderRadius: '12px',
+    padding: '16px',
+    marginBottom: '24px'
+  },
+  errorText: {
+    color: '#b91c1c',
+    fontSize: '14px',
+    fontWeight: '500'
+  },
+  formFields: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '20px'
+  },
+  inputGroup: {
+    position: 'relative'
+  },
+  inputIcon: {
+    position: 'absolute',
+    left: '20px',
+    top: '50%',
+    transform: 'translateY(-50%)',
+    transition: 'all 0.2s ease',
+    pointerEvents: 'none'
+  },
+  inputField: {
+    width: '100%',
+    padding: '16px 20px 16px 56px',
+    border: '2px solid #e5e7eb',
+    borderRadius: '12px',
+    fontSize: '16px',
+    fontWeight: '500',
+    outline: 'none',
+    transition: 'all 0.2s ease',
+    background: 'white'
+  },
+  inputFieldFocused: {
+    borderColor: '#8b5cf6',
+    background: 'rgba(139, 92, 246, 0.05)',
+    boxShadow: '0 4px 16px rgba(139, 92, 246, 0.1)'
+  },
+  passwordToggle: {
+    position: 'absolute',
+    right: '20px',
+    top: '50%',
+    transform: 'translateY(-50%)',
+    background: 'none',
+    border: 'none',
+    color: '#9ca3af',
+    cursor: 'pointer',
+    padding: '4px',
+    transition: 'all 0.2s ease',
+    display: 'flex',
+    alignItems: 'center'
+  },
+  submitBtn: {
+    width: '100%',
+    padding: '20px',
+    background: 'linear-gradient(90deg, #8b5cf6 0%, #a855f7 50%, #d946ef 100%)',
+    color: 'white',
+    border: 'none',
+    borderRadius: '12px',
+    fontSize: '18px',
+    fontWeight: 'bold',
+    cursor: 'pointer',
+    marginTop: '32px',
+    boxShadow: '0 10px 30px rgba(139, 92, 246, 0.3)',
+    transition: 'all 0.3s ease'
+  },
+  submitBtnDisabled: {
+    background: '#9ca3af',
+    cursor: 'not-allowed',
+    boxShadow: 'none'
+  },
+  submitBtnContent: {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: '8px'
+  },
+  spinner: {
+    width: '24px',
+    height: '24px',
+    border: '3px solid rgba(255, 255, 255, 0.3)',
+    borderTopColor: 'white',
+    borderRadius: '50%',
+    animation: 'spin 0.8s linear infinite'
+  },
+  forgotPassword: {
+    textAlign: 'center',
+    marginTop: '24px'
+  },
+  forgotLink: {
+    color: '#8b5cf6',
+    fontSize: '14px',
+    fontWeight: '600',
+    textDecoration: 'none',
+    cursor: 'pointer',
+    background: 'none',
+    border: 'none'
+  },
+  divider: {
+    position: 'relative',
+    marginTop: '40px'
+  },
+  dividerLine: {
+    borderTop: '1px solid #d1d5db'
+  },
+  dividerText: {
+    position: 'absolute',
+    top: '50%',
+    left: '50%',
+    transform: 'translate(-50%, -50%)',
+    background: 'white',
+    padding: '0 16px',
+    color: '#6b7280',
+    fontSize: '14px',
+    fontWeight: '500'
+  },
+  switchBtn: {
+    width: '100%',
+    marginTop: '24px',
+    padding: '16px',
+    background: 'rgba(139, 92, 246, 0.1)',
+    color: '#8b5cf6',
+    border: '2px solid #ddd6fe',
+    borderRadius: '12px',
+    fontSize: '16px',
+    fontWeight: 'bold',
+    cursor: 'pointer',
+    transition: 'all 0.2s ease'
+  },
+  termsText: {
+    textAlign: 'center',
+    fontSize: '14px',
+    color: '#6b7280',
+    marginTop: '32px'
+  }
+};
