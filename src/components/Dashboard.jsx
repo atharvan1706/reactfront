@@ -1028,7 +1028,7 @@ function QuestDBPanel({ config, onEdit, onDelete, onDuplicate }) {
   const [latestRecordTime, setLatestRecordTime] = useState(null);
   const timerRef = useRef(null);
 
-  const fetchData = async () => {
+ const fetchData = async () => {
     try {
       setError(null);
       const startTime = Date.now();
@@ -1048,8 +1048,9 @@ function QuestDBPanel({ config, onEdit, onDelete, onDuplicate }) {
       const endTime = Date.now();
       setQueryTime(new Date(endTime));
       
-      if (formatted.length > 0 && formatted[0][config.timestampField]) {
-        setLatestRecordTime(new Date(formatted[0][config.timestampField]));
+      // Update latest record time from the actual data
+      if (result.length > 0 && result[0][config.timestampField]) {
+        setLatestRecordTime(new Date(result[0][config.timestampField]));
       }
       
       setData(formatted);
