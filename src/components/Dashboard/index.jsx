@@ -1,14 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
-  Plus, LogOut, Database, Zap, Folder, Save, Download, Upload
+  Plus, LogOut, Database, Zap, Folder, Save, Download, Upload, Moon, Sun
 } from 'lucide-react';
 import authService from '../../services/auth';
 import questdbService from '../../services/questdb';
 import DashboardModal from './DashboardModal';
 import PanelConfigModal from './PanelConfigModal';
 import QuestDBPanel from './QuestDBPanel';
-import { GRID_COLS, ROW_HEIGHT } from './constants';
+import { GRID_COLS, ROW_HEIGHT, DARK_COLORS } from './constants';
 
 export default function Dashboard() {
   const navigate = useNavigate();
@@ -20,6 +20,10 @@ export default function Dashboard() {
   const [editingPanel, setEditingPanel] = useState(null);
   const [availableTables, setAvailableTables] = useState([]);
   const [draggingPanel, setDraggingPanel] = useState(null);
+  const [darkMode, setDarkMode] = useState(() => {
+    const saved = localStorage.getItem('miralys_dark_mode');
+    return saved ? JSON.parse(saved) : false;
+  });
 
   useEffect(() => {
     const fetchTables = async () => {
@@ -76,6 +80,36 @@ export default function Dashboard() {
       localStorage.setItem('miralys_active_dashboard', currentDashboard.id);
     }
   }, [dashboards, currentDashboard]);
+
+  useEffect(() => {
+    localStorage.setItem('miralys_dark_mode', JSON.stringify(darkMode));
+  }, [darkMode]);
+
+  const toggleDarkMode = () => {
+    setDarkMode(!darkMode);
+  };
+
+  const theme = darkMode ? {
+    bg: DARK_COLORS.bg.main,
+    card: DARK_COLORS.bg.card,
+    hover: DARK_COLORS.bg.hover,
+    text: DARK_COLORS.text.primary,
+    textSecondary: DARK_COLORS.text.secondary,
+    textMuted: DARK_COLORS.text.muted,
+    border: DARK_COLORS.border.main,
+    borderLight: DARK_COLORS.border.light,
+    accent: DARK_COLORS.primary
+  } : {
+    bg: '#f3f4f6',
+    card: 'white',
+    hover: '#f9fafb',
+    text: '#111827',
+    textSecondary: '#374151',
+    textMuted: '#6b7280',
+    border: '#e5e7eb',
+    borderLight: '#d1d5db',
+    accent: '#667eea'
+  };
 
   const handleLogout = () => {
     authService.logout();
@@ -291,10 +325,14 @@ export default function Dashboard() {
   };
 
   return (
-    <div style={{ minHeight: '100vh', background: '#f3f4f6' }}>
+    <div style={{ 
+      minHeight: '100vh', 
+      background: theme.bg,
+      transition: 'background 0.3s ease'
+    }}>
       <div style={{
-        background: 'white',
-        borderBottom: '2px solid #e5e7eb',
+        background: theme.card,
+        borderBottom: `2px solid ${theme.border}`,
         padding: '12px 24px',
         display: 'flex',
         justifyContent: 'space-between',
@@ -302,7 +340,9 @@ export default function Dashboard() {
         position: 'sticky',
         top: 0,
         zIndex: 100,
-        boxShadow: '0 2px 4px rgba(0,0,0,0.05)'
+        boxShadow: darkMode ? '0 2px 8px rgba(0,0,0,0.3)' : '0 2px 4px rgba(0,0,0,0.05)',
+        backdropFilter: 'blur(10px)',
+        transition: 'all 0.3s ease'
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
           <div style={{
@@ -312,15 +352,28 @@ export default function Dashboard() {
             borderRadius: '10px',
             display: 'flex',
             alignItems: 'center',
-            justifyContent: 'center'
+            justifyContent: 'center',
+            boxShadow: darkMode ? '0 4px 12px rgba(102, 126, 234, 0.4)' : '0 2px 8px rgba(102, 126, 234, 0.3)',
+            transition: 'all 0.3s ease'
           }}>
             <Zap size={24} color="white" />
           </div>
           <div>
-            <h1 style={{ margin: 0, fontSize: '18px', fontWeight: '700', color: '#111827' }}>
+            <h1 style={{ 
+              margin: 0, 
+              fontSize: '18px', 
+              fontWeight: '700', 
+              color: theme.text,
+              transition: 'color 0.3s ease'
+            }}>
               Miralys
             </h1>
-            <p style={{ margin: 0, fontSize: '12px', color: '#6b7280' }}>
+            <p style={{ 
+              margin: 0, 
+              fontSize: '12px', 
+              color: theme.textMuted,
+              transition: 'color 0.3s ease'
+            }}>
               {currentDashboard?.name || 'Real-Time Data Intelligence'}
             </p>
           </div>
@@ -328,23 +381,57 @@ export default function Dashboard() {
         
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
           <button
+            onClick={toggleDarkMode}
+            style={{
+              padding: '10px',
+              background: darkMode ? DARK_COLORS.bg.hover : '#f9fafb',
+              border: `2px solid ${theme.border}`,
+              borderRadius: '8px',
+              color: theme.text,
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              transition: 'all 0.3s ease',
+              boxShadow: darkMode ? '0 2px 8px rgba(0,0,0,0.2)' : 'none'
+            }}
+            onMouseEnter={(e) => {
+              e.target.style.borderColor = theme.accent;
+              e.target.style.transform = 'translateY(-2px)';
+            }}
+            onMouseLeave={(e) => {
+              e.target.style.borderColor = theme.border;
+              e.target.style.transform = 'translateY(0)';
+            }}
+            title={darkMode ? 'Light Mode' : 'Dark Mode'}
+          >
+            {darkMode ? <Sun size={18} /> : <Moon size={18} />}
+          </button>
+
+          <button
             onClick={() => setShowDashboardModal(true)}
             style={{
               padding: '10px 16px',
-              background: 'white',
-              border: '2px solid #e5e7eb',
+              background: theme.card,
+              border: `2px solid ${theme.border}`,
               borderRadius: '8px',
-              color: '#374151',
+              color: theme.textSecondary,
               cursor: 'pointer',
               display: 'flex',
               alignItems: 'center',
               gap: '8px',
               fontSize: '14px',
               fontWeight: '600',
-              transition: 'border-color 0.2s'
+              transition: 'all 0.3s ease',
+              boxShadow: darkMode ? '0 2px 8px rgba(0,0,0,0.2)' : 'none'
             }}
-            onMouseEnter={(e) => e.target.style.borderColor = '#667eea'}
-            onMouseLeave={(e) => e.target.style.borderColor = '#e5e7eb'}
+            onMouseEnter={(e) => {
+              e.target.style.borderColor = theme.accent;
+              e.target.style.transform = 'translateY(-2px)';
+            }}
+            onMouseLeave={(e) => {
+              e.target.style.borderColor = theme.border;
+              e.target.style.transform = 'translateY(0)';
+            }}
           >
             <Folder size={16} />
             Dashboards ({dashboards.length})
@@ -355,36 +442,45 @@ export default function Dashboard() {
             disabled={!currentDashboard}
             style={{
               padding: '10px 16px',
-              background: 'white',
-              border: '2px solid #e5e7eb',
+              background: theme.card,
+              border: `2px solid ${theme.border}`,
               borderRadius: '8px',
-              color: '#374151',
+              color: theme.textSecondary,
               cursor: currentDashboard ? 'pointer' : 'not-allowed',
               display: 'flex',
               alignItems: 'center',
               gap: '8px',
               fontSize: '14px',
               fontWeight: '600',
-              opacity: currentDashboard ? 1 : 0.5
+              opacity: currentDashboard ? 1 : 0.5,
+              transition: 'all 0.3s ease',
+              boxShadow: darkMode ? '0 2px 8px rgba(0,0,0,0.2)' : 'none'
             }}
             title="Export Dashboard"
+            onMouseEnter={(e) => currentDashboard && (e.target.style.transform = 'translateY(-2px)')}
+            onMouseLeave={(e) => (e.target.style.transform = 'translateY(0)')}
           >
             <Download size={16} />
           </button>
 
           <label style={{
             padding: '10px 16px',
-            background: 'white',
-            border: '2px solid #e5e7eb',
+            background: theme.card,
+            border: `2px solid ${theme.border}`,
             borderRadius: '8px',
-            color: '#374151',
+            color: theme.textSecondary,
             cursor: 'pointer',
             display: 'flex',
             alignItems: 'center',
             gap: '8px',
             fontSize: '14px',
-            fontWeight: '600'
-          }}>
+            fontWeight: '600',
+            transition: 'all 0.3s ease',
+            boxShadow: darkMode ? '0 2px 8px rgba(0,0,0,0.2)' : 'none'
+          }}
+          onMouseEnter={(e) => e.currentTarget.style.transform = 'translateY(-2px)'}
+          onMouseLeave={(e) => e.currentTarget.style.transform = 'translateY(0)'}
+          >
             <Upload size={16} />
             <input
               type="file"
@@ -408,10 +504,17 @@ export default function Dashboard() {
               gap: '8px',
               fontSize: '14px',
               fontWeight: '600',
-              transition: 'transform 0.2s'
+              transition: 'all 0.3s ease',
+              boxShadow: darkMode ? '0 4px 12px rgba(102, 126, 234, 0.4)' : '0 2px 8px rgba(102, 126, 234, 0.3)'
             }}
-            onMouseEnter={(e) => e.target.style.transform = 'translateY(-1px)'}
-            onMouseLeave={(e) => e.target.style.transform = 'translateY(0)'}
+            onMouseEnter={(e) => {
+              e.target.style.transform = 'translateY(-2px)';
+              e.target.style.boxShadow = darkMode ? '0 6px 16px rgba(102, 126, 234, 0.5)' : '0 4px 12px rgba(102, 126, 234, 0.4)';
+            }}
+            onMouseLeave={(e) => {
+              e.target.style.transform = 'translateY(0)';
+              e.target.style.boxShadow = darkMode ? '0 4px 12px rgba(102, 126, 234, 0.4)' : '0 2px 8px rgba(102, 126, 234, 0.3)';
+            }}
           >
             <Plus size={16} />
             Add Panel
@@ -419,16 +522,31 @@ export default function Dashboard() {
           
           <div style={{
             padding: '8px 16px',
-            background: '#f9fafb',
-            border: '2px solid #e5e7eb',
+            background: theme.hover,
+            border: `2px solid ${theme.border}`,
             borderRadius: '8px',
             display: 'flex',
             alignItems: 'center',
-            gap: '12px'
+            gap: '12px',
+            transition: 'all 0.3s ease',
+            boxShadow: darkMode ? '0 2px 8px rgba(0,0,0,0.2)' : 'none'
           }}>
             <div style={{ textAlign: 'right' }}>
-              <div style={{ fontSize: '13px', fontWeight: '600', color: '#111827' }}>{user?.name}</div>
-              <div style={{ fontSize: '11px', color: '#6b7280' }}>{user?.email}</div>
+              <div style={{ 
+                fontSize: '13px', 
+                fontWeight: '600', 
+                color: theme.text,
+                transition: 'color 0.3s ease'
+              }}>
+                {user?.name}
+              </div>
+              <div style={{ 
+                fontSize: '11px', 
+                color: theme.textMuted,
+                transition: 'color 0.3s ease'
+              }}>
+                {user?.email}
+              </div>
             </div>
             <button
               onClick={handleLogout}
@@ -436,9 +554,18 @@ export default function Dashboard() {
                 padding: '8px',
                 background: 'transparent',
                 border: 'none',
-                color: '#6b7280',
+                color: theme.textMuted,
                 cursor: 'pointer',
-                borderRadius: '6px'
+                borderRadius: '6px',
+                transition: 'all 0.3s ease'
+              }}
+              onMouseEnter={(e) => {
+                e.target.style.background = darkMode ? DARK_COLORS.bg.hover : '#e5e7eb';
+                e.target.style.color = DARK_COLORS.danger;
+              }}
+              onMouseLeave={(e) => {
+                e.target.style.background = 'transparent';
+                e.target.style.color = theme.textMuted;
               }}
               title="Logout"
             >
@@ -451,13 +578,15 @@ export default function Dashboard() {
       <div style={{ padding: '24px' }}>
         {!currentDashboard || currentDashboard.panels?.length === 0 ? (
           <div style={{
-            background: 'white',
-            border: '2px dashed #d1d5db',
+            background: theme.card,
+            border: `2px dashed ${theme.borderLight}`,
             borderRadius: '16px',
             padding: '60px 40px',
             textAlign: 'center',
             maxWidth: '600px',
-            margin: '60px auto'
+            margin: '60px auto',
+            transition: 'all 0.3s ease',
+            boxShadow: darkMode ? '0 8px 24px rgba(0,0,0,0.3)' : '0 2px 8px rgba(0,0,0,0.05)'
           }}>
             <div style={{
               width: '80px',
@@ -467,16 +596,30 @@ export default function Dashboard() {
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              margin: '0 auto 24px'
+              margin: '0 auto 24px',
+              boxShadow: darkMode ? '0 8px 24px rgba(102, 126, 234, 0.5)' : '0 4px 16px rgba(102, 126, 234, 0.3)',
+              animation: 'pulse 2s infinite'
             }}>
               <Database size={40} color="white" />
             </div>
-            <h3 style={{ margin: '0 0 12px', color: '#111827', fontSize: '24px', fontWeight: '700' }}>
+            <h3 style={{ 
+              margin: '0 0 12px', 
+              color: theme.text, 
+              fontSize: '24px', 
+              fontWeight: '700',
+              transition: 'color 0.3s ease'
+            }}>
               {currentDashboard ? 'Add Your First Panel' : 'Create Your First Dashboard'}
             </h3>
-            <p style={{ margin: '0 0 32px', color: '#6b7280', fontSize: '15px', lineHeight: '1.6' }}>
+            <p style={{ 
+              margin: '0 0 32px', 
+              color: theme.textMuted, 
+              fontSize: '15px', 
+              lineHeight: '1.6',
+              transition: 'color 0.3s ease'
+            }}>
               {currentDashboard
-                ? 'Build powerful visualizations from your QuestDB data. Drag panels to reorder them and resize by editing panel settings.'
+                ? 'Build powerful visualizations from your QuestDB data. Drag panels to reorder them, select multiple Y-axes for comparison, and enjoy smooth animations.'
                 : 'Create a dashboard to organize your data visualizations and start monitoring in real-time.'}
             </p>
             <button
@@ -493,10 +636,17 @@ export default function Dashboard() {
                 display: 'inline-flex',
                 alignItems: 'center',
                 gap: '10px',
-                transition: 'transform 0.2s'
+                transition: 'all 0.3s ease',
+                boxShadow: darkMode ? '0 8px 24px rgba(102, 126, 234, 0.5)' : '0 4px 16px rgba(102, 126, 234, 0.3)'
               }}
-              onMouseEnter={(e) => e.target.style.transform = 'translateY(-2px)'}
-              onMouseLeave={(e) => e.target.style.transform = 'translateY(0)'}
+              onMouseEnter={(e) => {
+                e.target.style.transform = 'translateY(-3px)';
+                e.target.style.boxShadow = darkMode ? '0 12px 32px rgba(102, 126, 234, 0.6)' : '0 6px 20px rgba(102, 126, 234, 0.4)';
+              }}
+              onMouseLeave={(e) => {
+                e.target.style.transform = 'translateY(0)';
+                e.target.style.boxShadow = darkMode ? '0 8px 24px rgba(102, 126, 234, 0.5)' : '0 4px 16px rgba(102, 126, 234, 0.3)';
+              }}
             >
               <Plus size={20} />
               {currentDashboard ? 'Add Your First Panel' : 'Create Dashboard'}
@@ -518,7 +668,8 @@ export default function Dashboard() {
                   ...calculatePanelStyle(panel),
                   cursor: 'move',
                   opacity: draggingPanel?.id === panel.id ? 0.5 : 1,
-                  transition: 'opacity 0.2s'
+                  transition: 'opacity 0.3s ease, transform 0.3s ease',
+                  animation: 'fadeIn 0.5s ease'
                 }}
                 draggable
                 onDragStart={(e) => handleDragStart(e, panel)}
@@ -531,6 +682,7 @@ export default function Dashboard() {
                   onDelete={handleDelete}
                   onDuplicate={handleDuplicate}
                   onResize={handleResize}
+                  darkMode={darkMode}
                 />
               </div>
             ))}
@@ -547,6 +699,7 @@ export default function Dashboard() {
             setEditingPanel(null);
           }}
           allTables={availableTables}
+          darkMode={darkMode}
         />
       )}
 
@@ -559,8 +712,21 @@ export default function Dashboard() {
           onRename={handleRenameDashboard}
           onDelete={handleDeleteDashboard}
           onClose={() => setShowDashboardModal(false)}
+          darkMode={darkMode}
         />
       )}
+
+      <style>{`
+        @keyframes pulse {
+          0%, 100% { transform: scale(1); }
+          50% { transform: scale(1.05); }
+        }
+        
+        @keyframes fadeIn {
+          from { opacity: 0; transform: translateY(10px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
+      `}</style>
     </div>
   );
 }
