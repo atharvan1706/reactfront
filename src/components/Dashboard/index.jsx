@@ -113,10 +113,7 @@ export default function Dashboard({ onLogout }) {
 
   const handleLogout = () => {
     authService.logout();
-    const handleLogout = () => {
-  authService.logout();          // clears token + user
-  onLogout();                    // 🔥 tells App: user logged out
-};
+   onLogout();
   };
 
   const handleAddPanel = () => {
