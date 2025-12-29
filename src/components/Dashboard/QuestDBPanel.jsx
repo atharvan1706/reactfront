@@ -147,6 +147,9 @@ function QuestDBPanel({ config, onEdit, onDelete, onDuplicate, onResize, style, 
       margin: { top: 10, right: 20, left: 10, bottom: 5 }
     };
 
+    // Get y-axis fields - support both single and multiple
+    const yFields = (config.yAxes && config.yAxes.length > 0) ? config.yAxes : [config.yAxis].filter(Boolean);
+
     switch (config.vizType) {
       case 'line':
         return (
@@ -164,7 +167,7 @@ function QuestDBPanel({ config, onEdit, onDelete, onDuplicate, onResize, style, 
                 }} 
               />
               {config.showLegend && <Legend wrapperStyle={{ color: theme.text }} />}
-              {(config.yAxes || [config.yAxis]).filter(Boolean).map((yField, idx) => (
+              {yFields.map((yField, idx) => (
                 <Line 
                   key={yField}
                   type="monotone" 
@@ -197,7 +200,7 @@ function QuestDBPanel({ config, onEdit, onDelete, onDuplicate, onResize, style, 
                 }} 
               />
               {config.showLegend && <Legend wrapperStyle={{ color: theme.text }} />}
-              {(config.yAxes || [config.yAxis]).filter(Boolean).map((yField, idx) => (
+              {yFields.map((yField, idx) => (
                 <Area 
                   key={yField}
                   type="monotone" 
@@ -231,7 +234,7 @@ function QuestDBPanel({ config, onEdit, onDelete, onDuplicate, onResize, style, 
                 }} 
               />
               {config.showLegend && <Legend wrapperStyle={{ color: theme.text }} />}
-              {(config.yAxes || [config.yAxis]).filter(Boolean).map((yField, idx) => (
+              {yFields.map((yField, idx) => (
                 <Bar 
                   key={yField}
                   dataKey={yField} 
@@ -246,12 +249,14 @@ function QuestDBPanel({ config, onEdit, onDelete, onDuplicate, onResize, style, 
         );
 
       case 'pie':
+        // For pie chart, use first y-axis field or all fields with latest values
+        const pieDataKey = yFields[0] || config.yAxis;
         return (
           <ResponsiveContainer width="100%" height="100%">
             <PieChart>
               <Pie 
                 data={data.slice(0, 10)} 
-                dataKey={config.yAxis} 
+                dataKey={pieDataKey} 
                 nameKey="_time" 
                 cx="50%" 
                 cy="50%" 
@@ -263,8 +268,8 @@ function QuestDBPanel({ config, onEdit, onDelete, onDuplicate, onResize, style, 
                   <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                 ))}
               </Pie>
-              <Tooltip contentStyle={{ background: 'white', border: '1px solid #e5e7eb', borderRadius: '6px' }} />
-              {config.showLegend && <Legend />}
+              <Tooltip contentStyle={{ background: theme.card, border: `1px solid ${theme.border}`, borderRadius: '6px', color: theme.text }} />
+              {config.showLegend && <Legend wrapperStyle={{ color: theme.text }} />}
             </PieChart>
           </ResponsiveContainer>
         );
@@ -273,12 +278,20 @@ function QuestDBPanel({ config, onEdit, onDelete, onDuplicate, onResize, style, 
         return (
           <ResponsiveContainer width="100%" height="100%">
             <ScatterChart {...chartProps}>
-              {config.showGrid && <CartesianGrid strokeDasharray="3 3" stroke="rgba(0,0,0,0.1)" />}
-              <XAxis dataKey="_time" tick={{ fill: '#6b7280', fontSize: 11 }} stroke="#e5e7eb" />
-              <YAxis dataKey={config.yAxis} tick={{ fill: '#6b7280', fontSize: 11 }} stroke="#e5e7eb" />
-              <Tooltip contentStyle={{ background: 'white', border: '1px solid #e5e7eb', borderRadius: '6px' }} />
-              {config.showLegend && <Legend />}
-              <Scatter dataKey={config.yAxis} fill={config.colors[0]} isAnimationActive={false} />
+              {config.showGrid && <CartesianGrid strokeDasharray="3 3" stroke={theme.chartGrid} />}
+              <XAxis dataKey="_time" tick={{ fill: theme.chartText, fontSize: 11 }} stroke={theme.chartAxis} />
+              <YAxis tick={{ fill: theme.chartText, fontSize: 11 }} stroke={theme.chartAxis} />
+              <Tooltip contentStyle={{ background: theme.card, border: `1px solid ${theme.border}`, borderRadius: '6px', color: theme.text }} />
+              {config.showLegend && <Legend wrapperStyle={{ color: theme.text }} />}
+              {yFields.map((yField, idx) => (
+                <Scatter 
+                  key={yField}
+                  dataKey={yField} 
+                  fill={config.colors[idx] || COLORS[idx % COLORS.length]} 
+                  name={yField}
+                  isAnimationActive={false} 
+                />
+              ))}
             </ScatterChart>
           </ResponsiveContainer>
         );
@@ -287,23 +300,28 @@ function QuestDBPanel({ config, onEdit, onDelete, onDuplicate, onResize, style, 
         return (
           <ResponsiveContainer width="100%" height="100%">
             <RadarChart data={data.slice(0, 8)}>
-              <PolarGrid stroke="rgba(0,0,0,0.1)" />
-              <PolarAngleAxis dataKey="_time" tick={{ fill: '#6b7280', fontSize: 11 }} />
-              <PolarRadiusAxis tick={{ fill: '#6b7280', fontSize: 11 }} />
-              <Radar 
-                dataKey={config.yAxis} 
-                stroke={config.colors[0]} 
-                fill={config.colors[0]} 
-                fillOpacity={config.fillOpacity || 0.5}
-                isAnimationActive={false}
-              />
-              {config.showLegend && <Legend />}
+              <PolarGrid stroke={theme.chartGrid} />
+              <PolarAngleAxis dataKey="_time" tick={{ fill: theme.chartText, fontSize: 11 }} />
+              <PolarRadiusAxis tick={{ fill: theme.chartText, fontSize: 11 }} />
+              {yFields.map((yField, idx) => (
+                <Radar 
+                  key={yField}
+                  dataKey={yField} 
+                  stroke={config.colors[idx] || COLORS[idx % COLORS.length]} 
+                  fill={config.colors[idx] || COLORS[idx % COLORS.length]} 
+                  fillOpacity={config.fillOpacity || 0.5}
+                  name={yField}
+                  isAnimationActive={false}
+                />
+              ))}
+              {config.showLegend && <Legend wrapperStyle={{ color: theme.text }} />}
             </RadarChart>
           </ResponsiveContainer>
         );
 
       case 'stat':
-        const values = data.map(d => d[config.yAxis] || 0);
+        const statField = yFields[0] || config.yAxis;
+        const values = data.map(d => d[statField] || 0);
         const latest = values[values.length - 1] || 0;
         const previous = values[values.length - 2] || 0;
         const change = latest - previous;
@@ -328,10 +346,10 @@ function QuestDBPanel({ config, onEdit, onDelete, onDuplicate, onResize, style, 
             }}>
               {change >= 0 ? '↑' : '↓'} {Math.abs(change).toFixed(2)} ({((change / previous) * 100).toFixed(1)}%)
             </div>
-            <div style={{ display: 'flex', gap: '24px', fontSize: '14px', color: '#6b7280' }}>
-              <div>Min: <span style={{ color: '#111827', fontWeight: '600' }}>{Math.min(...values).toFixed(2)}</span></div>
-              <div>Max: <span style={{ color: '#111827', fontWeight: '600' }}>{Math.max(...values).toFixed(2)}</span></div>
-              <div>Avg: <span style={{ color: '#111827', fontWeight: '600' }}>{avg.toFixed(2)}</span></div>
+            <div style={{ display: 'flex', gap: '24px', fontSize: '14px', color: theme.textMuted }}>
+              <div>Min: <span style={{ color: theme.text, fontWeight: '600' }}>{Math.min(...values).toFixed(2)}</span></div>
+              <div>Max: <span style={{ color: theme.text, fontWeight: '600' }}>{Math.max(...values).toFixed(2)}</span></div>
+              <div>Avg: <span style={{ color: theme.text, fontWeight: '600' }}>{avg.toFixed(2)}</span></div>
             </div>
           </div>
         );
@@ -342,13 +360,13 @@ function QuestDBPanel({ config, onEdit, onDelete, onDuplicate, onResize, style, 
           <div style={{ height: '100%', overflow: 'auto' }}>
             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px' }}>
               <thead>
-                <tr style={{ background: '#f9fafb', position: 'sticky', top: 0, zIndex: 1 }}>
+                <tr style={{ background: theme.hover, position: 'sticky', top: 0, zIndex: 1 }}>
                   {columns.map(col => (
                     <th key={col} style={{ 
                       padding: '10px', 
                       textAlign: 'left', 
-                      borderBottom: '2px solid #e5e7eb', 
-                      color: '#374151', 
+                      borderBottom: `2px solid ${theme.border}`, 
+                      color: theme.textSecondary, 
                       fontWeight: '600',
                       fontSize: '12px'
                     }}>
@@ -359,9 +377,9 @@ function QuestDBPanel({ config, onEdit, onDelete, onDuplicate, onResize, style, 
               </thead>
               <tbody>
                 {data.map((row, i) => (
-                  <tr key={i} style={{ borderBottom: '1px solid #e5e7eb' }}>
+                  <tr key={i} style={{ borderBottom: `1px solid ${theme.border}` }}>
                     {columns.map(col => (
-                      <td key={col} style={{ padding: '10px', color: '#111827' }}>
+                      <td key={col} style={{ padding: '10px', color: theme.text }}>
                         {typeof row[col] === 'number' ? row[col].toFixed(2) : row[col]}
                       </td>
                     ))}
@@ -373,7 +391,7 @@ function QuestDBPanel({ config, onEdit, onDelete, onDuplicate, onResize, style, 
         );
 
       default:
-        return <div style={{ textAlign: 'center', color: '#6b7280' }}>Unsupported chart type</div>;
+        return <div style={{ textAlign: 'center', color: theme.textMuted }}>Unsupported chart type</div>;
     }
   };
 
