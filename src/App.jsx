@@ -11,7 +11,9 @@ function App() {
     return <AuthPage onAuth={() => setIsAuthenticated(true)} />;
   }
 
-  return <Dashboard />;
+  return (
+    <Dashboard onLogout={() => setIsAuthenticated(false)} />
+  );
 }
 
 export default App;
