@@ -157,6 +157,9 @@ function QuestDBPanel({ config, onEdit, onDelete, onDuplicate, onResize, style, 
 
     // Get y-axis fields - support both single and multiple
     const yFields = (config.yAxes && config.yAxes.length > 0) ? config.yAxes : [config.yAxis].filter(Boolean);
+    
+    // Filter out 'value' if it's not explicitly selected
+    const filteredYFields = yFields.filter(field => field && field !== 'value');
 
     switch (config.vizType) {
       case 'line':
@@ -175,7 +178,7 @@ function QuestDBPanel({ config, onEdit, onDelete, onDuplicate, onResize, style, 
                 }} 
               />
               {config.showLegend && <Legend wrapperStyle={{ color: theme.text }} />}
-              {yFields.map((yField, idx) => (
+              {filteredYFields.map((yField, idx) => (
                 <Line 
                   key={yField}
                   type="monotone" 
@@ -208,7 +211,7 @@ function QuestDBPanel({ config, onEdit, onDelete, onDuplicate, onResize, style, 
                 }} 
               />
               {config.showLegend && <Legend wrapperStyle={{ color: theme.text }} />}
-              {yFields.map((yField, idx) => (
+              {filteredYFields.map((yField, idx) => (
                 <Area 
                   key={yField}
                   type="monotone" 
@@ -242,7 +245,7 @@ function QuestDBPanel({ config, onEdit, onDelete, onDuplicate, onResize, style, 
                 }} 
               />
               {config.showLegend && <Legend wrapperStyle={{ color: theme.text }} />}
-              {yFields.map((yField, idx) => (
+              {filteredYFields.map((yField, idx) => (
                 <Bar 
                   key={yField}
                   dataKey={yField} 
@@ -257,7 +260,7 @@ function QuestDBPanel({ config, onEdit, onDelete, onDuplicate, onResize, style, 
         );
 
       case 'pie':
-        const pieDataKey = yFields[0] || config.yAxis;
+        const pieDataKey = filteredYFields[0] || config.yAxis;
         return (
           <ResponsiveContainer width="100%" height="100%">
             <PieChart>
@@ -290,7 +293,7 @@ function QuestDBPanel({ config, onEdit, onDelete, onDuplicate, onResize, style, 
               <YAxis tick={{ fill: theme.chartText, fontSize: 11 }} stroke={theme.chartAxis} />
               <Tooltip contentStyle={{ background: theme.card, border: `1px solid ${theme.border}`, borderRadius: '6px', color: theme.text }} />
               {config.showLegend && <Legend wrapperStyle={{ color: theme.text }} />}
-              {yFields.map((yField, idx) => (
+              {filteredYFields.map((yField, idx) => (
                 <Scatter 
                   key={yField}
                   dataKey={yField} 
@@ -310,7 +313,7 @@ function QuestDBPanel({ config, onEdit, onDelete, onDuplicate, onResize, style, 
               <PolarGrid stroke={theme.chartGrid} />
               <PolarAngleAxis dataKey="_time" tick={{ fill: theme.chartText, fontSize: 11 }} />
               <PolarRadiusAxis tick={{ fill: theme.chartText, fontSize: 11 }} />
-              {yFields.map((yField, idx) => (
+              {filteredYFields.map((yField, idx) => (
                 <Radar 
                   key={yField}
                   dataKey={yField} 
@@ -327,7 +330,7 @@ function QuestDBPanel({ config, onEdit, onDelete, onDuplicate, onResize, style, 
         );
 
       case 'stat':
-        const statField = yFields[0] || config.yAxis;
+        const statField = filteredYFields[0] || config.yAxis;
         const values = data.map(d => d[statField] || 0);
         const latest = values[values.length - 1] || 0;
         const previous = values[values.length - 2] || 0;
