@@ -6,19 +6,17 @@ import {
 } from 'recharts';
 import {
   Trash2, Copy, RefreshCw, Settings, Play, Clock, Database, AlertCircle, 
-  Maximize2, Minimize2
+  Move
 } from 'lucide-react';
 import { COLORS } from './constants';
 import questdbService from '../../services/questdb';
 
-function QuestDBPanel({ config, onEdit, onDelete, onDuplicate, onResize }) {
+function QuestDBPanel({ config, onEdit, onDelete, onDuplicate, onResize, style }) {
   const [data, setData] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [queryTime, setQueryTime] = useState(null);
   const [latestRecordTime, setLatestRecordTime] = useState(null);
-  const [isResizing, setIsResizing] = useState(false);
-  const panelRef = useRef(null);
   const timerRef = useRef(null);
 
   const fetchData = async () => {
@@ -78,40 +76,6 @@ function QuestDBPanel({ config, onEdit, onDelete, onDuplicate, onResize }) {
       minute: '2-digit',
       second: '2-digit'
     });
-  };
-
-  const handleResizeStart = (e) => {
-    e.preventDefault();
-    setIsResizing(true);
-    
-    const startX = e.clientX;
-    const startY = e.clientY;
-    const startWidth = config.width;
-    const startHeight = config.height;
-    
-    const handleMouseMove = (e) => {
-      const deltaX = e.clientX - startX;
-      const deltaY = e.clientY - startY;
-      
-      const cellWidth = panelRef.current?.offsetWidth / startWidth;
-      const cellHeight = panelRef.current?.offsetHeight / startHeight;
-      
-      const newWidth = Math.max(1, Math.min(12, startWidth + Math.round(deltaX / cellWidth)));
-      const newHeight = Math.max(1, Math.min(10, startHeight + Math.round(deltaY / cellHeight)));
-      
-      if (newWidth !== config.width || newHeight !== config.height) {
-        onResize(config.id, newWidth, newHeight);
-      }
-    };
-    
-    const handleMouseUp = () => {
-      setIsResizing(false);
-      document.removeEventListener('mousemove', handleMouseMove);
-      document.removeEventListener('mouseup', handleMouseUp);
-    };
-    
-    document.addEventListener('mousemove', handleMouseMove);
-    document.addEventListener('mouseup', handleMouseUp);
   };
 
   const renderChart = () => {
@@ -353,8 +317,8 @@ function QuestDBPanel({ config, onEdit, onDelete, onDuplicate, onResize }) {
 
   return (
     <div 
-      ref={panelRef}
       style={{
+        ...style,
         height: '100%',
         display: 'flex',
         flexDirection: 'column',
@@ -500,26 +464,6 @@ function QuestDBPanel({ config, onEdit, onDelete, onDuplicate, onResize }) {
           </div>
         </div>
       </div>
-
-      {/* Resize Handle */}
-      <div
-        onMouseDown={handleResizeStart}
-        style={{
-          position: 'absolute',
-          bottom: 0,
-          right: 0,
-          width: '20px',
-          height: '20px',
-          cursor: 'nwse-resize',
-          background: isResizing ? '#667eea' : 'transparent',
-          borderTop: '2px solid',
-          borderLeft: '2px solid',
-          borderColor: isResizing ? '#667eea' : '#d1d5db',
-          borderTopLeftRadius: '4px',
-          transition: 'all 0.2s'
-        }}
-        title="Drag to resize"
-      />
 
       <style>{`
         @keyframes spin {
