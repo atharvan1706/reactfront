@@ -134,7 +134,17 @@ function PanelConfigModal({ panel, onSave, onClose, allTables }) {
             <XAxis dataKey="_time" tick={{ fill: '#6b7280', fontSize: 10 }} />
             <YAxis tick={{ fill: '#6b7280', fontSize: 10 }} />
             <Tooltip contentStyle={{ background: 'white', border: '1px solid #e5e7eb' }} />
-            <Line type="monotone" dataKey={config.yAxis} stroke={config.colors[0]} strokeWidth={config.lineWidth} dot={config.showDots} />
+            {(config.yAxes || [config.yAxis]).filter(Boolean).map((yField, idx) => (
+              <Line 
+                key={yField}
+                type="monotone" 
+                dataKey={yField} 
+                stroke={config.colors[idx] || COLORS[idx % COLORS.length]} 
+                strokeWidth={config.lineWidth} 
+                dot={config.showDots}
+                name={yField}
+              />
+            ))}
           </LineChart>
         )}
         {config.vizType === 'bar' && (
@@ -143,7 +153,14 @@ function PanelConfigModal({ panel, onSave, onClose, allTables }) {
             <XAxis dataKey="_time" tick={{ fill: '#6b7280', fontSize: 10 }} />
             <YAxis tick={{ fill: '#6b7280', fontSize: 10 }} />
             <Tooltip contentStyle={{ background: 'white', border: '1px solid #e5e7eb' }} />
-            <Bar dataKey={config.yAxis} fill={config.colors[0]} />
+            {(config.yAxes || [config.yAxis]).filter(Boolean).map((yField, idx) => (
+              <Bar 
+                key={yField}
+                dataKey={yField} 
+                fill={config.colors[idx] || COLORS[idx % COLORS.length]}
+                name={yField}
+              />
+            ))}
           </BarChart>
         )}
         {config.vizType === 'area' && (
@@ -152,7 +169,17 @@ function PanelConfigModal({ panel, onSave, onClose, allTables }) {
             <XAxis dataKey="_time" tick={{ fill: '#6b7280', fontSize: 10 }} />
             <YAxis tick={{ fill: '#6b7280', fontSize: 10 }} />
             <Tooltip contentStyle={{ background: 'white', border: '1px solid #e5e7eb' }} />
-            <Area type="monotone" dataKey={config.yAxis} stroke={config.colors[0]} fill={config.colors[0]} fillOpacity={config.fillOpacity} />
+            {(config.yAxes || [config.yAxis]).filter(Boolean).map((yField, idx) => (
+              <Area 
+                key={yField}
+                type="monotone" 
+                dataKey={yField} 
+                stroke={config.colors[idx] || COLORS[idx % COLORS.length]} 
+                fill={config.colors[idx] || COLORS[idx % COLORS.length]} 
+                fillOpacity={config.fillOpacity}
+                name={yField}
+              />
+            ))}
           </AreaChart>
         )}
       </ResponsiveContainer>
@@ -384,7 +411,7 @@ function PanelConfigModal({ panel, onSave, onClose, allTables }) {
                 <label style={{ display: 'block', marginBottom: '12px', fontSize: '13px', color: '#374151', fontWeight: '600' }}>
                   Field Configuration
                 </label>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '12px' }}>
                   <div>
                     <label style={{ display: 'block', marginBottom: '6px', fontSize: '12px', color: '#6b7280' }}>
                       Timestamp Field
@@ -427,33 +454,59 @@ function PanelConfigModal({ panel, onSave, onClose, allTables }) {
                   </div>
                   <div>
                     <label style={{ display: 'block', marginBottom: '6px', fontSize: '12px', color: '#6b7280' }}>
-                      Value Field (Y-Axis)
+                      Value Fields (Y-Axis) - Select Multiple
                     </label>
                     {availableFields.length > 0 ? (
-                      <select
-                        value={config.yAxis}
-                        onChange={(e) => setConfig({ ...config, yAxis: e.target.value })}
-                        style={{
-                          width: '100%',
-                          padding: '8px',
-                          background: 'white',
-                          border: '2px solid #e5e7eb',
-                          borderRadius: '6px',
-                          color: '#111827',
-                          fontSize: '13px'
-                        }}
-                      >
-                        <option value="">Select field...</option>
-                        {availableFields.map(field => (
-                          <option key={field} value={field}>{field}</option>
+                      <div style={{
+                        border: '2px solid #e5e7eb',
+                        borderRadius: '6px',
+                        background: 'white',
+                        maxHeight: '150px',
+                        overflow: 'auto',
+                        padding: '8px'
+                      }}>
+                        {availableFields.filter(f => f !== config.timestampField).map(field => (
+                          <label 
+                            key={field}
+                            style={{ 
+                              display: 'flex', 
+                              alignItems: 'center', 
+                              gap: '8px', 
+                              padding: '6px',
+                              cursor: 'pointer',
+                              borderRadius: '4px',
+                              fontSize: '13px',
+                              color: '#111827',
+                              transition: 'background 0.2s'
+                            }}
+                            onMouseEnter={(e) => e.target.style.background = '#f3f4f6'}
+                            onMouseLeave={(e) => e.target.style.background = 'transparent'}
+                          >
+                            <input
+                              type="checkbox"
+                              checked={config.yAxes?.includes(field)}
+                              onChange={(e) => {
+                                const newYAxes = e.target.checked
+                                  ? [...(config.yAxes || []), field]
+                                  : (config.yAxes || []).filter(y => y !== field);
+                                setConfig({ ...config, yAxes: newYAxes, yAxis: newYAxes[0] });
+                              }}
+                              style={{ width: '16px', height: '16px' }}
+                            />
+                            {field}
+                          </label>
                         ))}
-                      </select>
+                      </div>
                     ) : (
                       <input
                         type="text"
-                        value={config.yAxis}
-                        onChange={(e) => setConfig({ ...config, yAxis: e.target.value })}
-                        placeholder="value"
+                        value={(config.yAxes || []).join(', ')}
+                        onChange={(e) => setConfig({ 
+                          ...config, 
+                          yAxes: e.target.value.split(',').map(s => s.trim()).filter(Boolean),
+                          yAxis: e.target.value.split(',')[0]?.trim()
+                        })}
+                        placeholder="value1, value2, value3"
                         style={{
                           width: '100%',
                           padding: '8px',
@@ -464,6 +517,11 @@ function PanelConfigModal({ panel, onSave, onClose, allTables }) {
                           fontSize: '13px'
                         }}
                       />
+                    )}
+                    {config.yAxes && config.yAxes.length > 0 && (
+                      <div style={{ marginTop: '6px', fontSize: '11px', color: '#6b7280' }}>
+                        Selected: {config.yAxes.join(', ')} ({config.yAxes.length} field{config.yAxes.length !== 1 ? 's' : ''})
+                      </div>
                     )}
                   </div>
                 </div>
