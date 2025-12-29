@@ -10,7 +10,7 @@ import PanelConfigModal from './PanelConfigModal';
 import QuestDBPanel from './QuestDBPanel';
 import { GRID_COLS, ROW_HEIGHT, DARK_COLORS } from './constants';
 
-export default function Dashboard() {
+export default function Dashboard({ onLogout }) {
   const navigate = useNavigate();
   const user = authService.getUser();
   const [dashboards, setDashboards] = useState([]);
@@ -113,7 +113,10 @@ export default function Dashboard() {
 
   const handleLogout = () => {
     authService.logout();
-    navigate('/login');
+    const handleLogout = () => {
+  authService.logout();          // clears token + user
+  onLogout();                    // 🔥 tells App: user logged out
+};
   };
 
   const handleAddPanel = () => {
