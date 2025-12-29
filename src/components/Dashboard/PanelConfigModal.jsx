@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import {
-  LineChart, Line, BarChart, Bar, AreaChart, Area,
-  XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer
+  LineChart, Line, BarChart, Bar, AreaChart, Area, PieChart, Pie, Cell,
+  ScatterChart, Scatter, RadarChart, Radar, PolarGrid, PolarAngleAxis, PolarRadiusAxis,
+  XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer
 } from 'recharts';
 import {
   X, Database, Eye, Save, RefreshCw, AlertCircle
@@ -67,12 +68,12 @@ function PanelConfigModal({ panel, onSave, onClose, allTables }) {
       const formatted = questdbService.formatForChart(result, config.timestampField);
       setPreviewData(formatted);
       
-      if (formatted.length > 0 && !config.yAxis) {
+      if (formatted.length > 0 && (!config.yAxes || config.yAxes.length === 0)) {
         const numericFields = Object.keys(formatted[0]).filter(key => 
           typeof formatted[0][key] === 'number' && key !== '_timestamp'
         );
         if (numericFields.length > 0) {
-          setConfig({ ...config, yAxis: numericFields[0] });
+          setConfig({ ...config, yAxis: numericFields[0], yAxes: [numericFields[0]] });
         }
       }
     } catch (error) {
@@ -125,6 +126,7 @@ function PanelConfigModal({ panel, onSave, onClose, allTables }) {
     }
 
     const chartProps = { data: previewData, margin: { top: 5, right: 20, left: 0, bottom: 5 } };
+    const yFields = (config.yAxes && config.yAxes.length > 0) ? config.yAxes : [config.yAxis].filter(Boolean);
 
     return (
       <ResponsiveContainer width="100%" height={200}>
@@ -134,7 +136,8 @@ function PanelConfigModal({ panel, onSave, onClose, allTables }) {
             <XAxis dataKey="_time" tick={{ fill: '#6b7280', fontSize: 10 }} />
             <YAxis tick={{ fill: '#6b7280', fontSize: 10 }} />
             <Tooltip contentStyle={{ background: 'white', border: '1px solid #e5e7eb' }} />
-            {(config.yAxes || [config.yAxis]).filter(Boolean).map((yField, idx) => (
+            <Legend />
+            {yFields.map((yField, idx) => (
               <Line 
                 key={yField}
                 type="monotone" 
@@ -153,7 +156,8 @@ function PanelConfigModal({ panel, onSave, onClose, allTables }) {
             <XAxis dataKey="_time" tick={{ fill: '#6b7280', fontSize: 10 }} />
             <YAxis tick={{ fill: '#6b7280', fontSize: 10 }} />
             <Tooltip contentStyle={{ background: 'white', border: '1px solid #e5e7eb' }} />
-            {(config.yAxes || [config.yAxis]).filter(Boolean).map((yField, idx) => (
+            <Legend />
+            {yFields.map((yField, idx) => (
               <Bar 
                 key={yField}
                 dataKey={yField} 
@@ -169,7 +173,8 @@ function PanelConfigModal({ panel, onSave, onClose, allTables }) {
             <XAxis dataKey="_time" tick={{ fill: '#6b7280', fontSize: 10 }} />
             <YAxis tick={{ fill: '#6b7280', fontSize: 10 }} />
             <Tooltip contentStyle={{ background: 'white', border: '1px solid #e5e7eb' }} />
-            {(config.yAxes || [config.yAxis]).filter(Boolean).map((yField, idx) => (
+            <Legend />
+            {yFields.map((yField, idx) => (
               <Area 
                 key={yField}
                 type="monotone" 
@@ -181,6 +186,107 @@ function PanelConfigModal({ panel, onSave, onClose, allTables }) {
               />
             ))}
           </AreaChart>
+        )}
+        {config.vizType === 'pie' && (
+          <PieChart>
+            <Pie 
+              data={previewData.slice(0, 10)} 
+              dataKey={yFields[0] || config.yAxis} 
+              nameKey="_time" 
+              cx="50%" 
+              cy="50%" 
+              outerRadius={60} 
+              label
+            >
+              {previewData.slice(0, 10).map((entry, index) => (
+                <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+              ))}
+            </Pie>
+            <Tooltip contentStyle={{ background: 'white', border: '1px solid #e5e7eb' }} />
+            <Legend />
+          </PieChart>
+        )}
+        {config.vizType === 'scatter' && (
+          <ScatterChart {...chartProps}>
+            <CartesianGrid strokeDasharray="3 3" stroke="rgba(0,0,0,0.1)" />
+            <XAxis dataKey="_time" tick={{ fill: '#6b7280', fontSize: 10 }} />
+            <YAxis tick={{ fill: '#6b7280', fontSize: 10 }} />
+            <Tooltip contentStyle={{ background: 'white', border: '1px solid #e5e7eb' }} />
+            <Legend />
+            {yFields.map((yField, idx) => (
+              <Scatter 
+                key={yField}
+                dataKey={yField} 
+                fill={config.colors[idx] || COLORS[idx % COLORS.length]}
+                name={yField}
+              />
+            ))}
+          </ScatterChart>
+        )}
+        {config.vizType === 'radar' && (
+          <RadarChart data={previewData.slice(0, 8)}>
+            <PolarGrid stroke="rgba(0,0,0,0.1)" />
+            <PolarAngleAxis dataKey="_time" tick={{ fill: '#6b7280', fontSize: 10 }} />
+            <PolarRadiusAxis tick={{ fill: '#6b7280', fontSize: 10 }} />
+            {yFields.map((yField, idx) => (
+              <Radar 
+                key={yField}
+                dataKey={yField} 
+                stroke={config.colors[idx] || COLORS[idx % COLORS.length]} 
+                fill={config.colors[idx] || COLORS[idx % COLORS.length]} 
+                fillOpacity={config.fillOpacity || 0.5}
+                name={yField}
+              />
+            ))}
+            <Legend />
+          </RadarChart>
+        )}
+        {config.vizType === 'stat' && (
+          <div style={{ 
+            display: 'flex', 
+            alignItems: 'center', 
+            justifyContent: 'center', 
+            height: '200px',
+            flexDirection: 'column'
+          }}>
+            <div style={{ fontSize: '36px', fontWeight: 'bold', color: config.colors[0] }}>
+              {previewData[previewData.length - 1]?.[yFields[0]]?.toFixed(2) || 'N/A'}
+            </div>
+            <div style={{ fontSize: '12px', color: '#6b7280', marginTop: '8px' }}>
+              {yFields[0] || 'No field selected'}
+            </div>
+          </div>
+        )}
+        {config.vizType === 'table' && (
+          <div style={{ height: '200px', overflow: 'auto' }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '11px' }}>
+              <thead>
+                <tr style={{ background: '#f9fafb' }}>
+                  {Object.keys(previewData[0] || {}).filter(k => !k.startsWith('_')).map(col => (
+                    <th key={col} style={{ 
+                      padding: '6px', 
+                      textAlign: 'left', 
+                      borderBottom: '2px solid #e5e7eb',
+                      fontSize: '10px'
+                    }}>
+                      {col}
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {previewData.slice(0, 5).map((row, i) => (
+                  <tr key={i} style={{ borderBottom: '1px solid #e5e7eb' }}>
+                    {Object.keys(row).filter(k => !k.startsWith('_')).map(col => (
+                      <td key={col} style={{ padding: '6px' }}>
+                        {typeof row[col] === 'number' ? row[col].toFixed(2) : row[col]}
+                      </td>
+                    ))}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         )}
       </ResponsiveContainer>
     );
@@ -489,7 +595,7 @@ function PanelConfigModal({ panel, onSave, onClose, allTables }) {
                                 const newYAxes = e.target.checked
                                   ? [...(config.yAxes || []), field]
                                   : (config.yAxes || []).filter(y => y !== field);
-                                setConfig({ ...config, yAxes: newYAxes, yAxis: newYAxes[0] });
+                                setConfig({ ...config, yAxes: newYAxes, yAxis: newYAxes[0] || '' });
                               }}
                               style={{ width: '16px', height: '16px' }}
                             />
@@ -504,7 +610,7 @@ function PanelConfigModal({ panel, onSave, onClose, allTables }) {
                         onChange={(e) => setConfig({ 
                           ...config, 
                           yAxes: e.target.value.split(',').map(s => s.trim()).filter(Boolean),
-                          yAxis: e.target.value.split(',')[0]?.trim()
+                          yAxis: e.target.value.split(',')[0]?.trim() || ''
                         })}
                         placeholder="value1, value2, value3"
                         style={{
