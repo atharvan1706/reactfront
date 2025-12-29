@@ -11,13 +11,35 @@ import {
 import { COLORS } from './constants';
 import questdbService from '../../services/questdb';
 
-function QuestDBPanel({ config, onEdit, onDelete, onDuplicate, onResize, style }) {
+function QuestDBPanel({ config, onEdit, onDelete, onDuplicate, onResize, style, darkMode }) {
   const [data, setData] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [queryTime, setQueryTime] = useState(null);
   const [latestRecordTime, setLatestRecordTime] = useState(null);
   const timerRef = useRef(null);
+
+  const theme = darkMode ? {
+    card: '#1e293b',
+    hover: '#334155',
+    text: '#f1f5f9',
+    textSecondary: '#cbd5e1',
+    textMuted: '#94a3b8',
+    border: '#334155',
+    chartGrid: 'rgba(148, 163, 184, 0.1)',
+    chartAxis: '#475569',
+    chartText: '#94a3b8'
+  } : {
+    card: 'white',
+    hover: '#f9fafb',
+    text: '#111827',
+    textSecondary: '#374151',
+    textMuted: '#6b7280',
+    border: '#e5e7eb',
+    chartGrid: 'rgba(0,0,0,0.1)',
+    chartAxis: '#e5e7eb',
+    chartText: '#6b7280'
+  };
 
   const fetchData = async () => {
     try {
@@ -130,19 +152,31 @@ function QuestDBPanel({ config, onEdit, onDelete, onDuplicate, onResize, style }
         return (
           <ResponsiveContainer width="100%" height="100%">
             <LineChart {...chartProps}>
-              {config.showGrid && <CartesianGrid strokeDasharray="3 3" stroke="rgba(0,0,0,0.1)" />}
-              <XAxis dataKey="_time" tick={{ fill: '#6b7280', fontSize: 11 }} stroke="#e5e7eb" />
-              <YAxis tick={{ fill: '#6b7280', fontSize: 11 }} stroke="#e5e7eb" />
-              <Tooltip contentStyle={{ background: 'white', border: '1px solid #e5e7eb', borderRadius: '6px' }} />
-              {config.showLegend && <Legend />}
-              <Line 
-                type="monotone" 
-                dataKey={config.yAxis} 
-                stroke={config.colors[0]} 
-                strokeWidth={config.lineWidth} 
-                dot={config.showDots}
-                isAnimationActive={false}
+              {config.showGrid && <CartesianGrid strokeDasharray="3 3" stroke={theme.chartGrid} />}
+              <XAxis dataKey="_time" tick={{ fill: theme.chartText, fontSize: 11 }} stroke={theme.chartAxis} />
+              <YAxis tick={{ fill: theme.chartText, fontSize: 11 }} stroke={theme.chartAxis} />
+              <Tooltip 
+                contentStyle={{ 
+                  background: theme.card, 
+                  border: `1px solid ${theme.border}`, 
+                  borderRadius: '6px',
+                  color: theme.text
+                }} 
               />
+              {config.showLegend && <Legend wrapperStyle={{ color: theme.text }} />}
+              {(config.yAxes || [config.yAxis]).filter(Boolean).map((yField, idx) => (
+                <Line 
+                  key={yField}
+                  type="monotone" 
+                  dataKey={yField} 
+                  stroke={config.colors[idx] || COLORS[idx % COLORS.length]} 
+                  strokeWidth={config.lineWidth} 
+                  dot={config.showDots}
+                  name={yField}
+                  animationDuration={800}
+                  animationEasing="ease-in-out"
+                />
+              ))}
             </LineChart>
           </ResponsiveContainer>
         );
@@ -151,20 +185,32 @@ function QuestDBPanel({ config, onEdit, onDelete, onDuplicate, onResize, style }
         return (
           <ResponsiveContainer width="100%" height="100%">
             <AreaChart {...chartProps}>
-              {config.showGrid && <CartesianGrid strokeDasharray="3 3" stroke="rgba(0,0,0,0.1)" />}
-              <XAxis dataKey="_time" tick={{ fill: '#6b7280', fontSize: 11 }} stroke="#e5e7eb" />
-              <YAxis tick={{ fill: '#6b7280', fontSize: 11 }} stroke="#e5e7eb" />
-              <Tooltip contentStyle={{ background: 'white', border: '1px solid #e5e7eb', borderRadius: '6px' }} />
-              {config.showLegend && <Legend />}
-              <Area 
-                type="monotone" 
-                dataKey={config.yAxis} 
-                stroke={config.colors[0]} 
-                fill={config.colors[0]} 
-                fillOpacity={config.fillOpacity}
-                strokeWidth={config.lineWidth}
-                isAnimationActive={false}
+              {config.showGrid && <CartesianGrid strokeDasharray="3 3" stroke={theme.chartGrid} />}
+              <XAxis dataKey="_time" tick={{ fill: theme.chartText, fontSize: 11 }} stroke={theme.chartAxis} />
+              <YAxis tick={{ fill: theme.chartText, fontSize: 11 }} stroke={theme.chartAxis} />
+              <Tooltip 
+                contentStyle={{ 
+                  background: theme.card, 
+                  border: `1px solid ${theme.border}`, 
+                  borderRadius: '6px',
+                  color: theme.text
+                }} 
               />
+              {config.showLegend && <Legend wrapperStyle={{ color: theme.text }} />}
+              {(config.yAxes || [config.yAxis]).filter(Boolean).map((yField, idx) => (
+                <Area 
+                  key={yField}
+                  type="monotone" 
+                  dataKey={yField} 
+                  stroke={config.colors[idx] || COLORS[idx % COLORS.length]} 
+                  fill={config.colors[idx] || COLORS[idx % COLORS.length]} 
+                  fillOpacity={config.fillOpacity}
+                  strokeWidth={config.lineWidth}
+                  name={yField}
+                  animationDuration={800}
+                  animationEasing="ease-in-out"
+                />
+              ))}
             </AreaChart>
           </ResponsiveContainer>
         );
@@ -173,12 +219,28 @@ function QuestDBPanel({ config, onEdit, onDelete, onDuplicate, onResize, style }
         return (
           <ResponsiveContainer width="100%" height="100%">
             <BarChart {...chartProps}>
-              {config.showGrid && <CartesianGrid strokeDasharray="3 3" stroke="rgba(0,0,0,0.1)" />}
-              <XAxis dataKey="_time" tick={{ fill: '#6b7280', fontSize: 11 }} stroke="#e5e7eb" />
-              <YAxis tick={{ fill: '#6b7280', fontSize: 11 }} stroke="#e5e7eb" />
-              <Tooltip contentStyle={{ background: 'white', border: '1px solid #e5e7eb', borderRadius: '6px' }} />
-              {config.showLegend && <Legend />}
-              <Bar dataKey={config.yAxis} fill={config.colors[0]} isAnimationActive={false} />
+              {config.showGrid && <CartesianGrid strokeDasharray="3 3" stroke={theme.chartGrid} />}
+              <XAxis dataKey="_time" tick={{ fill: theme.chartText, fontSize: 11 }} stroke={theme.chartAxis} />
+              <YAxis tick={{ fill: theme.chartText, fontSize: 11 }} stroke={theme.chartAxis} />
+              <Tooltip 
+                contentStyle={{ 
+                  background: theme.card, 
+                  border: `1px solid ${theme.border}`, 
+                  borderRadius: '6px',
+                  color: theme.text
+                }} 
+              />
+              {config.showLegend && <Legend wrapperStyle={{ color: theme.text }} />}
+              {(config.yAxes || [config.yAxis]).filter(Boolean).map((yField, idx) => (
+                <Bar 
+                  key={yField}
+                  dataKey={yField} 
+                  fill={config.colors[idx] || COLORS[idx % COLORS.length]}
+                  name={yField}
+                  animationDuration={800}
+                  animationEasing="ease-in-out"
+                />
+              ))}
             </BarChart>
           </ResponsiveContainer>
         );
@@ -322,39 +384,43 @@ function QuestDBPanel({ config, onEdit, onDelete, onDuplicate, onResize, style }
         height: '100%',
         display: 'flex',
         flexDirection: 'column',
-        background: 'white',
-        border: '2px solid #e5e7eb',
+        background: theme.card,
+        border: `2px solid ${theme.border}`,
         borderRadius: '12px',
         overflow: 'hidden',
-        boxShadow: '0 4px 6px rgba(0,0,0,0.05)',
-        transition: 'box-shadow 0.2s',
+        boxShadow: darkMode ? '0 8px 24px rgba(0,0,0,0.3)' : '0 4px 6px rgba(0,0,0,0.05)',
+        transition: 'all 0.3s ease',
         position: 'relative'
       }}
-      onMouseEnter={(e) => e.currentTarget.style.boxShadow = '0 8px 12px rgba(0,0,0,0.1)'}
-      onMouseLeave={(e) => e.currentTarget.style.boxShadow = '0 4px 6px rgba(0,0,0,0.05)'}
+      onMouseEnter={(e) => e.currentTarget.style.boxShadow = darkMode ? '0 12px 32px rgba(0,0,0,0.4)' : '0 8px 12px rgba(0,0,0,0.1)'}
+      onMouseLeave={(e) => e.currentTarget.style.boxShadow = darkMode ? '0 8px 24px rgba(0,0,0,0.3)' : '0 4px 6px rgba(0,0,0,0.05)'}
     >
       <div style={{
         padding: '12px 16px',
-        background: '#f9fafb',
-        borderBottom: '2px solid #e5e7eb',
+        background: theme.hover,
+        borderBottom: `2px solid ${theme.border}`,
         display: 'flex',
         justifyContent: 'space-between',
-        alignItems: 'center'
+        alignItems: 'center',
+        transition: 'all 0.3s ease'
       }}>
         <div style={{
           fontWeight: '600',
-          color: '#111827',
+          color: theme.text,
           fontSize: '14px',
           flex: 1,
           display: 'flex',
           alignItems: 'center',
-          gap: '8px'
+          gap: '8px',
+          transition: 'color 0.3s ease'
         }}>
           <div style={{
             width: '8px',
             height: '8px',
             borderRadius: '50%',
-            background: config.colors[0]
+            background: config.colors[0],
+            boxShadow: `0 0 8px ${config.colors[0]}`,
+            animation: 'pulse 2s infinite'
           }} />
           {config.title}
         </div>
@@ -363,13 +429,19 @@ function QuestDBPanel({ config, onEdit, onDelete, onDuplicate, onResize, style }
             padding: '6px',
             background: 'transparent',
             border: 'none',
-            color: '#6b7280',
+            color: theme.textMuted,
             cursor: 'pointer',
             borderRadius: '4px',
-            transition: 'background 0.2s'
+            transition: 'all 0.3s ease'
           }} 
-          onMouseEnter={(e) => e.target.style.background = '#e5e7eb'}
-          onMouseLeave={(e) => e.target.style.background = 'transparent'}
+          onMouseEnter={(e) => {
+            e.target.style.background = darkMode ? '#475569' : '#e5e7eb';
+            e.target.style.color = theme.text;
+          }}
+          onMouseLeave={(e) => {
+            e.target.style.background = 'transparent';
+            e.target.style.color = theme.textMuted;
+          }}
           title="Refresh">
             <RefreshCw size={14} style={{ animation: loading ? 'spin 1s linear infinite' : 'none' }} />
           </button>
@@ -377,13 +449,19 @@ function QuestDBPanel({ config, onEdit, onDelete, onDuplicate, onResize, style }
             padding: '6px',
             background: 'transparent',
             border: 'none',
-            color: '#6b7280',
+            color: theme.textMuted,
             cursor: 'pointer',
             borderRadius: '4px',
-            transition: 'background 0.2s'
+            transition: 'all 0.3s ease'
           }}
-          onMouseEnter={(e) => e.target.style.background = '#e5e7eb'}
-          onMouseLeave={(e) => e.target.style.background = 'transparent'}
+          onMouseEnter={(e) => {
+            e.target.style.background = darkMode ? '#475569' : '#e5e7eb';
+            e.target.style.color = theme.text;
+          }}
+          onMouseLeave={(e) => {
+            e.target.style.background = 'transparent';
+            e.target.style.color = theme.textMuted;
+          }}
           title="Duplicate">
             <Copy size={14} />
           </button>
@@ -391,13 +469,19 @@ function QuestDBPanel({ config, onEdit, onDelete, onDuplicate, onResize, style }
             padding: '6px',
             background: 'transparent',
             border: 'none',
-            color: '#6b7280',
+            color: theme.textMuted,
             cursor: 'pointer',
             borderRadius: '4px',
-            transition: 'background 0.2s'
+            transition: 'all 0.3s ease'
           }}
-          onMouseEnter={(e) => e.target.style.background = '#e5e7eb'}
-          onMouseLeave={(e) => e.target.style.background = 'transparent'}
+          onMouseEnter={(e) => {
+            e.target.style.background = darkMode ? '#475569' : '#e5e7eb';
+            e.target.style.color = theme.text;
+          }}
+          onMouseLeave={(e) => {
+            e.target.style.background = 'transparent';
+            e.target.style.color = theme.textMuted;
+          }}
           title="Edit">
             <Settings size={14} />
           </button>
@@ -408,7 +492,7 @@ function QuestDBPanel({ config, onEdit, onDelete, onDuplicate, onResize, style }
             color: '#ef4444',
             cursor: 'pointer',
             borderRadius: '4px',
-            transition: 'background 0.2s'
+            transition: 'all 0.3s ease'
           }}
           onMouseEnter={(e) => e.target.style.background = 'rgba(239, 68, 68, 0.1)'}
           onMouseLeave={(e) => e.target.style.background = 'transparent'}
@@ -424,15 +508,17 @@ function QuestDBPanel({ config, onEdit, onDelete, onDuplicate, onResize, style }
 
       <div style={{
         padding: '8px 12px',
-        borderTop: '1px solid #e5e7eb',
-        background: '#f9fafb'
+        borderTop: `1px solid ${theme.border}`,
+        background: theme.hover,
+        transition: 'all 0.3s ease'
       }}>
         <div style={{
           display: 'flex',
           justifyContent: 'space-between',
           fontSize: '11px',
-          color: '#6b7280',
-          marginBottom: '4px'
+          color: theme.textMuted,
+          marginBottom: '4px',
+          transition: 'color 0.3s ease'
         }}>
           <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
             <div style={{ display: 'flex', gap: '4px', alignItems: 'center' }}>
@@ -449,9 +535,10 @@ function QuestDBPanel({ config, onEdit, onDelete, onDuplicate, onResize, style }
           display: 'flex',
           gap: '12px',
           fontSize: '10px',
-          color: '#6b7280',
+          color: theme.textMuted,
           paddingTop: '6px',
-          borderTop: '1px solid #e5e7eb'
+          borderTop: `1px solid ${theme.border}`,
+          transition: 'all 0.3s ease'
         }}>
           <div style={{ display: 'flex', gap: '4px', alignItems: 'center' }} title="Query executed at">
             <Clock size={10} />
@@ -469,6 +556,10 @@ function QuestDBPanel({ config, onEdit, onDelete, onDuplicate, onResize, style }
         @keyframes spin {
           0% { transform: rotate(0deg); }
           100% { transform: rotate(360deg); }
+        }
+        @keyframes pulse {
+          0%, 100% { opacity: 1; }
+          50% { opacity: 0.5; }
         }
       `}</style>
     </div>
