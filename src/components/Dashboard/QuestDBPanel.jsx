@@ -100,6 +100,14 @@ function QuestDBPanel({ config, onEdit, onDelete, onDuplicate, onResize, style, 
     });
   };
 
+  // Helper function to get color for Y-axis field at given index
+  const getColor = (idx) => {
+    if (config.colors && config.colors.length > idx && config.colors[idx]) {
+      return config.colors[idx];
+    }
+    return COLORS[idx % COLORS.length];
+  };
+
   const renderChart = () => {
     if (loading && data.length === 0) {
       return (
@@ -149,14 +157,6 @@ function QuestDBPanel({ config, onEdit, onDelete, onDuplicate, onResize, style, 
 
     // Get y-axis fields - support both single and multiple
     const yFields = (config.yAxes && config.yAxes.length > 0) ? config.yAxes : [config.yAxis].filter(Boolean);
-
-    // Assign colors to each Y-axis field
-    const getColor = (idx) => {
-      if (config.colors && config.colors.length > idx && config.colors[idx]) {
-        return config.colors[idx];
-      }
-      return COLORS[idx % COLORS.length];
-    };
 
     switch (config.vizType) {
       case 'line':
