@@ -13,29 +13,20 @@ import questdbService from '../../services/questdb';
 function PanelConfigModal({ panel, onSave, onClose, allTables }) {
   const [config, setConfig] = useState(panel || {
     ...DEFAULT_PANEL_CONFIG,
-    id: `panel_${Date.now()}`
+    id: `panel_${Date.now()}`,
+    colors: [COLORS[0], COLORS[1], COLORS[2], COLORS[3], COLORS[4]]
   });
 
   const [previewData, setPreviewData] = useState([]);
   const [previewLoading, setPreviewLoading] = useState(false);
   const [previewError, setPreviewError] = useState(null);
   const [availableFields, setAvailableFields] = useState([]);
-  const [tablesLoading, setTablesLoading] = useState(false);
 
   useEffect(() => {
     if (config.table && config.dataSource === 'table') {
       fetchTableFields(config.table);
     }
   }, [config.table]);
-
-  // Load tables immediately when modal opens
-  useEffect(() => {
-    if (allTables.length === 0) {
-      setTablesLoading(true);
-      // Signal that tables are being loaded
-      setTimeout(() => setTablesLoading(false), 2000);
-    }
-  }, [allTables]);
 
   const fetchTableFields = async (tableName) => {
     try {
@@ -84,6 +75,13 @@ function PanelConfigModal({ panel, onSave, onClose, allTables }) {
     }
     
     setPreviewLoading(false);
+  };
+
+  const getColor = (idx) => {
+    if (config.colors && config.colors.length > idx && config.colors[idx]) {
+      return config.colors[idx];
+    }
+    return COLORS[idx % COLORS.length];
   };
 
   const renderPreviewChart = () => {
@@ -145,7 +143,7 @@ function PanelConfigModal({ panel, onSave, onClose, allTables }) {
                 key={yField}
                 type="monotone" 
                 dataKey={yField} 
-                stroke={config.colors && config.colors[idx] ? config.colors[idx] : COLORS[idx % COLORS.length]} 
+                stroke={getColor(idx)} 
                 strokeWidth={config.lineWidth} 
                 dot={config.showDots}
                 name={yField}
@@ -164,7 +162,7 @@ function PanelConfigModal({ panel, onSave, onClose, allTables }) {
               <Bar 
                 key={yField}
                 dataKey={yField} 
-                fill={config.colors && config.colors[idx] ? config.colors[idx] : COLORS[idx % COLORS.length]}
+                fill={getColor(idx)}
                 name={yField}
               />
             ))}
@@ -182,8 +180,8 @@ function PanelConfigModal({ panel, onSave, onClose, allTables }) {
                 key={yField}
                 type="monotone" 
                 dataKey={yField} 
-                stroke={config.colors && config.colors[idx] ? config.colors[idx] : COLORS[idx % COLORS.length]} 
-                fill={config.colors && config.colors[idx] ? config.colors[idx] : COLORS[idx % COLORS.length]} 
+                stroke={getColor(idx)} 
+                fill={getColor(idx)} 
                 fillOpacity={config.fillOpacity}
                 name={yField}
               />
@@ -220,7 +218,7 @@ function PanelConfigModal({ panel, onSave, onClose, allTables }) {
               <Scatter 
                 key={yField}
                 dataKey={yField} 
-                fill={config.colors && config.colors[idx] ? config.colors[idx] : COLORS[idx % COLORS.length]}
+                fill={getColor(idx)}
                 name={yField}
               />
             ))}
@@ -235,8 +233,8 @@ function PanelConfigModal({ panel, onSave, onClose, allTables }) {
               <Radar 
                 key={yField}
                 dataKey={yField} 
-                stroke={config.colors && config.colors[idx] ? config.colors[idx] : COLORS[idx % COLORS.length]} 
-                fill={config.colors && config.colors[idx] ? config.colors[idx] : COLORS[idx % COLORS.length]} 
+                stroke={getColor(idx)} 
+                fill={getColor(idx)} 
                 fillOpacity={config.fillOpacity || 0.5}
                 name={yField}
               />
@@ -252,7 +250,7 @@ function PanelConfigModal({ panel, onSave, onClose, allTables }) {
             height: '200px',
             flexDirection: 'column'
           }}>
-            <div style={{ fontSize: '36px', fontWeight: 'bold', color: config.colors && config.colors[0] ? config.colors[0] : COLORS[0] }}>
+            <div style={{ fontSize: '36px', fontWeight: 'bold', color: getColor(0) }}>
               {previewData[previewData.length - 1]?.[yFields[0]]?.toFixed(2) || 'N/A'}
             </div>
             <div style={{ fontSize: '12px', color: '#6b7280', marginTop: '8px' }}>
@@ -461,7 +459,6 @@ function PanelConfigModal({ panel, onSave, onClose, allTables }) {
                     <select
                       value={config.table}
                       onChange={(e) => setConfig({ ...config, table: e.target.value })}
-                      disabled={tablesLoading}
                       style={{
                         width: '100%',
                         padding: '10px 12px',
@@ -469,20 +466,19 @@ function PanelConfigModal({ panel, onSave, onClose, allTables }) {
                         border: '2px solid #e5e7eb',
                         borderRadius: '8px',
                         color: '#111827',
-                        fontSize: '14px',
-                        cursor: tablesLoading ? 'wait' : 'pointer'
+                        fontSize: '14px'
                       }}
                     >
-                      <option value="">{tablesLoading ? 'Loading tables...' : 'Select a table...'}</option>
+                      <option value="">Select a table...</option>
                       {allTables && allTables.length > 0 ? (
                         allTables.map(table => (
                           <option key={table} value={table}>{table}</option>
                         ))
-                      ) : !tablesLoading ? (
+                      ) : (
                         <option value="" disabled>No tables available</option>
-                      ) : null}
+                      )}
                     </select>
-                    {allTables.length === 0 && !tablesLoading && (
+                    {allTables.length === 0 && (
                       <div style={{ 
                         marginTop: '8px', 
                         padding: '8px 12px',
@@ -576,7 +572,7 @@ function PanelConfigModal({ panel, onSave, onClose, allTables }) {
                         overflow: 'auto',
                         padding: '8px'
                       }}>
-                        {availableFields.filter(f => f !== config.timestampField).map(field => (
+                        {availableFields.filter(f => f !== config.timestampField).map((field, idx) => (
                           <label 
                             key={field}
                             style={{ 
@@ -590,8 +586,8 @@ function PanelConfigModal({ panel, onSave, onClose, allTables }) {
                               color: '#111827',
                               transition: 'background 0.2s'
                             }}
-                            onMouseEnter={(e) => e.target.style.background = '#f3f4f6'}
-                            onMouseLeave={(e) => e.target.style.background = 'transparent'}
+                            onMouseEnter={(e) => e.currentTarget.style.background = '#f3f4f6'}
+                            onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
                           >
                             <input
                               type="checkbox"
@@ -604,6 +600,13 @@ function PanelConfigModal({ panel, onSave, onClose, allTables }) {
                               }}
                               style={{ width: '16px', height: '16px' }}
                             />
+                            <div style={{
+                              width: '12px',
+                              height: '12px',
+                              borderRadius: '3px',
+                              background: getColor((config.yAxes || []).indexOf(field)),
+                              marginLeft: 'auto'
+                            }} />
                             {field}
                           </label>
                         ))}
@@ -792,26 +795,36 @@ function PanelConfigModal({ panel, onSave, onClose, allTables }) {
                 
                 <div style={{ marginBottom: '12px' }}>
                   <label style={{ display: 'block', marginBottom: '6px', fontSize: '12px', color: '#6b7280' }}>
-                    Chart Colors
+                    Chart Colors (for multiple Y-axes)
                   </label>
-                  <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-                    {COLORS.map((color, idx) => (
-                      <button
-                        key={color}
-                        onClick={() => {
-                          const newColors = [...(config.colors || [COLORS[0]])];
-                          newColors[0] = color;
-                          setConfig({ ...config, colors: newColors });
-                        }}
-                        style={{
-                          width: '36px',
-                          height: '36px',
-                          background: color,
-                          border: config.colors && config.colors[0] === color ? '3px solid #374151' : '2px solid #e5e7eb',
-                          borderRadius: '8px',
-                          cursor: 'pointer'
-                        }}
-                      />
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: '8px' }}>
+                    {[0, 1, 2, 3, 4].map((colorIdx) => (
+                      <div key={colorIdx} style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                        <div style={{ fontSize: '10px', color: '#9ca3af', textAlign: 'center' }}>Y{colorIdx + 1}</div>
+                        <select
+                          value={config.colors?.[colorIdx] || COLORS[colorIdx]}
+                          onChange={(e) => {
+                            const newColors = [...(config.colors || COLORS.slice(0, 5))];
+                            newColors[colorIdx] = e.target.value;
+                            setConfig({ ...config, colors: newColors });
+                          }}
+                          style={{
+                            width: '100%',
+                            height: '36px',
+                            background: config.colors?.[colorIdx] || COLORS[colorIdx],
+                            border: '2px solid #e5e7eb',
+                            borderRadius: '6px',
+                            cursor: 'pointer',
+                            color: 'transparent'
+                          }}
+                        >
+                          {COLORS.map(color => (
+                            <option key={color} value={color} style={{ background: color }}>
+                              {color}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
                     ))}
                   </div>
                 </div>
