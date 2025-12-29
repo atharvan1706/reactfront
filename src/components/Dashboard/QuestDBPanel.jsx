@@ -150,6 +150,14 @@ function QuestDBPanel({ config, onEdit, onDelete, onDuplicate, onResize, style, 
     // Get y-axis fields - support both single and multiple
     const yFields = (config.yAxes && config.yAxes.length > 0) ? config.yAxes : [config.yAxis].filter(Boolean);
 
+    // Assign colors to each Y-axis field
+    const getColor = (idx) => {
+      if (config.colors && config.colors.length > idx && config.colors[idx]) {
+        return config.colors[idx];
+      }
+      return COLORS[idx % COLORS.length];
+    };
+
     switch (config.vizType) {
       case 'line':
         return (
@@ -172,7 +180,7 @@ function QuestDBPanel({ config, onEdit, onDelete, onDuplicate, onResize, style, 
                   key={yField}
                   type="monotone" 
                   dataKey={yField} 
-                  stroke={config.colors && config.colors[idx] ? config.colors[idx] : COLORS[idx % COLORS.length]} 
+                  stroke={getColor(idx)} 
                   strokeWidth={config.lineWidth} 
                   dot={config.showDots}
                   name={yField}
@@ -205,8 +213,8 @@ function QuestDBPanel({ config, onEdit, onDelete, onDuplicate, onResize, style, 
                   key={yField}
                   type="monotone" 
                   dataKey={yField} 
-                  stroke={config.colors && config.colors[idx] ? config.colors[idx] : COLORS[idx % COLORS.length]} 
-                  fill={config.colors && config.colors[idx] ? config.colors[idx] : COLORS[idx % COLORS.length]} 
+                  stroke={getColor(idx)} 
+                  fill={getColor(idx)} 
                   fillOpacity={config.fillOpacity}
                   strokeWidth={config.lineWidth}
                   name={yField}
@@ -238,7 +246,7 @@ function QuestDBPanel({ config, onEdit, onDelete, onDuplicate, onResize, style, 
                 <Bar 
                   key={yField}
                   dataKey={yField} 
-                  fill={config.colors && config.colors[idx] ? config.colors[idx] : COLORS[idx % COLORS.length]}
+                  fill={getColor(idx)}
                   name={yField}
                   animationDuration={800}
                   animationEasing="ease-in-out"
@@ -249,7 +257,6 @@ function QuestDBPanel({ config, onEdit, onDelete, onDuplicate, onResize, style, 
         );
 
       case 'pie':
-        // For pie chart, use first y-axis field or all fields with latest values
         const pieDataKey = yFields[0] || config.yAxis;
         return (
           <ResponsiveContainer width="100%" height="100%">
@@ -287,7 +294,7 @@ function QuestDBPanel({ config, onEdit, onDelete, onDuplicate, onResize, style, 
                 <Scatter 
                   key={yField}
                   dataKey={yField} 
-                  fill={config.colors && config.colors[idx] ? config.colors[idx] : COLORS[idx % COLORS.length]} 
+                  fill={getColor(idx)} 
                   name={yField}
                   isAnimationActive={false} 
                 />
@@ -307,8 +314,8 @@ function QuestDBPanel({ config, onEdit, onDelete, onDuplicate, onResize, style, 
                 <Radar 
                   key={yField}
                   dataKey={yField} 
-                  stroke={config.colors && config.colors[idx] ? config.colors[idx] : COLORS[idx % COLORS.length]} 
-                  fill={config.colors && config.colors[idx] ? config.colors[idx] : COLORS[idx % COLORS.length]} 
+                  stroke={getColor(idx)} 
+                  fill={getColor(idx)} 
                   fillOpacity={config.fillOpacity || 0.5}
                   name={yField}
                   isAnimationActive={false}
@@ -335,7 +342,7 @@ function QuestDBPanel({ config, onEdit, onDelete, onDuplicate, onResize, style, 
             justifyContent: 'center',
             height: '100%'
           }}>
-            <div style={{ fontSize: '48px', fontWeight: 'bold', color: config.colors && config.colors[0] ? config.colors[0] : COLORS[0], marginBottom: '8px' }}>
+            <div style={{ fontSize: '48px', fontWeight: 'bold', color: getColor(0), marginBottom: '8px' }}>
               {latest.toFixed(2)}
             </div>
             <div style={{
@@ -436,8 +443,8 @@ function QuestDBPanel({ config, onEdit, onDelete, onDuplicate, onResize, style, 
             width: '8px',
             height: '8px',
             borderRadius: '50%',
-            background: config.colors && config.colors[0] ? config.colors[0] : COLORS[0],
-            boxShadow: `0 0 8px ${config.colors && config.colors[0] ? config.colors[0] : COLORS[0]}`,
+            background: getColor(0),
+            boxShadow: `0 0 8px ${getColor(0)}`,
             animation: 'pulse 2s infinite'
           }} />
           {config.title}
