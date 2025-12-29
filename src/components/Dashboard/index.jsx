@@ -19,6 +19,7 @@ export default function Dashboard() {
   const [showDashboardModal, setShowDashboardModal] = useState(false);
   const [editingPanel, setEditingPanel] = useState(null);
   const [availableTables, setAvailableTables] = useState([]);
+  const [draggingPanel, setDraggingPanel] = useState(null);
 
   useEffect(() => {
     const fetchTables = async () => {
@@ -26,8 +27,10 @@ export default function Dashboard() {
         const result = await questdbService.getTables();
         const tableNames = result.map(row => row.table_name);
         setAvailableTables(tableNames);
+        console.log('Loaded tables:', tableNames);
       } catch (error) {
         console.error('Error fetching tables:', error);
+        setAvailableTables([]);
       }
     };
     fetchTables();
@@ -93,7 +96,13 @@ export default function Dashboard() {
         p.id === config.id ? config : p
       );
     } else {
-      updatedDashboard.panels = [...(updatedDashboard.panels || []), config];
+      // Add position data for new panels
+      const newPanel = {
+        ...config,
+        x: 0,
+        y: getNextAvailableY()
+      };
+      updatedDashboard.panels = [...(updatedDashboard.panels || []), newPanel];
     }
     
     setCurrentDashboard(updatedDashboard);
@@ -102,6 +111,12 @@ export default function Dashboard() {
     ));
     setShowConfigModal(false);
     setEditingPanel(null);
+  };
+
+  const getNextAvailableY = () => {
+    if (!currentDashboard?.panels || currentDashboard.panels.length === 0) return 0;
+    const maxY = Math.max(...currentDashboard.panels.map(p => (p.y || 0) + (p.height || 1)));
+    return maxY;
   };
 
   const handleEdit = (panel) => {
@@ -126,7 +141,8 @@ export default function Dashboard() {
     const newPanel = {
       ...panel,
       id: `panel_${Date.now()}`,
-      title: `${panel.title} (Copy)`
+      title: `${panel.title} (Copy)`,
+      y: getNextAvailableY()
     };
     const updatedDashboard = {
       ...currentDashboard,
@@ -224,37 +240,51 @@ export default function Dashboard() {
     e.target.value = '';
   };
 
-  const calculatePanelStyle = (panel, index) => {
+  // Drag and drop handlers
+  const handleDragStart = (e, panel) => {
+    setDraggingPanel(panel);
+    e.dataTransfer.effectAllowed = 'move';
+  };
+
+  const handleDragOver = (e) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+  };
+
+  const handleDrop = (e, targetPanel) => {
+    e.preventDefault();
+    if (!draggingPanel || draggingPanel.id === targetPanel.id) {
+      setDraggingPanel(null);
+      return;
+    }
+
+    const updatedPanels = [...currentDashboard.panels];
+    const dragIndex = updatedPanels.findIndex(p => p.id === draggingPanel.id);
+    const targetIndex = updatedPanels.findIndex(p => p.id === targetPanel.id);
+
+    if (dragIndex !== -1 && targetIndex !== -1) {
+      // Swap positions
+      [updatedPanels[dragIndex], updatedPanels[targetIndex]] = 
+      [updatedPanels[targetIndex], updatedPanels[dragIndex]];
+
+      const updatedDashboard = {
+        ...currentDashboard,
+        panels: updatedPanels
+      };
+      setCurrentDashboard(updatedDashboard);
+      setDashboards(dashboards.map(d => 
+        d.id === updatedDashboard.id ? updatedDashboard : d
+      ));
+    }
+    setDraggingPanel(null);
+  };
+
+  const calculatePanelStyle = (panel) => {
     const width = panel.width || 1;
     const height = panel.height || 1;
     
-    // Calculate grid position
-    let row = 0;
-    let col = 0;
-    
-    const panels = currentDashboard.panels.slice(0, index);
-    panels.forEach(p => {
-      const pWidth = p.width || 1;
-      if (col + pWidth > GRID_COLS) {
-        row += (p.height || 1);
-        col = 0;
-      }
-      if (index > panels.indexOf(p)) {
-        col += pWidth;
-        if (col >= GRID_COLS) {
-          row += (p.height || 1);
-          col = 0;
-        }
-      }
-    });
-    
-    if (col + width > GRID_COLS) {
-      row += 1;
-      col = 0;
-    }
-    
     return {
-      gridColumn: `span ${width}`,
+      gridColumn: `span ${Math.min(width, GRID_COLS)}`,
       gridRow: `span ${height}`,
       minHeight: `${height * ROW_HEIGHT}px`
     };
@@ -446,7 +476,7 @@ export default function Dashboard() {
             </h3>
             <p style={{ margin: '0 0 32px', color: '#6b7280', fontSize: '15px', lineHeight: '1.6' }}>
               {currentDashboard
-                ? 'Build powerful visualizations from your QuestDB data. Panels are now resizable - drag the corner handle to adjust size.'
+                ? 'Build powerful visualizations from your QuestDB data. Drag panels to reorder them and resize by editing panel settings.'
                 : 'Create a dashboard to organize your data visualizations and start monitoring in real-time.'}
             </p>
             <button
@@ -478,10 +508,23 @@ export default function Dashboard() {
             gridTemplateColumns: `repeat(${GRID_COLS}, 1fr)`,
             gap: '20px',
             maxWidth: '1600px',
-            margin: '0 auto'
+            margin: '0 auto',
+            gridAutoRows: `${ROW_HEIGHT}px`
           }}>
-            {currentDashboard.panels.map((panel, index) => (
-              <div key={panel.id} style={calculatePanelStyle(panel, index)}>
+            {currentDashboard.panels.map((panel) => (
+              <div 
+                key={panel.id} 
+                style={{
+                  ...calculatePanelStyle(panel),
+                  cursor: 'move',
+                  opacity: draggingPanel?.id === panel.id ? 0.5 : 1,
+                  transition: 'opacity 0.2s'
+                }}
+                draggable
+                onDragStart={(e) => handleDragStart(e, panel)}
+                onDragOver={handleDragOver}
+                onDrop={(e) => handleDrop(e, panel)}
+              >
                 <QuestDBPanel
                   config={panel}
                   onEdit={handleEdit}
