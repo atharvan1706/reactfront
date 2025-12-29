@@ -26,6 +26,13 @@ function PanelConfigModal({ panel, onSave, onClose, allTables }) {
     }
   }, [config.table]);
 
+  // Fetch tables when modal opens if tables are empty
+  useEffect(() => {
+    if (allTables.length === 0) {
+      console.warn('No tables available. Please check QuestDB connection.');
+    }
+  }, [allTables]);
+
   const fetchTableFields = async (tableName) => {
     try {
       const query = `SELECT * FROM ${tableName} LIMIT 1`;
@@ -314,24 +321,43 @@ function PanelConfigModal({ panel, onSave, onClose, allTables }) {
                 </div>
 
                 {config.dataSource === 'table' ? (
-                  <select
-                    value={config.table}
-                    onChange={(e) => setConfig({ ...config, table: e.target.value })}
-                    style={{
-                      width: '100%',
-                      padding: '10px 12px',
-                      background: 'white',
-                      border: '2px solid #e5e7eb',
-                      borderRadius: '8px',
-                      color: '#111827',
-                      fontSize: '14px'
-                    }}
-                  >
-                    <option value="">Select a table...</option>
-                    {allTables.map(table => (
-                      <option key={table} value={table}>{table}</option>
-                    ))}
-                  </select>
+                  <>
+                    <select
+                      value={config.table}
+                      onChange={(e) => setConfig({ ...config, table: e.target.value })}
+                      style={{
+                        width: '100%',
+                        padding: '10px 12px',
+                        background: 'white',
+                        border: '2px solid #e5e7eb',
+                        borderRadius: '8px',
+                        color: '#111827',
+                        fontSize: '14px'
+                      }}
+                    >
+                      <option value="">Select a table...</option>
+                      {allTables && allTables.length > 0 ? (
+                        allTables.map(table => (
+                          <option key={table} value={table}>{table}</option>
+                        ))
+                      ) : (
+                        <option value="" disabled>No tables available</option>
+                      )}
+                    </select>
+                    {allTables.length === 0 && (
+                      <div style={{ 
+                        marginTop: '8px', 
+                        padding: '8px 12px',
+                        background: '#fef3c7',
+                        border: '1px solid #fbbf24',
+                        borderRadius: '6px',
+                        fontSize: '12px',
+                        color: '#92400e'
+                      }}>
+                        ⚠️ No tables found in QuestDB. Please create tables first.
+                      </div>
+                    )}
+                  </>
                 ) : (
                   <textarea
                     value={config.query}
