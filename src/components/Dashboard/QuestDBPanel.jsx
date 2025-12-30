@@ -187,7 +187,7 @@ function QuestDBPanel({ config, onEdit, onDelete, onDuplicate, onResize, style, 
                   strokeWidth={config.lineWidth} 
                   dot={config.showDots}
                   name={yField}
-                  animationDuration={800}
+                  animationDuration={300}
                   animationEasing="ease-in-out"
                 />
               ))}
@@ -221,7 +221,7 @@ function QuestDBPanel({ config, onEdit, onDelete, onDuplicate, onResize, style, 
                   fillOpacity={config.fillOpacity}
                   strokeWidth={config.lineWidth}
                   name={yField}
-                  animationDuration={800}
+                  animationDuration={300}
                   animationEasing="ease-in-out"
                 />
               ))}
@@ -251,7 +251,7 @@ function QuestDBPanel({ config, onEdit, onDelete, onDuplicate, onResize, style, 
                   dataKey={yField} 
                   fill={getColor(idx)}
                   name={yField}
-                  animationDuration={800}
+                  animationDuration={300}
                   animationEasing="ease-in-out"
                 />
               ))}
@@ -272,7 +272,7 @@ function QuestDBPanel({ config, onEdit, onDelete, onDuplicate, onResize, style, 
                 cy="50%" 
                 outerRadius={80} 
                 label
-                isAnimationActive={false}
+                isAnimationActive={true}
               >
                 {data.slice(0, 10).map((entry, index) => (
                   <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
@@ -299,7 +299,7 @@ function QuestDBPanel({ config, onEdit, onDelete, onDuplicate, onResize, style, 
                   dataKey={yField} 
                   fill={getColor(idx)} 
                   name={yField}
-                  isAnimationActive={false} 
+                  isAnimationActive={true} 
                 />
               ))}
             </ScatterChart>
@@ -321,7 +321,7 @@ function QuestDBPanel({ config, onEdit, onDelete, onDuplicate, onResize, style, 
                   fill={getColor(idx)} 
                   fillOpacity={config.fillOpacity || 0.5}
                   name={yField}
-                  isAnimationActive={false}
+                  isAnimationActive={true}
                 />
               ))}
               {config.showLegend && <Legend wrapperStyle={{ color: theme.text }} />}
