@@ -1,13 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
-  Plus, LogOut, Database, Zap, Folder, Save, Download, Upload, Moon, Sun
+  Plus, LogOut, Database, Zap, Folder, Save, Download, Upload, Moon, Sun, Settings
 } from 'lucide-react';
 import authService from '../../services/auth';
 import questdbService from '../../services/questdb';
 import DashboardModal from './DashboardModal';
 import PanelConfigModal from './PanelConfigModal';
 import QuestDBPanel from './QuestDBPanel';
+import ScadaDesigner from './ScadaDesigner';
+import ScadaPanel from './ScadaPanel';
 import { GRID_COLS, ROW_HEIGHT, DARK_COLORS } from './constants';
 
 export default function Dashboard({ onLogout }) {
@@ -17,7 +19,9 @@ export default function Dashboard({ onLogout }) {
   const [currentDashboard, setCurrentDashboard] = useState(null);
   const [showConfigModal, setShowConfigModal] = useState(false);
   const [showDashboardModal, setShowDashboardModal] = useState(false);
+  const [showScadaModal, setShowScadaModal] = useState(false);
   const [editingPanel, setEditingPanel] = useState(null);
+  const [editingScadaDiagram, setEditingScadaDiagram] = useState(null);
   const [availableTables, setAvailableTables] = useState([]);
   const [draggingPanel, setDraggingPanel] = useState(null);
   const [darkMode, setDarkMode] = useState(() => {
@@ -121,6 +125,11 @@ export default function Dashboard({ onLogout }) {
     setShowConfigModal(true);
   };
 
+  const handleAddScada = () => {
+    setEditingScadaDiagram(null);
+    setShowScadaModal(true);
+  };
+
   const handleSavePanel = (config) => {
     const updatedDashboard = { ...currentDashboard };
     const panelExists = updatedDashboard.panels?.some(p => p.id === config.id);
@@ -144,7 +153,9 @@ export default function Dashboard({ onLogout }) {
       d.id === updatedDashboard.id ? updatedDashboard : d
     ));
     setShowConfigModal(false);
+    setShowScadaModal(false);
     setEditingPanel(null);
+    setEditingScadaDiagram(null);
   };
 
   const getNextAvailableY = () => {
@@ -154,8 +165,13 @@ export default function Dashboard({ onLogout }) {
   };
 
   const handleEdit = (panel) => {
-    setEditingPanel(panel);
-    setShowConfigModal(true);
+    if (panel.type === 'scada') {
+      setEditingScadaDiagram(panel);
+      setShowScadaModal(true);
+    } else {
+      setEditingPanel(panel);
+      setShowConfigModal(true);
+    }
   };
 
   const handleDelete = (panelId) => {
@@ -491,6 +507,36 @@ export default function Dashboard({ onLogout }) {
           </label>
           
           <button
+            onClick={handleAddScada}
+            style={{
+              padding: '10px 16px',
+              background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
+              border: 'none',
+              borderRadius: '8px',
+              color: 'white',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px',
+              fontSize: '14px',
+              fontWeight: '600',
+              transition: 'all 0.3s ease',
+              boxShadow: darkMode ? '0 4px 12px rgba(16, 185, 129, 0.4)' : '0 2px 8px rgba(16, 185, 129, 0.3)'
+            }}
+            onMouseEnter={(e) => {
+              e.target.style.transform = 'translateY(-2px)';
+              e.target.style.boxShadow = darkMode ? '0 6px 16px rgba(16, 185, 129, 0.5)' : '0 4px 12px rgba(16, 185, 129, 0.4)';
+            }}
+            onMouseLeave={(e) => {
+              e.target.style.transform = 'translateY(0)';
+              e.target.style.boxShadow = darkMode ? '0 4px 12px rgba(16, 185, 129, 0.4)' : '0 2px 8px rgba(16, 185, 129, 0.3)';
+            }}
+          >
+            <Settings size={16} />
+            SCADA Designer
+          </button>
+
+          <button
             onClick={handleAddPanel}
             style={{
               padding: '10px 16px',
@@ -619,38 +665,71 @@ export default function Dashboard({ onLogout }) {
               transition: 'color 0.3s ease'
             }}>
               {currentDashboard
-                ? 'Build powerful visualizations from your QuestDB data. Drag panels to reorder them, select multiple Y-axes for comparison, and enjoy smooth animations.'
+                ? 'Build powerful visualizations from your QuestDB data or create SCADA diagrams. Drag panels to reorder them.'
                 : 'Create a dashboard to organize your data visualizations and start monitoring in real-time.'}
             </p>
-            <button
-              onClick={currentDashboard ? handleAddPanel : () => setShowDashboardModal(true)}
-              style={{
-                padding: '14px 28px',
-                background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-                border: 'none',
-                borderRadius: '10px',
-                color: 'white',
-                cursor: 'pointer',
-                fontSize: '15px',
-                fontWeight: '600',
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: '10px',
-                transition: 'all 0.3s ease',
-                boxShadow: darkMode ? '0 8px 24px rgba(102, 126, 234, 0.5)' : '0 4px 16px rgba(102, 126, 234, 0.3)'
-              }}
-              onMouseEnter={(e) => {
-                e.target.style.transform = 'translateY(-3px)';
-                e.target.style.boxShadow = darkMode ? '0 12px 32px rgba(102, 126, 234, 0.6)' : '0 6px 20px rgba(102, 126, 234, 0.4)';
-              }}
-              onMouseLeave={(e) => {
-                e.target.style.transform = 'translateY(0)';
-                e.target.style.boxShadow = darkMode ? '0 8px 24px rgba(102, 126, 234, 0.5)' : '0 4px 16px rgba(102, 126, 234, 0.3)';
-              }}
-            >
-              <Plus size={20} />
-              {currentDashboard ? 'Add Your First Panel' : 'Create Dashboard'}
-            </button>
+            <div style={{ display: 'flex', gap: '12px', justifyContent: 'center' }}>
+              <button
+                onClick={currentDashboard ? handleAddPanel : () => setShowDashboardModal(true)}
+                style={{
+                  padding: '14px 28px',
+                  background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                  border: 'none',
+                  borderRadius: '10px',
+                  color: 'white',
+                  cursor: 'pointer',
+                  fontSize: '15px',
+                  fontWeight: '600',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '10px',
+                  transition: 'all 0.3s ease',
+                  boxShadow: darkMode ? '0 8px 24px rgba(102, 126, 234, 0.5)' : '0 4px 16px rgba(102, 126, 234, 0.3)'
+                }}
+                onMouseEnter={(e) => {
+                  e.target.style.transform = 'translateY(-3px)';
+                  e.target.style.boxShadow = darkMode ? '0 12px 32px rgba(102, 126, 234, 0.6)' : '0 6px 20px rgba(102, 126, 234, 0.4)';
+                }}
+                onMouseLeave={(e) => {
+                  e.target.style.transform = 'translateY(0)';
+                  e.target.style.boxShadow = darkMode ? '0 8px 24px rgba(102, 126, 234, 0.5)' : '0 4px 16px rgba(102, 126, 234, 0.3)';
+                }}
+              >
+                <Plus size={20} />
+                {currentDashboard ? 'Add Data Panel' : 'Create Dashboard'}
+              </button>
+              {currentDashboard && (
+                <button
+                  onClick={handleAddScada}
+                  style={{
+                    padding: '14px 28px',
+                    background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
+                    border: 'none',
+                    borderRadius: '10px',
+                    color: 'white',
+                    cursor: 'pointer',
+                    fontSize: '15px',
+                    fontWeight: '600',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '10px',
+                    transition: 'all 0.3s ease',
+                    boxShadow: darkMode ? '0 8px 24px rgba(16, 185, 129, 0.5)' : '0 4px 16px rgba(16, 185, 129, 0.3)'
+                  }}
+                  onMouseEnter={(e) => {
+                    e.target.style.transform = 'translateY(-3px)';
+                    e.target.style.boxShadow = darkMode ? '0 12px 32px rgba(16, 185, 129, 0.6)' : '0 6px 20px rgba(16, 185, 129, 0.4)';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.target.style.transform = 'translateY(0)';
+                    e.target.style.boxShadow = darkMode ? '0 8px 24px rgba(16, 185, 129, 0.5)' : '0 4px 16px rgba(16, 185, 129, 0.3)';
+                  }}
+                >
+                  <Settings size={20} />
+                  Add SCADA Diagram
+                </button>
+              )}
+            </div>
           </div>
         ) : (
           <div style={{
@@ -676,14 +755,81 @@ export default function Dashboard({ onLogout }) {
                 onDragOver={handleDragOver}
                 onDrop={(e) => handleDrop(e, panel)}
               >
-                <QuestDBPanel
-                  config={panel}
-                  onEdit={handleEdit}
-                  onDelete={handleDelete}
-                  onDuplicate={handleDuplicate}
-                  onResize={handleResize}
-                  darkMode={darkMode}
-                />
+                {panel.type === 'scada' ? (
+                  <div style={{
+                    height: '100%',
+                    background: theme.card,
+                    borderRadius: '12px',
+                    border: `2px solid ${theme.border}`,
+                    overflow: 'hidden',
+                    boxShadow: darkMode ? '0 4px 12px rgba(0,0,0,0.3)' : '0 2px 8px rgba(0,0,0,0.08)',
+                    position: 'relative'
+                  }}>
+                    <div style={{
+                      padding: '12px 16px',
+                      borderBottom: `1px solid ${theme.border}`,
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'center',
+                      background: theme.hover
+                    }}>
+                      <h3 style={{ margin: 0, fontSize: '14px', fontWeight: '600', color: theme.text }}>
+                        {panel.title}
+                      </h3>
+                      <div style={{ display: 'flex', gap: '8px' }}>
+                        <button
+                          onClick={() => handleEdit(panel)}
+                          style={{
+                            padding: '6px',
+                            background: 'transparent',
+                            border: 'none',
+                            color: theme.textSecondary,
+                            cursor: 'pointer',
+                            borderRadius: '4px'
+                          }}
+                        >
+                          <Settings size={16} />
+                        </button>
+                        <button
+                          onClick={() => handleDuplicate(panel)}
+                          style={{
+                            padding: '6px',
+                            background: 'transparent',
+                            border: 'none',
+                            color: theme.textSecondary,
+                            cursor: 'pointer',
+                            borderRadius: '4px'
+                          }}
+                        >
+                          <Plus size={16} />
+                        </button>
+                        <button
+                          onClick={() => handleDelete(panel.id)}
+                          style={{
+                            padding: '6px',
+                            background: 'transparent',
+                            border: 'none',
+                            color: '#ef4444',
+                            cursor: 'pointer',
+                            borderRadius: '4px'
+                          }}
+                        >
+                          <X size={16} />
+                        </button>
+                      </div>
+                    </div>
+                    <ScadaPanel config={panel} darkMode={darkMode} />
+                  </div>
+                ) : (
+                  <QuestDBPanel
+                    config={panel}
+                    onEdit={handleEdit}
+                    onDelete={handleDelete}
+                    onDuplicate={handleDuplicate}
+                    onResize={handleResize}
+                    darkMode={darkMode}
+                  />
+                )}
               </div>
             ))}
           </div>
@@ -712,6 +858,18 @@ export default function Dashboard({ onLogout }) {
           onRename={handleRenameDashboard}
           onDelete={handleDeleteDashboard}
           onClose={() => setShowDashboardModal(false)}
+          darkMode={darkMode}
+        />
+      )}
+
+      {showScadaModal && (
+        <ScadaDesigner
+          config={editingScadaDiagram}
+          onSave={handleSavePanel}
+          onClose={() => {
+            setShowScadaModal(false);
+            setEditingScadaDiagram(null);
+          }}
           darkMode={darkMode}
         />
       )}
