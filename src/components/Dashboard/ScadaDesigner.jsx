@@ -863,11 +863,6 @@ export default function ScadaDesigner({ config, onSave, onClose, darkMode }) {
                     <g
                       key={comp.id}
                       transform={`translate(${comp.x}, ${comp.y})`}
-                      onMouseDown={(e) => handleComponentMouseDown(e, comp)}
-                      style={{ 
-                        cursor: selectedTool === 'select' ? 'move' : 
-                                selectedTool === 'line' ? 'pointer' : 'default' 
-                      }}
                     >
                       <g transform={`rotate(${comp.rotation || 0}, ${svgData.width/2}, ${svgData.height/2})`}>
                         {/* Selection highlight */}
@@ -884,6 +879,7 @@ export default function ScadaDesigner({ config, onSave, onClose, darkMode }) {
                               strokeDasharray="0"
                               rx={10}
                               opacity="0.6"
+                              style={{ pointerEvents: 'none' }}
                             />
                             <rect
                               x={-6}
@@ -895,6 +891,7 @@ export default function ScadaDesigner({ config, onSave, onClose, darkMode }) {
                               strokeWidth={2}
                               strokeDasharray="8,4"
                               rx={10}
+                              style={{ pointerEvents: 'none' }}
                             >
                               <animate
                                 attributeName="stroke-dashoffset"
@@ -906,6 +903,20 @@ export default function ScadaDesigner({ config, onSave, onClose, darkMode }) {
                             </rect>
                           </>
                         )}
+                        
+                        {/* Invisible clickable area */}
+                        <rect
+                          x={0}
+                          y={0}
+                          width={svgData.width}
+                          height={svgData.height}
+                          fill="transparent"
+                          style={{ 
+                            cursor: selectedTool === 'select' ? 'move' : 
+                                    selectedTool === 'line' ? 'pointer' : 'default'
+                          }}
+                          onMouseDown={(e) => handleComponentMouseDown(e, comp)}
+                        />
                         
                         {/* Component SVG */}
                         <image
