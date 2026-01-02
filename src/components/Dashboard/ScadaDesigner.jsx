@@ -2,14 +2,14 @@ import React, { useState, useRef, useEffect } from 'react';
 import { X, Save, Trash2, Plus, Move, Pencil, Grid, ZoomIn, ZoomOut, Download, Upload, Settings, RotateCw } from 'lucide-react';
 
 // Import SVG files
-import MixerSvg from '../../assets/Mixer.svg';
-import MixerGreenSvg from '../../assets/MixerGreen.svg';
-import PumpSvg from '../../assets/Pump.svg';
-import PumpGreenSvg from '../../assets/PumpGreen.svg';
-import RotationalMixerSvg from '../../assets/RotationalMixer.svg';
-import RotationalPumpSvg from '../../assets/RotationalPump.svg';
-import ValveSvg from '../../assets/Valve.svg';
-import ValveActuatorGreenSvg from '../../assets/ValveActuatorGreen.svg';
+import MixerSvg from '../../renderer/assets/Mixer.svg';
+import MixerGreenSvg from '../../renderer/assets/MixerGreen.svg';
+import PumpSvg from '../../renderer/assets/Pump.svg';
+import PumpGreenSvg from '../../renderer/assets/PumpGreen.svg';
+import RotationalMixerSvg from '../../renderer/assets/RotationalMixer.svg';
+import RotationalPumpSvg from '../../renderer/assets/RotationalPump.svg';
+import ValveSvg from '../../renderer/assets/Valve.svg';
+import ValveActuatorGreenSvg from '../../renderer/assets/ValveActuatorGreen.svg';
 
 // SVG Component Templates with actual SVG paths
 const SVG_COMPONENTS = {
