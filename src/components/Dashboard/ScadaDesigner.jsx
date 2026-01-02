@@ -1,22 +1,32 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { X, Save, Trash2, Plus, Move, Pencil, Grid, ZoomIn, ZoomOut, Download, Upload, Settings } from 'lucide-react';
+import { X, Save, Trash2, Plus, Move, Pencil, Grid, ZoomIn, ZoomOut, Download, Upload, Settings, RotateCw } from 'lucide-react';
 
-// SVG Component Templates
+// Import SVG files
+import MixerSvg from '../../assets/Mixer.svg';
+import MixerGreenSvg from '../../assets/MixerGreen.svg';
+import PumpSvg from '../../assets/Pump.svg';
+import PumpGreenSvg from '../../assets/PumpGreen.svg';
+import RotationalMixerSvg from '../../assets/RotationalMixer.svg';
+import RotationalPumpSvg from '../../assets/RotationalPump.svg';
+import ValveSvg from '../../assets/Valve.svg';
+import ValveActuatorGreenSvg from '../../assets/ValveActuatorGreen.svg';
+
+// SVG Component Templates with actual SVG paths
 const SVG_COMPONENTS = {
-  mixer: { name: 'Mixer', width: 60, height: 60, color: '#3b82f6' },
-  mixerGreen: { name: 'Mixer (Active)', width: 60, height: 60, color: '#10b981' },
-  pump: { name: 'Pump', width: 80, height: 80, color: '#3b82f6' },
-  pumpGreen: { name: 'Pump (Active)', width: 80, height: 80, color: '#10b981' },
-  rotationalMixer: { name: 'Rotational Mixer', width: 70, height: 70, color: '#8b5cf6' },
-  rotationalPump: { name: 'Rotational Pump', width: 80, height: 80, color: '#8b5cf6' },
-  valve: { name: 'Valve', width: 50, height: 70, color: '#f59e0b' },
-  valveGreen: { name: 'Valve (Active)', width: 50, height: 70, color: '#10b981' }
+  mixer: { name: 'Mixer', width: 60, height: 60, svg: MixerSvg, color: '#3b82f6' },
+  mixerGreen: { name: 'Mixer (Active)', width: 60, height: 60, svg: MixerGreenSvg, color: '#10b981' },
+  pump: { name: 'Pump', width: 80, height: 80, svg: PumpSvg, color: '#3b82f6' },
+  pumpGreen: { name: 'Pump (Active)', width: 80, height: 80, svg: PumpGreenSvg, color: '#10b981' },
+  rotationalMixer: { name: 'Rotational Mixer', width: 70, height: 70, svg: RotationalMixerSvg, color: '#8b5cf6' },
+  rotationalPump: { name: 'Rotational Pump', width: 80, height: 80, svg: RotationalPumpSvg, color: '#8b5cf6' },
+  valve: { name: 'Valve', width: 50, height: 70, svg: ValveSvg, color: '#f59e0b' },
+  valveGreen: { name: 'Valve (Active)', width: 50, height: 70, svg: ValveActuatorGreenSvg, color: '#10b981' }
 };
 
 export default function ScadaDesigner({ config, onSave, onClose, darkMode }) {
   const [components, setComponents] = useState(config?.components || []);
   const [lines, setLines] = useState(config?.lines || []);
-  const [selectedTool, setSelectedTool] = useState('select'); // select, line, component
+  const [selectedTool, setSelectedTool] = useState('select');
   const [selectedComponent, setSelectedComponent] = useState(null);
   const [selectedLine, setSelectedLine] = useState(null);
   const [draggingComponent, setDraggingComponent] = useState(null);
@@ -25,6 +35,8 @@ export default function ScadaDesigner({ config, onSave, onClose, darkMode }) {
   const [pan, setPan] = useState({ x: 0, y: 0 });
   const [showGrid, setShowGrid] = useState(true);
   const [componentToAdd, setComponentToAdd] = useState(null);
+  const [lineColor, setLineColor] = useState('#3b82f6');
+  const [lineWidth, setLineWidth] = useState(2);
   const canvasRef = useRef(null);
 
   const theme = darkMode ? {
@@ -64,6 +76,9 @@ export default function ScadaDesigner({ config, onSave, onClose, darkMode }) {
       setComponents([...components, newComponent]);
       setSelectedTool('select');
       setComponentToAdd(null);
+    } else if (selectedTool === 'select') {
+      setSelectedComponent(null);
+      setSelectedLine(null);
     }
   };
 
@@ -72,6 +87,7 @@ export default function ScadaDesigner({ config, onSave, onClose, darkMode }) {
     
     if (selectedTool === 'select') {
       setSelectedComponent(comp.id);
+      setSelectedLine(null);
       setDraggingComponent({ 
         id: comp.id, 
         startX: e.clientX, 
@@ -93,8 +109,8 @@ export default function ScadaDesigner({ config, onSave, onClose, darkMode }) {
           id: `line_${Date.now()}`,
           from: drawingLine.from,
           to: comp.id,
-          color: '#3b82f6',
-          width: 2,
+          color: lineColor,
+          width: lineWidth,
           style: 'solid'
         };
         setLines([...lines, newLine]);
@@ -105,7 +121,6 @@ export default function ScadaDesigner({ config, onSave, onClose, darkMode }) {
 
   const handleMouseMove = (e) => {
     if (draggingComponent) {
-      const rect = canvasRef.current.getBoundingClientRect();
       const deltaX = (e.clientX - draggingComponent.startX) / zoom;
       const deltaY = (e.clientY - draggingComponent.startY) / zoom;
       
@@ -322,7 +337,7 @@ export default function ScadaDesigner({ config, onSave, onClose, darkMode }) {
             
             <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '20px' }}>
               <button
-                onClick={() => { setSelectedTool('select'); setComponentToAdd(null); }}
+                onClick={() => { setSelectedTool('select'); setComponentToAdd(null); setDrawingLine(null); }}
                 style={{
                   padding: '10px',
                   background: selectedTool === 'select' ? theme.accent : theme.bg,
@@ -362,6 +377,37 @@ export default function ScadaDesigner({ config, onSave, onClose, darkMode }) {
               </button>
             </div>
 
+            {selectedTool === 'line' && (
+              <div style={{ marginBottom: '20px' }}>
+                <h3 style={{ margin: '0 0 8px', color: theme.text, fontSize: '13px', fontWeight: '600' }}>
+                  Line Color
+                </h3>
+                <input
+                  type="color"
+                  value={lineColor}
+                  onChange={(e) => setLineColor(e.target.value)}
+                  style={{
+                    width: '100%',
+                    height: '40px',
+                    border: `2px solid ${theme.border}`,
+                    borderRadius: '8px',
+                    cursor: 'pointer'
+                  }}
+                />
+                <h3 style={{ margin: '12px 0 8px', color: theme.text, fontSize: '13px', fontWeight: '600' }}>
+                  Line Width: {lineWidth}px
+                </h3>
+                <input
+                  type="range"
+                  min="1"
+                  max="10"
+                  value={lineWidth}
+                  onChange={(e) => setLineWidth(parseInt(e.target.value))}
+                  style={{ width: '100%' }}
+                />
+              </div>
+            )}
+
             <h3 style={{ margin: '20px 0 12px', color: theme.text, fontSize: '14px', fontWeight: '700' }}>
               Components
             </h3>
@@ -373,6 +419,7 @@ export default function ScadaDesigner({ config, onSave, onClose, darkMode }) {
                   onClick={() => {
                     setSelectedTool('component');
                     setComponentToAdd(key);
+                    setDrawingLine(null);
                   }}
                   style={{
                     padding: '12px',
@@ -396,11 +443,9 @@ export default function ScadaDesigner({ config, onSave, onClose, darkMode }) {
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
-                      color: 'white',
-                      fontSize: '10px',
-                      fontWeight: '700'
+                      padding: '4px'
                     }}>
-                      {comp.name.substring(0, 2).toUpperCase()}
+                      <img src={comp.svg} alt={comp.name} style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
                     </div>
                     {comp.name}
                   </div>
@@ -424,9 +469,13 @@ export default function ScadaDesigner({ config, onSave, onClose, darkMode }) {
                       color: theme.text,
                       cursor: 'pointer',
                       fontSize: '14px',
-                      fontWeight: '600'
+                      fontWeight: '600',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '8px'
                     }}
                   >
+                    <RotateCw size={16} />
                     Rotate 90°
                   </button>
                   <button
@@ -446,9 +495,37 @@ export default function ScadaDesigner({ config, onSave, onClose, darkMode }) {
                     }}
                   >
                     <Trash2 size={16} />
-                    Delete
+                    Delete Component
                   </button>
                 </div>
+              </>
+            )}
+
+            {selectedLine && (
+              <>
+                <h3 style={{ margin: '20px 0 12px', color: theme.text, fontSize: '14px', fontWeight: '700' }}>
+                  Line Actions
+                </h3>
+                <button
+                  onClick={handleDeleteLine}
+                  style={{
+                    padding: '10px',
+                    background: '#ef4444',
+                    border: 'none',
+                    borderRadius: '8px',
+                    color: 'white',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '8px',
+                    fontSize: '14px',
+                    fontWeight: '600',
+                    width: '100%'
+                  }}
+                >
+                  <Trash2 size={16} />
+                  Delete Line
+                </button>
               </>
             )}
           </div>
@@ -542,8 +619,10 @@ export default function ScadaDesigner({ config, onSave, onClose, darkMode }) {
                       style={{ cursor: 'pointer' }}
                       onClick={(e) => {
                         e.stopPropagation();
-                        setSelectedLine(line.id);
-                        setSelectedComponent(null);
+                        if (selectedTool === 'select') {
+                          setSelectedLine(line.id);
+                          setSelectedComponent(null);
+                        }
                       }}
                     />
                   );
@@ -556,8 +635,8 @@ export default function ScadaDesigner({ config, onSave, onClose, darkMode }) {
                     y1={drawingLine.startY}
                     x2={drawingLine.endX}
                     y2={drawingLine.endY}
-                    stroke="#3b82f6"
-                    strokeWidth={2}
+                    stroke={lineColor}
+                    strokeWidth={lineWidth}
                     strokeDasharray="5,5"
                   />
                 )}
@@ -568,30 +647,31 @@ export default function ScadaDesigner({ config, onSave, onClose, darkMode }) {
                   return (
                     <g
                       key={comp.id}
-                      transform={`translate(${comp.x}, ${comp.y}) rotate(${comp.rotation}, ${svgData.width/2}, ${svgData.height/2})`}
+                      transform={`translate(${comp.x}, ${comp.y})`}
                       onMouseDown={(e) => handleComponentMouseDown(e, comp)}
                       style={{ cursor: selectedTool === 'select' ? 'move' : 'pointer' }}
                     >
-                      <rect
-                        width={svgData.width}
-                        height={svgData.height}
-                        fill={svgData.color}
-                        stroke={selectedComponent === comp.id ? '#ef4444' : theme.border}
-                        strokeWidth={selectedComponent === comp.id ? 3 : 1}
-                        rx={8}
-                        opacity={0.9}
-                      />
-                      <text
-                        x={svgData.width / 2}
-                        y={svgData.height / 2}
-                        textAnchor="middle"
-                        dominantBaseline="middle"
-                        fill="white"
-                        fontSize="12"
-                        fontWeight="700"
-                      >
-                        {svgData.name.substring(0, 2).toUpperCase()}
-                      </text>
+                      <g transform={`rotate(${comp.rotation}, ${svgData.width/2}, ${svgData.height/2})`}>
+                        {selectedComponent === comp.id && (
+                          <rect
+                            x={-4}
+                            y={-4}
+                            width={svgData.width + 8}
+                            height={svgData.height + 8}
+                            fill="none"
+                            stroke="#ef4444"
+                            strokeWidth={2}
+                            strokeDasharray="5,5"
+                            rx={8}
+                          />
+                        )}
+                        <image
+                          href={svgData.svg}
+                          width={svgData.width}
+                          height={svgData.height}
+                          style={{ pointerEvents: 'none' }}
+                        />
+                      </g>
                       <text
                         x={svgData.width / 2}
                         y={svgData.height + 15}
