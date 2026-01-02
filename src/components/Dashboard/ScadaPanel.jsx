@@ -1,14 +1,24 @@
 import React from 'react';
 
+// Import SVG files
+import MixerSvg from '../../assets/Mixer.svg';
+import MixerGreenSvg from '../../assets/MixerGreen.svg';
+import PumpSvg from '../../assets/Pump.svg';
+import PumpGreenSvg from '../../assets/PumpGreen.svg';
+import RotationalMixerSvg from '../../assets/RotationalMixer.svg';
+import RotationalPumpSvg from '../../assets/RotationalPump.svg';
+import ValveSvg from '../../assets/Valve.svg';
+import ValveActuatorGreenSvg from '../../assets/ValveActuatorGreen.svg';
+
 const SVG_COMPONENTS = {
-  mixer: { name: 'Mixer', width: 60, height: 60, color: '#3b82f6' },
-  mixerGreen: { name: 'Mixer (Active)', width: 60, height: 60, color: '#10b981' },
-  pump: { name: 'Pump', width: 80, height: 80, color: '#3b82f6' },
-  pumpGreen: { name: 'Pump (Active)', width: 80, height: 80, color: '#10b981' },
-  rotationalMixer: { name: 'Rotational Mixer', width: 70, height: 70, color: '#8b5cf6' },
-  rotationalPump: { name: 'Rotational Pump', width: 80, height: 80, color: '#8b5cf6' },
-  valve: { name: 'Valve', width: 50, height: 70, color: '#f59e0b' },
-  valveGreen: { name: 'Valve (Active)', width: 50, height: 70, color: '#10b981' }
+  mixer: { name: 'Mixer', width: 60, height: 60, svg: MixerSvg, color: '#3b82f6' },
+  mixerGreen: { name: 'Mixer (Active)', width: 60, height: 60, svg: MixerGreenSvg, color: '#10b981' },
+  pump: { name: 'Pump', width: 80, height: 80, svg: PumpSvg, color: '#3b82f6' },
+  pumpGreen: { name: 'Pump (Active)', width: 80, height: 80, svg: PumpGreenSvg, color: '#10b981' },
+  rotationalMixer: { name: 'Rotational Mixer', width: 70, height: 70, svg: RotationalMixerSvg, color: '#8b5cf6' },
+  rotationalPump: { name: 'Rotational Pump', width: 80, height: 80, svg: RotationalPumpSvg, color: '#8b5cf6' },
+  valve: { name: 'Valve', width: 50, height: 70, svg: ValveSvg, color: '#f59e0b' },
+  valveGreen: { name: 'Valve (Active)', width: 50, height: 70, svg: ValveActuatorGreenSvg, color: '#10b981' }
 };
 
 export default function ScadaPanel({ config, darkMode }) {
@@ -89,28 +99,15 @@ export default function ScadaPanel({ config, darkMode }) {
           return (
             <g
               key={comp.id}
-              transform={`translate(${comp.x}, ${comp.y}) rotate(${comp.rotation || 0}, ${svgData.width/2}, ${svgData.height/2})`}
+              transform={`translate(${comp.x}, ${comp.y})`}
             >
-              <rect
-                width={svgData.width}
-                height={svgData.height}
-                fill={svgData.color}
-                stroke={theme.border}
-                strokeWidth={1}
-                rx={8}
-                opacity={0.9}
-              />
-              <text
-                x={svgData.width / 2}
-                y={svgData.height / 2}
-                textAnchor="middle"
-                dominantBaseline="middle"
-                fill="white"
-                fontSize="12"
-                fontWeight="700"
-              >
-                {svgData.name.substring(0, 2).toUpperCase()}
-              </text>
+              <g transform={`rotate(${comp.rotation || 0}, ${svgData.width/2}, ${svgData.height/2})`}>
+                <image
+                  href={svgData.svg}
+                  width={svgData.width}
+                  height={svgData.height}
+                />
+              </g>
               <text
                 x={svgData.width / 2}
                 y={svgData.height + 15}
