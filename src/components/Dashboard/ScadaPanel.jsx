@@ -101,7 +101,7 @@ export default function ScadaPanel({ config, darkMode }) {
     border: '#e5e7eb'
   };
 
-  // Fetch real-time tag values
+  // Fetch real-time tag values from scada_wide table
   useEffect(() => {
     const fetchTagValues = async () => {
       try {
@@ -114,16 +114,25 @@ export default function ScadaPanel({ config, darkMode }) {
 
         if (tagNames.length === 0) return;
 
-        // Fetch latest values for all tags
-        const result = await questdbService.getLatestValues(tagNames);
+        // Fetch latest row from scada_wide table with only the needed columns
+        const columnsToSelect = ['timestamp', ...tagNames].join(', ');
+        const sql = `SELECT ${columnsToSelect} FROM scada_wide ORDER BY timestamp DESC LIMIT 1`;
         
-        // Create a map of tag_name -> value
-        const valueMap = {};
-        result.forEach(row => {
-          valueMap[row.tag_name] = String(row.value);
-        });
+        const result = await questdbService.query(sql);
         
-        setTagValues(valueMap);
+        if (result.length > 0) {
+          // Create a map of column_name -> value
+          const valueMap = {};
+          const latestRow = result[0];
+          
+          tagNames.forEach(tagName => {
+            if (latestRow[tagName] !== undefined && latestRow[tagName] !== null) {
+              valueMap[tagName] = String(latestRow[tagName]);
+            }
+          });
+          
+          setTagValues(valueMap);
+        }
       } catch (error) {
         console.error('Error fetching tag values:', error);
       }
