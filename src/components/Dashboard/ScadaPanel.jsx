@@ -1,6 +1,7 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
+import questdbService from '../../services/questdb';
 
-// Import SVG files
+// Import all SVG files
 import BlowdownValve from '../../renderer/assets/3-D Blowdown valve.svg';
 import PressureBalancedDiaphragm from '../../renderer/assets/3-D Pressure-balanced diaphragm actuated.svg';
 import RegulatorExternalPressure from '../../renderer/assets/3-D Regulator with external pressure tap.svg';
@@ -42,9 +43,7 @@ import SRHPump from '../../renderer/assets/SRH_pump.svg';
 import VerticalPump9 from '../../renderer/assets/Vertical pump 9.svg';
 import YellowPump from '../../renderer/assets/Yellow pump.svg';
 
-// SVG Component Templates
 const SVG_COMPONENTS = {
- // 3D Valves
   blowdownValve: { name: 'Blowdown Valve', width: 60, height: 80, svg: BlowdownValve, color: '#ef4444' },
   pressureBalancedDiaphragm: { name: 'Pressure Balanced Diaphragm', width: 70, height: 90, svg: PressureBalancedDiaphragm, color: '#06b6d4' },
   regulatorExternalPressure: { name: 'Regulator (External)', width: 80, height: 80, svg: RegulatorExternalPressure, color: '#8b5cf6' },
@@ -56,12 +55,8 @@ const SVG_COMPONENTS = {
   handControlValve: { name: 'Hand Control Valve', width: 60, height: 70, svg: HandControlValve, color: '#f59e0b' },
   valve3D: { name: '3D Valve', width: 60, height: 80, svg: Valve3D, color: '#f59e0b' },
   valveWithActuator: { name: 'Valve with Actuator', width: 70, height: 90, svg: ValveWithActuator, color: '#10b981' },
-  
-  // Ball Valves
   ballValve1: { name: 'Ball Valve', width: 70, height: 70, svg: BallValve1, color: '#64748b' },
   pvcTwoWayBallValve: { name: 'PVC Ball Valve', width: 60, height: 70, svg: PVCTwoWayBallValve, color: '#64748b' },
-  
-  // Control Valves
   blueControlValve: { name: 'Control Valve (Blue)', width: 70, height: 90, svg: BlueControlValve, color: '#3b82f6' },
   compactValve: { name: 'Compact Valve', width: 60, height: 70, svg: CompactValve, color: '#06b6d4' },
   controlValve3: { name: 'Control Valve 3', width: 70, height: 80, svg: ControlValve3, color: '#3b82f6' },
@@ -69,14 +64,10 @@ const SVG_COMPONENTS = {
   controlValveGrayFitting: { name: 'Control Valve (Gray)', width: 70, height: 90, svg: ControlValveGrayFitting, color: '#64748b' },
   controlValue: { name: 'Control Value', width: 70, height: 80, svg: ControlValue, color: '#3b82f6' },
   safetyShutoffValve: { name: 'Safety Shutoff Valve', width: 70, height: 90, svg: SafetyShutoffValve, color: '#ef4444' },
-  
-  // Hand Valves
   handValveHorizontal: { name: 'Hand Valve (H)', width: 80, height: 60, svg: HandValveHorizontal, color: '#f59e0b' },
   handValve1: { name: 'Hand Valve 1', width: 60, height: 80, svg: HandValve1, color: '#f59e0b' },
   handValve3: { name: 'Hand Valve 3', width: 70, height: 80, svg: HandValve3, color: '#f59e0b' },
   handValve4: { name: 'Hand Valve 4', width: 70, height: 80, svg: HandValve4, color: '#f59e0b' },
-  
-  // Pumps
   pump3D: { name: '3D Pump', width: 90, height: 80, svg: Pump3D, color: '#3b82f6' },
   centrifugalPump2: { name: 'Centrifugal Pump 2', width: 90, height: 80, svg: CentrifugalPump2, color: '#3b82f6' },
   centrifugalPump4: { name: 'Centrifugal Pump 4', width: 80, height: 80, svg: CentrifugalPump4, color: '#3b82f6' },
@@ -96,14 +87,79 @@ const SVG_COMPONENTS = {
 };
 
 export default function ScadaPanel({ config, darkMode }) {
+  const [tagValues, setTagValues] = useState({});
+
   const theme = darkMode ? {
     bg: '#1a1d29',
     text: '#e5e7eb',
+    textSecondary: '#9ca3af',
     border: '#374151'
   } : {
     bg: '#ffffff',
     text: '#111827',
+    textSecondary: '#6b7280',
     border: '#e5e7eb'
+  };
+
+  // Fetch real-time tag values
+  useEffect(() => {
+    const fetchTagValues = async () => {
+      try {
+        // Get all unique tag names from components
+        const tagNames = [...new Set(
+          config.components
+            ?.filter(comp => comp.tagName)
+            .map(comp => comp.tagName)
+        )];
+
+        if (tagNames.length === 0) return;
+
+        // Fetch latest values for all tags
+        const result = await questdbService.getLatestValues(tagNames);
+        
+        // Create a map of tag_name -> value
+        const valueMap = {};
+        result.forEach(row => {
+          valueMap[row.tag_name] = String(row.value);
+        });
+        
+        setTagValues(valueMap);
+      } catch (error) {
+        console.error('Error fetching tag values:', error);
+      }
+    };
+
+    // Initial fetch
+    fetchTagValues();
+
+    // Set up polling interval (every 2 seconds)
+    const interval = setInterval(fetchTagValues, 2000);
+
+    return () => clearInterval(interval);
+  }, [config.components]);
+
+  // Get color for a component based on its tag value
+  const getComponentColor = (comp) => {
+    if (!comp.tagName || !tagValues[comp.tagName]) {
+      return comp.defaultColor || '#64748b';
+    }
+
+    const tagValue = tagValues[comp.tagName];
+    const mapping = comp.colorMappings?.find(m => String(m.value) === String(tagValue));
+    
+    return mapping ? mapping.color : (comp.defaultColor || '#64748b');
+  };
+
+  // Get status label for a component
+  const getComponentStatus = (comp) => {
+    if (!comp.tagName || !tagValues[comp.tagName]) {
+      return null;
+    }
+
+    const tagValue = tagValues[comp.tagName];
+    const mapping = comp.colorMappings?.find(m => String(m.value) === String(tagValue));
+    
+    return mapping?.label || tagValue;
   };
 
   const getLineCoordinates = (line) => {
@@ -152,16 +208,30 @@ export default function ScadaPanel({ config, darkMode }) {
           if (!coords) return null;
           
           return (
-            <line
-              key={line.id}
-              x1={coords.x1}
-              y1={coords.y1}
-              x2={coords.x2}
-              y2={coords.y2}
-              stroke={line.color || '#3b82f6'}
-              strokeWidth={line.width || 2}
-              strokeDasharray={line.style === 'dashed' ? '5,5' : '0'}
-            />
+            <g key={line.id}>
+              <line
+                x1={coords.x1}
+                y1={coords.y1}
+                x2={coords.x2}
+                y2={coords.y2}
+                stroke={line.color || '#3b82f6'}
+                strokeWidth={line.width || 2}
+                strokeDasharray={line.style === 'dashed' ? '5,5' : '0'}
+                strokeLinecap="round"
+              />
+              {/* Arrow head */}
+              {(() => {
+                const angle = Math.atan2(coords.y2 - coords.y1, coords.x2 - coords.x1);
+                const arrowSize = 10;
+                return (
+                  <polygon
+                    points={`0,-${arrowSize/2} ${arrowSize},0 0,${arrowSize/2}`}
+                    fill={line.color || '#3b82f6'}
+                    transform={`translate(${coords.x2}, ${coords.y2}) rotate(${angle * 180 / Math.PI})`}
+                  />
+                );
+              })()}
+            </g>
           );
         })}
 
@@ -170,32 +240,143 @@ export default function ScadaPanel({ config, darkMode }) {
           const svgData = SVG_COMPONENTS[comp.type];
           if (!svgData) return null;
           
+          const componentColor = getComponentColor(comp);
+          const status = getComponentStatus(comp);
+          
           return (
             <g
               key={comp.id}
               transform={`translate(${comp.x}, ${comp.y})`}
             >
               <g transform={`rotate(${comp.rotation || 0}, ${svgData.width/2}, ${svgData.height/2})`}>
+                {/* Color indicator background */}
+                <rect
+                  x={-4}
+                  y={-4}
+                  width={svgData.width + 8}
+                  height={svgData.height + 8}
+                  fill={componentColor}
+                  rx="8"
+                  opacity="0.3"
+                />
+                
+                {/* Colored border */}
+                <rect
+                  x={-2}
+                  y={-2}
+                  width={svgData.width + 4}
+                  height={svgData.height + 4}
+                  fill="none"
+                  stroke={componentColor}
+                  strokeWidth="3"
+                  rx="6"
+                />
+                
+                {/* SVG Image */}
                 <image
                   href={svgData.svg}
                   width={svgData.width}
                   height={svgData.height}
+                  style={{ 
+                    filter: comp.tagName 
+                      ? `drop-shadow(0 0 8px ${componentColor})` 
+                      : 'none'
+                  }}
                 />
               </g>
+              
+              {/* Label */}
               <text
                 x={svgData.width / 2}
-                y={svgData.height + 15}
+                y={svgData.height + 18}
                 textAnchor="middle"
                 fill={theme.text}
                 fontSize="11"
-                fontWeight="500"
+                fontWeight="600"
               >
                 {comp.label}
               </text>
+              
+              {/* Status indicator */}
+              {status && (
+                <g>
+                  <rect
+                    x={svgData.width / 2 - 30}
+                    y={svgData.height + 24}
+                    width="60"
+                    height="18"
+                    fill={componentColor}
+                    rx="4"
+                    opacity="0.9"
+                  />
+                  <text
+                    x={svgData.width / 2}
+                    y={svgData.height + 36}
+                    textAnchor="middle"
+                    fill="white"
+                    fontSize="10"
+                    fontWeight="700"
+                  >
+                    {status}
+                  </text>
+                </g>
+              )}
+              
+              {/* Value display */}
+              {comp.tagName && tagValues[comp.tagName] && (
+                <text
+                  x={svgData.width / 2}
+                  y={svgData.height + 50}
+                  textAnchor="middle"
+                  fill={theme.textSecondary}
+                  fontSize="9"
+                  fontWeight="500"
+                >
+                  {comp.tagName}: {tagValues[comp.tagName]}
+                </text>
+              )}
             </g>
           );
         })}
       </svg>
+
+      {/* Legend */}
+      {config.components?.some(c => c.tagName) && (
+        <div style={{
+          position: 'absolute',
+          bottom: '12px',
+          right: '12px',
+          background: darkMode ? 'rgba(26, 29, 41, 0.95)' : 'rgba(255, 255, 255, 0.95)',
+          border: `1px solid ${theme.border}`,
+          borderRadius: '8px',
+          padding: '12px',
+          fontSize: '11px',
+          color: theme.text,
+          maxWidth: '200px',
+          boxShadow: '0 4px 12px rgba(0,0,0,0.15)'
+        }}>
+          <div style={{ fontWeight: '700', marginBottom: '8px', fontSize: '12px' }}>
+            Status Legend
+          </div>
+          {[...new Set(
+            config.components
+              .filter(c => c.colorMappings)
+              .flatMap(c => c.colorMappings)
+              .map(m => JSON.stringify(m))
+          )].map(m => JSON.parse(m)).map((mapping, i) => (
+            <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
+              <div style={{
+                width: '12px',
+                height: '12px',
+                background: mapping.color,
+                borderRadius: '3px',
+                border: `1px solid ${theme.border}`
+              }} />
+              <span>{mapping.label || mapping.value}</span>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
