@@ -5,11 +5,11 @@ import {
   XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer
 } from 'recharts';
 import {
-  X, Database, Eye, Save, RefreshCw, AlertCircle
+  X as LucideX, Database, Eye, Save, RefreshCw, AlertCircle
 } from 'lucide-react';
 import { COLORS, VIZ_TYPES, DEFAULT_PANEL_CONFIG } from './constants';
 import questdbService from '../../services/questdb';
-
+const X = LucideX;
 function PanelConfigModal({ panel, onSave, onClose, allTables }) {
   const [config, setConfig] = useState(panel || {
     ...DEFAULT_PANEL_CONFIG,
