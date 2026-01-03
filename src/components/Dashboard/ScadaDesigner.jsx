@@ -220,17 +220,23 @@ export default function ScadaDesigner({ config, onSave, onClose, darkMode }) {
   };
 
   useEffect(() => {
-    const fetchTags = async () => {
-      try {
-        const sql = `SELECT DISTINCT tag_name FROM opc_tag_data ORDER BY tag_name`;
-        const result = await questdbService.query(sql);
-        setAvailableTags(result.map(row => row.tag_name));
-      } catch (error) {
-        console.error('Error fetching tags:', error);
+  const fetchTags = async () => {
+    try {
+      // Get column names from scada_wide table
+      const sql = `SELECT * FROM scada_wide LIMIT 1`;
+      const result = await questdbService.query(sql);
+      
+      if (result.length > 0) {
+        // Get all column names except 'timestamp'
+        const columns = Object.keys(result[0]).filter(col => col !== 'timestamp');
+        setAvailableTags(columns);
       }
-    };
-    fetchTags();
-  }, []);
+    } catch (error) {
+      console.error('Error fetching tags from scada_wide:', error);
+    }
+  };
+  fetchTags();
+}, []);
 
   const handleCanvasClick = (e) => {
     const rect = canvasRef.current.getBoundingClientRect();
