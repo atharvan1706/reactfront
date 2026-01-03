@@ -605,3 +605,4 @@ export default function ScadaDesigner({ config, onSave, onClose, darkMode }) {
       )}
     </div>
   );
+}
