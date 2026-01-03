@@ -111,7 +111,8 @@ export default function ScadaPanel({ config, darkMode }) {
             ?.filter(comp => comp.tagName)
             .map(comp => comp.tagName)
         )];
-
+        console.log('🔍 Components:', config.components); // ADD THIS
+        console.log('🏷️ Tag names found:', tagNames); // ADD THIS
         if (tagNames.length === 0) return;
 
         // Fetch latest row from scada_wide table with only the needed columns
