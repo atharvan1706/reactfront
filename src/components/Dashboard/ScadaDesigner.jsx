@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { X, Save, Trash2, Plus, Move, Pencil, Grid, ZoomIn, ZoomOut, Download, Upload, RotateCw, Check, Database, Tag } from 'lucide-react';
+import { X as LucideX, Save, Trash2, Plus, Move, Pencil, Grid, ZoomIn, ZoomOut, Download, Upload, RotateCw, Check, Database, Tag } from 'lucide-react';
 import questdbService from '../../services/questdb';
 
 // Import all SVG files (keeping your existing imports)
@@ -43,7 +43,7 @@ import SelfPrimingCentrifugalPump from '../../renderer/assets/Self-priming centr
 import SRHPump from '../../renderer/assets/SRH_pump.svg';
 import VerticalPump9 from '../../renderer/assets/Vertical pump 9.svg';
 import YellowPump from '../../renderer/assets/Yellow pump.svg';
-
+const X = LucideX;
 const SVG_COMPONENTS = {
   blowdownValve: { name: 'Blowdown Valve', width: 60, height: 80, svg: BlowdownValve, color: '#ef4444' },
   pressureBalancedDiaphragm: { name: 'Pressure Balanced Diaphragm', width: 70, height: 90, svg: PressureBalancedDiaphragm, color: '#06b6d4' },
