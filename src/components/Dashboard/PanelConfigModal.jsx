@@ -400,7 +400,7 @@ function PanelConfigModal({ panel, onSave, onClose, allTables }) {
                           textAlign: 'left'
                         }}
                       >
-                        <Icon size={18} />
+                       {Icon && <Icon size={18} />}
                         <div>
                           <div style={{ fontWeight: '600' }}>{type.name}</div>
                           <div style={{ fontSize: '11px', opacity: 0.7 }}>{type.description}</div>
