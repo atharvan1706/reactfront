@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
 import {
-  X, FolderPlus, Folder, Edit2, Check, Trash2
+  X as LucideX, FolderPlus, Folder, Edit2, Check, Trash2
 } from 'lucide-react';
-
+const X = LucideX;
 function DashboardModal({ 
   currentDashboard, 
   dashboards, 
