@@ -131,32 +131,42 @@ export default function Dashboard({ onLogout }) {
   };
 
   const handleSavePanel = (config) => {
-    const updatedDashboard = { ...currentDashboard };
-    const panelExists = updatedDashboard.panels?.some(p => p.id === config.id);
-    
-    if (panelExists) {
-      updatedDashboard.panels = updatedDashboard.panels.map(p => 
-        p.id === config.id ? config : p
-      );
-    } else {
-      // Add position data for new panels
-      const newPanel = {
-        ...config,
-        x: 0,
-        y: getNextAvailableY()
-      };
-      updatedDashboard.panels = [...(updatedDashboard.panels || []), newPanel];
-    }
-    
-    setCurrentDashboard(updatedDashboard);
-    setDashboards(dashboards.map(d => 
-      d.id === updatedDashboard.id ? updatedDashboard : d
-    ));
-    setShowConfigModal(false);
-    setShowScadaModal(false);
-    setEditingPanel(null);
-    setEditingScadaDiagram(null);
+  const updatedDashboard = {
+    ...currentDashboard,
+    panels: [...(currentDashboard.panels || [])], // ✅ normalize
   };
+
+  const panelExists = updatedDashboard.panels.some(
+    p => p.id === config.id
+  );
+
+  if (panelExists) {
+    updatedDashboard.panels = updatedDashboard.panels.map(p =>
+      p.id === config.id ? config : p
+    );
+  } else {
+    const newPanel = {
+      ...config,
+      x: 0,
+      y: getNextAvailableY(),
+    };
+    updatedDashboard.panels.push(newPanel);
+  }
+
+  setCurrentDashboard(updatedDashboard);
+
+  setDashboards(
+    dashboards.map(d =>
+      d.id === updatedDashboard.id ? updatedDashboard : d
+    )
+  );
+
+  setShowConfigModal(false);
+  setShowScadaModal(false);
+  setEditingPanel(null);
+  setEditingScadaDiagram(null);
+};
+
 
   const getNextAvailableY = () => {
     if (!currentDashboard?.panels || currentDashboard.panels.length === 0) return 0;
