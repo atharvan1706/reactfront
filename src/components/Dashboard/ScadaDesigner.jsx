@@ -1,11 +1,8 @@
 import React, { useState, useRef, useEffect } from 'react';
-import SVG from 'react-inlinesvg'; // npm install react-inlinesvg
 import { X as LucideX, Save, Trash2, Plus, Move, Pencil, Grid, ZoomIn, ZoomOut, Download, Upload, RotateCw, Check, Database, Tag } from 'lucide-react';
 import questdbService from '../../services/questdb';
 
-const X = LucideX;
-
-// Import all SVG files
+// Import all SVG files (keeping your existing imports)
 import BlowdownValve from '../../renderer/assets/3-D Blowdown valve.svg';
 import PressureBalancedDiaphragm from '../../renderer/assets/3-D Pressure-balanced diaphragm actuated.svg';
 import RegulatorExternalPressure from '../../renderer/assets/3-D Regulator with external pressure tap.svg';
@@ -46,7 +43,7 @@ import SelfPrimingCentrifugalPump from '../../renderer/assets/Self-priming centr
 import SRHPump from '../../renderer/assets/SRH_pump.svg';
 import VerticalPump9 from '../../renderer/assets/Vertical pump 9.svg';
 import YellowPump from '../../renderer/assets/Yellow pump.svg';
-
+const X = LucideX;
 const SVG_COMPONENTS = {
   blowdownValve: { name: 'Blowdown Valve', width: 60, height: 80, svg: BlowdownValve, color: '#ef4444' },
   pressureBalancedDiaphragm: { name: 'Pressure Balanced Diaphragm', width: 70, height: 90, svg: PressureBalancedDiaphragm, color: '#06b6d4' },
@@ -212,7 +209,7 @@ export default function ScadaDesigner({ config, onSave, onClose, darkMode }) {
   const [showTagModal, setShowTagModal] = useState(false);
   const [editingComponentTag, setEditingComponentTag] = useState(null);
   const [availableTags, setAvailableTags] = useState([]);
-  const [tagValues, setTagValues] = useState({});
+  const [tagValues, setTagValues] = useState({}); 
   const canvasRef = useRef(null);
 
   const theme = darkMode ? {
@@ -224,96 +221,123 @@ export default function ScadaDesigner({ config, onSave, onClose, darkMode }) {
   };
 
   useEffect(() => {
-    const fetchTags = async () => {
-      try {
-        const sql = `SELECT * FROM scada_wide LIMIT 1`;
-        const result = await questdbService.query(sql);
-        
-        if (result.length > 0) {
-          const columns = Object.keys(result[0]).filter(col => col !== 'timestamp' && col !== 'bridge_id');
-          setAvailableTags(columns);
-        }
-      } catch (error) {
-        console.error('Error fetching tags from scada_wide:', error);
-      }
-    };
-    fetchTags();
-  }, []);
-
-  useEffect(() => {
-    const fetchTagValues = async () => {
-      try {
-        const tagNames = [...new Set(
-          components.filter(comp => comp.tagName).map(comp => comp.tagName)
-        )];
-        
-        if (tagNames.length === 0) return;
-
-        const columnsToSelect = ['timestamp', ...tagNames].join(', ');
-        const sql = `SELECT ${columnsToSelect} FROM scada_wide ORDER BY timestamp DESC LIMIT 1`;
-        
-        const result = await questdbService.query(sql);
-        
-        if (result.length > 0) {
-          const valueMap = {};
-          const latestRow = result[0];
-          
-          tagNames.forEach(tagName => {
-            if (latestRow[tagName] !== undefined && latestRow[tagName] !== null) {
-              valueMap[tagName] = String(latestRow[tagName]);
-            }
-          });
-          
-          setTagValues(valueMap);
-        }
-      } catch (error) {
-        console.error('Error fetching tag values:', error);
-      }
-    };
-
-    fetchTagValues();
-    const interval = setInterval(fetchTagValues, 2000);
-    return () => clearInterval(interval);
-  }, [components]);
-
-  const getComponentColor = (comp) => {
-    if (!comp.tagName || !tagValues[comp.tagName]) {
-      return comp.defaultColor || '#64748b';
-    }
-
-    const tagValue = tagValues[comp.tagName];
-    const mapping = comp.colorMappings?.find(m => String(m.value) === String(tagValue));
-    
-    return mapping ? mapping.color : (comp.defaultColor || '#64748b');
-  };
-
-  const getComponentStatus = (comp) => {
-    if (!comp.tagName || !tagValues[comp.tagName]) {
-      return null;
-    }
-
-    const tagValue = tagValues[comp.tagName];
-    const mapping = comp.colorMappings?.find(m => String(m.value) === String(tagValue));
-    
-    return mapping?.label || tagValue;
-  };
-
-  const fetchSingleTagValue = async (tagName) => {
-    if (!tagName) return;
+  const fetchTags = async () => {
     try {
-      const sql = `SELECT timestamp, ${tagName} FROM scada_wide ORDER BY timestamp DESC LIMIT 1`;
+      const sql = `SELECT * FROM scada_wide LIMIT 1`;
       const result = await questdbService.query(sql);
       
-      if (result.length > 0 && result[0][tagName] !== undefined) {
-        setTagValues(prev => ({
-          ...prev,
-          [tagName]: String(result[0][tagName])
-        }));
+      if (result.length > 0) {
+        const columns = Object.keys(result[0]).filter(col => col !== 'timestamp' && col !== 'bridge_id');
+        setAvailableTags(columns);
       }
     } catch (error) {
-      console.error('Error fetching single tag value:', error);
+      console.error('Error fetching tags from scada_wide:', error);
     }
   };
+  fetchTags();
+}, []);
+
+// NEW useEffect - ADD THIS RIGHT AFTER THE ABOVE
+useEffect(() => {
+  const fetchTagValues = async () => {
+    try {
+      const tagNames = [...new Set(
+        components.filter(comp => comp.tagName).map(comp => comp.tagName)
+      )];
+      
+      if (tagNames.length === 0) return;
+
+      const columnsToSelect = ['timestamp', ...tagNames].join(', ');
+      const sql = `SELECT ${columnsToSelect} FROM scada_wide ORDER BY timestamp DESC LIMIT 1`;
+      
+      const result = await questdbService.query(sql);
+      
+      if (result.length > 0) {
+        const valueMap = {};
+        const latestRow = result[0];
+        
+        tagNames.forEach(tagName => {
+          if (latestRow[tagName] !== undefined && latestRow[tagName] !== null) {
+            valueMap[tagName] = String(latestRow[tagName]);
+          }
+        });
+        
+        setTagValues(valueMap);
+      }
+    } catch (error) {
+      console.error('Error fetching tag values:', error);
+    }
+  };
+
+  fetchTagValues();
+  const interval = setInterval(fetchTagValues, 2000);
+  return () => clearInterval(interval);
+}, [components]);
+
+// ADD THESE THREE FUNCTIONS
+const getComponentColor = (comp) => {
+  if (!comp.tagName || !tagValues[comp.tagName]) {
+    return comp.defaultColor || '#64748b';
+  }
+
+  const tagValue = tagValues[comp.tagName];
+  const mapping = comp.colorMappings?.find(m => String(m.value) === String(tagValue));
+  
+  return mapping ? mapping.color : (comp.defaultColor || '#64748b');
+};
+
+const getComponentStatus = (comp) => {
+  if (!comp.tagName || !tagValues[comp.tagName]) {
+    return null;
+  }
+
+  const tagValue = tagValues[comp.tagName];
+  const mapping = comp.colorMappings?.find(m => String(m.value) === String(tagValue));
+  
+  return mapping?.label || tagValue;
+};
+const getSVGColorFilter = (hexColor) => {
+  const hex = hexColor.replace('#', '');
+  const r = parseInt(hex.substr(0, 2), 16) / 255;
+  const g = parseInt(hex.substr(2, 2), 16) / 255;
+  const b = parseInt(hex.substr(4, 2), 16) / 255;
+  const brightness = (r + g + b) / 3;
+  const saturation = Math.max(r, g, b) - Math.min(r, g, b);
+  return `brightness(${brightness * 2}) saturate(${saturation * 5 + 1}) hue-rotate(${getHueRotation(r, g, b)}deg)`;
+};
+
+const getHueRotation = (r, g, b) => {
+  const max = Math.max(r, g, b);
+  const min = Math.min(r, g, b);
+  let h = 0;
+  if (max !== min) {
+    const d = max - min;
+    if (max === r) {
+      h = ((g - b) / d + (g < b ? 6 : 0)) / 6;
+    } else if (max === g) {
+      h = ((b - r) / d + 2) / 6;
+    } else {
+      h = ((r - g) / d + 4) / 6;
+    }
+  }
+  return Math.round(h * 360);
+};
+const fetchSingleTagValue = async (tagName) => {
+  if (!tagName) return;
+  try {
+    const sql = `SELECT timestamp, ${tagName} FROM scada_wide ORDER BY timestamp DESC LIMIT 1`;
+    const result = await questdbService.query(sql);
+    
+    if (result.length > 0 && result[0][tagName] !== undefined) {
+      setTagValues(prev => ({
+        ...prev,
+        [tagName]: String(result[0][tagName])
+      }));
+    }
+  } catch (error) {
+    console.error('Error fetching single tag value:', error);
+  }
+};
 
   const handleCanvasClick = (e) => {
     const rect = canvasRef.current.getBoundingClientRect();
@@ -401,12 +425,13 @@ export default function ScadaDesigner({ config, onSave, onClose, darkMode }) {
     }
   };
 
-  const handleSaveTagConfig = (updatedComponent) => {
-    setComponents(components.map(c => c.id === updatedComponent.id ? updatedComponent : c));
-    setShowTagModal(false);
-    setEditingComponentTag(null);
-    fetchSingleTagValue(updatedComponent.tagName);
-  };
+const handleSaveTagConfig = (updatedComponent) => {
+  setComponents(components.map(c => c.id === updatedComponent.id ? updatedComponent : c));
+  setShowTagModal(false);
+  setEditingComponentTag(null);
+  // Immediately fetch the tag value
+  fetchSingleTagValue(updatedComponent.tagName);
+};
 
   const handleDeleteComponent = () => {
     if (selectedComponent) {
@@ -485,30 +510,6 @@ export default function ScadaDesigner({ config, onSave, onClose, darkMode }) {
       y1: fromComp.y + SVG_COMPONENTS[fromComp.type].height / 2,
       x2: toComp.x + SVG_COMPONENTS[toComp.type].width / 2,
       y2: toComp.y + SVG_COMPONENTS[toComp.type].height / 2
-    };
-  };
-
-  // Preprocess SVG to replace colors with currentColor
-  const preprocessSVG = (svg) => {
-    return (node) => {
-      if (node.tagName === 'path' || node.tagName === 'circle' || 
-          node.tagName === 'rect' || node.tagName === 'polygon' || 
-          node.tagName === 'ellipse') {
-        // Replace fill colors (except white/transparent)
-        const fill = node.getAttribute('fill');
-        if (fill && fill !== 'none' && fill !== 'transparent' && 
-            !fill.includes('url(') && fill.toLowerCase() !== '#ffffff' && 
-            fill.toLowerCase() !== '#fff') {
-          node.setAttribute('fill', 'currentColor');
-        }
-        
-        // Replace stroke colors
-        const stroke = node.getAttribute('stroke');
-        if (stroke && stroke !== 'none' && stroke !== 'transparent' && 
-            !stroke.includes('url(')) {
-          node.setAttribute('stroke', 'currentColor');
-        }
-      }
     };
   };
 
@@ -656,86 +657,90 @@ export default function ScadaDesigner({ config, onSave, onClose, darkMode }) {
                   </g>
                 )}
 
-                {components.map(comp => {
-                  const svgData = SVG_COMPONENTS[comp.type];
-                  const isSelected = selectedComponent === comp.id;
-                  const componentColor = getComponentColor(comp);
-                  const status = getComponentStatus(comp);
-                  
-                  return (
-                    <g key={comp.id} transform={`translate(${comp.x}, ${comp.y})`}>
+               {components.map(comp => {
+  const svgData = SVG_COMPONENTS[comp.type];
+  const isSelected = selectedComponent === comp.id;
+  const componentColor = getComponentColor(comp);
+  const status = getComponentStatus(comp);
+  
+  return (
+    <g key={comp.id} transform={`translate(${comp.x}, ${comp.y})`}>
                       <g transform={`rotate(${comp.rotation || 0}, ${svgData.width/2}, ${svgData.height/2})`}>
                         {isSelected && (
                           <rect x={-6} y={-6} width={svgData.width + 12} height={svgData.height + 12} fill="none" stroke="#667eea" strokeWidth={3} rx={10} opacity="0.6" style={{ pointerEvents: 'none' }} />
                         )}
                         <rect x={0} y={0} width={svgData.width} height={svgData.height} fill="transparent" style={{ cursor: selectedTool === 'select' ? 'move' : selectedTool === 'line' ? 'pointer' : 'default' }} onMouseDown={(e) => handleComponentMouseDown(e, comp)} />
-                        
-                        {/* SVG with actual color change using react-inlinesvg */}
-                        <foreignObject 
-                          width={svgData.width} 
-                          height={svgData.height}
-                          style={{ color: componentColor, pointerEvents: 'none' }}
-                        >
-                          <SVG
-                            src={svgData.svg}
-                            width={svgData.width}
-                            height={svgData.height}
-                            preProcessor={preprocessSVG(svgData.svg)}
-                            style={{
-                              width: '100%',
-                              height: '100%',
-                              color: componentColor
-                            }}
-                          />
-                        </foreignObject>
-                      </g>
                       
-                      <text x={svgData.width / 2} y={svgData.height + 20} textAnchor="middle" fill={theme.text} fontSize="12" fontWeight="600" style={{ pointerEvents: 'none' }}>
-                        {comp.label}
-                      </text>
+<g>
+  <image 
+    href={svgData.svg} 
+    width={svgData.width} 
+    height={svgData.height} 
+    style={{ pointerEvents: 'none' }}
+  />
+  <rect
+    x={0}
+    y={0}
+    width={svgData.width}
+    height={svgData.height}
+    fill={componentColor}
+    opacity="0.6"
+    style={{ mixBlendMode: 'multiply', pointerEvents: 'none' }}
+  />
+</g>
+ </g>
+                     <text x={svgData.width / 2} y={svgData.height + 20} textAnchor="middle" fill={theme.text} fontSize="12" fontWeight="600" style={{ pointerEvents: 'none' }}>
+  {comp.label}
+</text>
 
-                      {status && (
-                        <g>
-                          <rect
-                            x={svgData.width / 2 - 30}
-                            y={svgData.height + 30}
-                            width="60"
-                            height="18"
-                            fill={componentColor}
-                            rx="4"
-                            opacity="0.9"
-                          />
-                          <text
-                            x={svgData.width / 2}
-                            y={svgData.height + 42}
-                            textAnchor="middle"
-                            fill="white"
-                            fontSize="10"
-                            fontWeight="700"
-                            style={{ pointerEvents: 'none' }}
-                          >
-                            {status}
-                          </text>
-                        </g>
-                      )}
+{status && (
+  <g>
+    <rect
+      x={svgData.width / 2 - 30}
+      y={svgData.height + 30}
+      width="60"
+      height="18"
+      fill={componentColor}
+      rx="4"
+      opacity="0.9"
+    />
+    <text
+      x={svgData.width / 2}
+      y={svgData.height + 42}
+      textAnchor="middle"
+      fill="white"
+      fontSize="10"
+      fontWeight="700"
+      style={{ pointerEvents: 'none' }}
+    >
+      {status}
+    </text>
+  </g>
+)}
 
-                      {comp.tagName && (
-                        <text 
-                          x={svgData.width / 2} 
-                          y={svgData.height + (status ? 56 : 35)} 
-                          textAnchor="middle" 
-                          fill={theme.accent} 
-                          fontSize="9" 
-                          fontWeight="500" 
-                          style={{ pointerEvents: 'none' }}
-                        >
-                          🏷️ {comp.tagName}
-                          {tagValues[comp.tagName] && `: ${tagValues[comp.tagName]}`}
-                        </text>
-                      )}
+{comp.tagName && (
+  <text 
+    x={svgData.width / 2} 
+    y={svgData.height + (status ? 56 : 35)} 
+    textAnchor="middle" 
+    fill={theme.accent} 
+    fontSize="9" 
+    fontWeight="500" 
+    style={{ pointerEvents: 'none' }}
+  >
+    🏷️ {comp.tagName}
+    {tagValues[comp.tagName] && `: ${tagValues[comp.tagName]}`}
+  </text>
+)}
                     </g>
                   );
                 })}
+
+                {drawingLine && (
+                  <g>
+                    <line x1={drawingLine.startX} y1={drawingLine.startY} x2={drawingLine.endX} y2={drawingLine.endY} stroke={lineColor} strokeWidth={lineWidth} strokeDasharray="8,4" strokeLinecap="round" opacity="0.7" />
+                  </g>
+                )}
               </g>
             </svg>
 
