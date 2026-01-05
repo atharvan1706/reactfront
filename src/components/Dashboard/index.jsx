@@ -792,7 +792,7 @@ export default function Dashboard({ onLogout }) {
                     position: 'relative'
                   }}>
                     <div style={{
-                      padding: '12px 16px',
+                      padding: '2px 2px',
                       borderBottom: `1px solid ${theme.border}`,
                       display: 'flex',
                       justifyContent: 'space-between',
