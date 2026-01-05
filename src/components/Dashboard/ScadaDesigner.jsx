@@ -731,8 +731,9 @@ const handleSaveTagConfig = (updatedComponent) => {
                   </g>
                 )}
               </g>
+            </svg>
 
-              {components.length === 0 && (
+            {components.length === 0 && (
               <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', textAlign: 'center', color: theme.textSecondary, pointerEvents: 'none' }}>
                 <div style={{ fontSize: '48px', marginBottom: '16px', opacity: 0.3 }}>⚙️</div>
                 <h3 style={{ margin: '0 0 8px', fontSize: '18px', fontWeight: '600', color: theme.text }}>Start Building</h3>
