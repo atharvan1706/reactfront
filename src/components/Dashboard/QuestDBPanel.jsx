@@ -424,7 +424,7 @@ function QuestDBPanel({ config, onEdit, onDelete, onDuplicate, onResize, style, 
       onMouseLeave={(e) => e.currentTarget.style.boxShadow = darkMode ? '0 8px 24px rgba(0,0,0,0.3)' : '0 4px 6px rgba(0,0,0,0.05)'}
     >
       <div style={{
-        padding: '12px 16px',
+        padding: '2px 2px',
         background: theme.hover,
         borderBottom: `2px solid ${theme.border}`,
         display: 'flex',
