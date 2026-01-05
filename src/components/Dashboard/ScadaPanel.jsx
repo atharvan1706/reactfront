@@ -365,7 +365,7 @@ export default function ScadaPanel({ config, darkMode }) {
           maxWidth: '200px',
           boxShadow: '0 4px 12px rgba(0,0,0,0.15)'
         }}>
-          <div style={{ fontWeight: '700', marginBottom: '12px', fontSize: '12px' }}>
+          <div style={{ fontWeight: '700', marginBottom: '8px', fontSize: '12px' }}>
             Status Legend
           </div>
           {[...new Set(
@@ -374,7 +374,7 @@ export default function ScadaPanel({ config, darkMode }) {
               .flatMap(c => c.colorMappings)
               .map(m => JSON.stringify(m))
           )].map(m => JSON.parse(m)).map((mapping, i) => (
-            <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
+            <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '10px' }}>
               <div style={{
                 width: '12px',
                 height: '12px',
