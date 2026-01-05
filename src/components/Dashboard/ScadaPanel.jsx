@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import SVG from 'react-inlinesvg'; // npm install react-inlinesvg
 import questdbService from '../../services/questdb';
 
 // Import all SVG files
@@ -106,20 +105,24 @@ export default function ScadaPanel({ config, darkMode }) {
   useEffect(() => {
     const fetchTagValues = async () => {
       try {
+        // Get all unique tag names from components
         const tagNames = [...new Set(
           config.components
             ?.filter(comp => comp.tagName)
             .map(comp => comp.tagName)
         )];
-        
+        console.log('🔍 Components:', config.components);
+        console.log('🏷️ Tag names found:', tagNames);
         if (tagNames.length === 0) return;
 
+        // Fetch latest row from scada_wide table with only the needed columns
         const columnsToSelect = ['timestamp', ...tagNames].join(', ');
         const sql = `SELECT ${columnsToSelect} FROM scada_wide ORDER BY timestamp DESC LIMIT 1`;
         
         const result = await questdbService.query(sql);
         
         if (result.length > 0) {
+          // Create a map of column_name -> value
           const valueMap = {};
           const latestRow = result[0];
           
@@ -136,11 +139,16 @@ export default function ScadaPanel({ config, darkMode }) {
       }
     };
 
+    // Initial fetch
     fetchTagValues();
+
+    // Set up polling interval (every 2 seconds)
     const interval = setInterval(fetchTagValues, 2000);
+
     return () => clearInterval(interval);
   }, [config.components]);
 
+  // Get color for a component based on its tag value
   const getComponentColor = (comp) => {
     if (!comp.tagName || !tagValues[comp.tagName]) {
       return comp.defaultColor || '#64748b';
@@ -152,6 +160,7 @@ export default function ScadaPanel({ config, darkMode }) {
     return mapping ? mapping.color : (comp.defaultColor || '#64748b');
   };
 
+  // Get status label for a component
   const getComponentStatus = (comp) => {
     if (!comp.tagName || !tagValues[comp.tagName]) {
       return null;
@@ -162,7 +171,33 @@ export default function ScadaPanel({ config, darkMode }) {
     
     return mapping?.label || tagValue;
   };
+// Convert hex color to CSS filter for SVG recoloring
+  const getSVGColorFilter = (hexColor) => {
+    const hex = hexColor.replace('#', '');
+    const r = parseInt(hex.substr(0, 2), 16) / 255;
+    const g = parseInt(hex.substr(2, 2), 16) / 255;
+    const b = parseInt(hex.substr(4, 2), 16) / 255;
+    const brightness = (r + g + b) / 3;
+    const saturation = Math.max(r, g, b) - Math.min(r, g, b);
+    return `brightness(${brightness * 2}) saturate(${saturation * 5 + 1}) hue-rotate(${getHueRotation(r, g, b)}deg)`;
+  };
 
+  const getHueRotation = (r, g, b) => {
+    const max = Math.max(r, g, b);
+    const min = Math.min(r, g, b);
+    let h = 0;
+    if (max !== min) {
+      const d = max - min;
+      if (max === r) {
+        h = ((g - b) / d + (g < b ? 6 : 0)) / 6;
+      } else if (max === g) {
+        h = ((b - r) / d + 2) / 6;
+      } else {
+        h = ((r - g) / d + 4) / 6;
+      }
+    }
+    return Math.round(h * 360);
+  };
   const getLineCoordinates = (line) => {
     const fromComp = config.components?.find(c => c.id === line.from);
     const toComp = config.components?.find(c => c.id === line.to);
@@ -180,6 +215,7 @@ export default function ScadaPanel({ config, darkMode }) {
     };
   };
 
+  // Calculate dynamic viewBox based on component positions
   const getViewBox = () => {
     if (!config.components || config.components.length === 0) {
       return "0 0 1000 600";
@@ -194,7 +230,7 @@ export default function ScadaPanel({ config, darkMode }) {
       
       minX = Math.min(minX, comp.x - 20);
       minY = Math.min(minY, comp.y - 20);
-      maxX = Math.max(maxX, comp.x + width + 80);
+      maxX = Math.max(maxX, comp.x + width + 80); // Extra space for labels
       maxY = Math.max(maxY, comp.y + height + 80);
     });
 
@@ -203,30 +239,6 @@ export default function ScadaPanel({ config, darkMode }) {
     const viewBoxHeight = Math.max(600, maxY - minY + padding * 2);
     
     return `${minX - padding} ${minY - padding} ${viewBoxWidth} ${viewBoxHeight}`;
-  };
-
-  // Preprocess SVG to replace colors with currentColor
-  const preprocessSVG = (svg) => {
-    return (node) => {
-      if (node.tagName === 'path' || node.tagName === 'circle' || 
-          node.tagName === 'rect' || node.tagName === 'polygon' || 
-          node.tagName === 'ellipse') {
-        // Replace fill colors (except white/transparent)
-        const fill = node.getAttribute('fill');
-        if (fill && fill !== 'none' && fill !== 'transparent' && 
-            !fill.includes('url(') && fill.toLowerCase() !== '#ffffff' && 
-            fill.toLowerCase() !== '#fff') {
-          node.setAttribute('fill', 'currentColor');
-        }
-        
-        // Replace stroke colors
-        const stroke = node.getAttribute('stroke');
-        if (stroke && stroke !== 'none' && stroke !== 'transparent' && 
-            !stroke.includes('url(')) {
-          node.setAttribute('stroke', 'currentColor');
-        }
-      }
-    };
   };
 
   return (
@@ -269,6 +281,7 @@ export default function ScadaPanel({ config, darkMode }) {
                 strokeDasharray={line.style === 'dashed' ? '5,5' : '0'}
                 strokeLinecap="round"
               />
+              {/* Arrow head */}
               {(() => {
                 const angle = Math.atan2(coords.y2 - coords.y1, coords.x2 - coords.x1);
                 const arrowSize = 10;
@@ -284,7 +297,7 @@ export default function ScadaPanel({ config, darkMode }) {
           );
         })}
 
-        {/* Components with dynamic SVG coloring */}
+        {/* Components */}
         {config.components?.map(comp => {
           const svgData = SVG_COMPONENTS[comp.type];
           if (!svgData) return null;
@@ -298,24 +311,27 @@ export default function ScadaPanel({ config, darkMode }) {
               transform={`translate(${comp.x}, ${comp.y})`}
             >
               <g transform={`rotate(${comp.rotation || 0}, ${svgData.width/2}, ${svgData.height/2})`}>
-                {/* SVG with actual color change using react-inlinesvg */}
-                <foreignObject 
-                  width={svgData.width} 
-                  height={svgData.height}
-                  style={{ color: componentColor }}
-                >
-                  <SVG
-                    src={svgData.svg}
+                {/* Color indicator background */}
+               
+                
+                {/* SVG Image */}
+                {/* SVG with color overlay */}
+                 <g>
+                  <image
+                    href={svgData.svg}
                     width={svgData.width}
                     height={svgData.height}
-                    preProcessor={preprocessSVG(svgData.svg)}
-                    style={{
-                      width: '100%',
-                      height: '100%',
-                      color: componentColor
-                    }}
                   />
-                </foreignObject>
+                  <rect
+                    x={0}
+                    y={0}
+                    width={svgData.width}
+                    height={svgData.height}
+                    fill={componentColor}
+                    opacity="0.6"
+                    style={{ mixBlendMode: 'multiply' }}
+                  />
+                </g>
               </g>
               
               {/* Label */}
@@ -373,7 +389,7 @@ export default function ScadaPanel({ config, darkMode }) {
         })}
       </svg>
 
-      {/* Legend */}
+     {/* Legend */}
       {config.components?.some(c => c.tagName) && (
         <div style={{
           position: 'absolute',
@@ -382,7 +398,7 @@ export default function ScadaPanel({ config, darkMode }) {
           background: darkMode ? 'rgba(26, 29, 41, 0.95)' : 'rgba(255, 255, 255, 0.95)',
           border: `1px solid ${theme.border}`,
           borderRadius: '8px',
-          padding: '12px',
+          padding: '2px',
           fontSize: '11px',
           color: theme.text,
           maxWidth: '200px',
@@ -394,6 +410,7 @@ export default function ScadaPanel({ config, darkMode }) {
             Status Legend
           </div>
           {(() => {
+            // Get unique color mappings based on label+color combination
             const uniqueMappings = new Map();
             config.components
               .filter(c => c.colorMappings)
