@@ -380,12 +380,12 @@ export default function ScadaPanel({ config, darkMode }) {
       {config.components?.some(c => c.tagName) && (
         <div style={{
           position: 'absolute',
-          bottom: '16px',
+          bottom: '36px',
           right: '16px',
           background: darkMode ? 'rgba(26, 29, 41, 0.95)' : 'rgba(255, 255, 255, 0.95)',
           border: `1px solid ${theme.border}`,
           borderRadius: '8px',
-          padding: '12px',
+          padding: '2px',
           fontSize: '11px',
           color: theme.text,
           maxWidth: '200px',
