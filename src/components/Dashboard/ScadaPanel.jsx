@@ -376,8 +376,8 @@ export default function ScadaPanel({ config, darkMode }) {
         })}
       </svg>
 
-      {/* Legend */}
-       {config.components?.some(c => c.tagName) && (
+     {/* Legend */}
+      {config.components?.some(c => c.tagName) && (
         <div style={{
           position: 'absolute',
           bottom: '16px',
