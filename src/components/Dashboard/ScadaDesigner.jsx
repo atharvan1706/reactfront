@@ -693,15 +693,25 @@ const handleSaveTagConfig = (updatedComponent) => {
     />
   </>
 )}
-<image 
-  href={svgData.svg} 
-  width={svgData.width} 
-  height={svgData.height} 
-  style={{ 
-    pointerEvents: 'none',
-    filter: comp.tagName ? `${getSVGColorFilter(componentColor)} drop-shadow(0 0 6px ${componentColor})` : 'none'
-  }} 
-/>                     
+<g>
+  <image 
+    href={svgData.svg} 
+    width={svgData.width} 
+    height={svgData.height} 
+    style={{ pointerEvents: 'none' }}
+  />
+  {comp.tagName && (
+    <rect
+      x={0}
+      y={0}
+      width={svgData.width}
+      height={svgData.height}
+      fill={componentColor}
+      opacity="0.6"
+      style={{ mixBlendMode: 'multiply', pointerEvents: 'none' }}
+    />
+  )}
+</g>
  </g>
                      <text x={svgData.width / 2} y={svgData.height + 20} textAnchor="middle" fill={theme.text} fontSize="12" fontWeight="600" style={{ pointerEvents: 'none' }}>
   {comp.label}
