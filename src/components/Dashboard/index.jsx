@@ -131,40 +131,54 @@ export default function Dashboard({ onLogout }) {
   };
 
   const handleSavePanel = (config) => {
-  const updatedDashboard = {
-    ...currentDashboard,
-    panels: [...(currentDashboard.panels || [])], // ✅ normalize
-  };
+  try {
+    if (!config || !config.id) {
+      console.error('Invalid panel config:', config);
+      return;
+    }
 
-  const panelExists = updatedDashboard.panels.some(
-    p => p.id === config.id
-  );
-
-  if (panelExists) {
-    updatedDashboard.panels = updatedDashboard.panels.map(p =>
-      p.id === config.id ? config : p
-    );
-  } else {
-    const newPanel = {
-      ...config,
-      x: 0,
-      y: getNextAvailableY(),
+    const updatedDashboard = {
+      ...currentDashboard,
+      panels: [...(currentDashboard.panels || [])],
     };
-    updatedDashboard.panels.push(newPanel);
+
+    const panelExists = updatedDashboard.panels.some(
+      p => p.id === config.id
+    );
+
+    if (panelExists) {
+      updatedDashboard.panels = updatedDashboard.panels.map(p =>
+        p.id === config.id ? config : p
+      );
+    } else {
+      const newPanel = {
+        ...config,
+        x: 0,
+        y: getNextAvailableY(),
+      };
+      updatedDashboard.panels.push(newPanel);
+    }
+
+    // Update states in the correct order
+    setDashboards(prevDashboards =>
+      prevDashboards.map(d =>
+        d.id === updatedDashboard.id ? updatedDashboard : d
+      )
+    );
+    
+    setCurrentDashboard(updatedDashboard);
+    
+    // Close modals after state updates
+    setTimeout(() => {
+      setShowConfigModal(false);
+      setShowScadaModal(false);
+      setEditingPanel(null);
+      setEditingScadaDiagram(null);
+    }, 0);
+  } catch (error) {
+    console.error('Error saving panel:', error);
+    alert('Failed to save panel. Please try again.');
   }
-
-  setCurrentDashboard(updatedDashboard);
-
-  setDashboards(
-    dashboards.map(d =>
-      d.id === updatedDashboard.id ? updatedDashboard : d
-    )
-  );
-
-  setShowConfigModal(false);
-  setShowScadaModal(false);
-  setEditingPanel(null);
-  setEditingScadaDiagram(null);
 };
 
 
