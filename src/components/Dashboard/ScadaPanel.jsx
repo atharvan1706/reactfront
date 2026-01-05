@@ -111,8 +111,8 @@ export default function ScadaPanel({ config, darkMode }) {
             ?.filter(comp => comp.tagName)
             .map(comp => comp.tagName)
         )];
-        console.log('🔍 Components:', config.components); // ADD THIS
-        console.log('🏷️ Tag names found:', tagNames); // ADD THIS
+        console.log('🔍 Components:', config.components);
+        console.log('🏷️ Tag names found:', tagNames);
         if (tagNames.length === 0) return;
 
         // Fetch latest row from scada_wide table with only the needed columns
@@ -189,6 +189,32 @@ export default function ScadaPanel({ config, darkMode }) {
     };
   };
 
+  // Calculate dynamic viewBox based on component positions
+  const getViewBox = () => {
+    if (!config.components || config.components.length === 0) {
+      return "0 0 1000 600";
+    }
+
+    let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+    
+    config.components.forEach(comp => {
+      const svgData = SVG_COMPONENTS[comp.type];
+      const width = svgData?.width || 60;
+      const height = svgData?.height || 60;
+      
+      minX = Math.min(minX, comp.x - 20);
+      minY = Math.min(minY, comp.y - 20);
+      maxX = Math.max(maxX, comp.x + width + 80); // Extra space for labels
+      maxY = Math.max(maxY, comp.y + height + 80);
+    });
+
+    const padding = 50;
+    const viewBoxWidth = Math.max(1000, maxX - minX + padding * 2);
+    const viewBoxHeight = Math.max(600, maxY - minY + padding * 2);
+    
+    return `${minX - padding} ${minY - padding} ${viewBoxWidth} ${viewBoxHeight}`;
+  };
+
   return (
     <div style={{
       width: '100%',
@@ -200,7 +226,7 @@ export default function ScadaPanel({ config, darkMode }) {
       <svg 
         width="100%" 
         height="100%" 
-        viewBox="0 0 1000 600" 
+        viewBox={getViewBox()}
         preserveAspectRatio="xMidYMid meet"
         style={{ display: 'block' }}
       >
