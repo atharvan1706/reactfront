@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
-  Plus, LogOut, Database, Zap, Folder, Save, Download, Upload, Moon, Sun, Settings
+  Plus, LogOut, Database, Zap, Folder, Save, Download, Upload, Moon, Sun, Settings, X
 } from 'lucide-react';
 import authService from '../../services/auth';
 import questdbService from '../../services/questdb';
