@@ -296,7 +296,32 @@ const getComponentStatus = (comp) => {
   
   return mapping?.label || tagValue;
 };
+const getSVGColorFilter = (hexColor) => {
+  const hex = hexColor.replace('#', '');
+  const r = parseInt(hex.substr(0, 2), 16) / 255;
+  const g = parseInt(hex.substr(2, 2), 16) / 255;
+  const b = parseInt(hex.substr(4, 2), 16) / 255;
+  const brightness = (r + g + b) / 3;
+  const saturation = Math.max(r, g, b) - Math.min(r, g, b);
+  return `brightness(${brightness * 2}) saturate(${saturation * 5 + 1}) hue-rotate(${getHueRotation(r, g, b)}deg)`;
+};
 
+const getHueRotation = (r, g, b) => {
+  const max = Math.max(r, g, b);
+  const min = Math.min(r, g, b);
+  let h = 0;
+  if (max !== min) {
+    const d = max - min;
+    if (max === r) {
+      h = ((g - b) / d + (g < b ? 6 : 0)) / 6;
+    } else if (max === g) {
+      h = ((b - r) / d + 2) / 6;
+    } else {
+      h = ((r - g) / d + 4) / 6;
+    }
+  }
+  return Math.round(h * 360);
+};
 const fetchSingleTagValue = async (tagName) => {
   if (!tagName) return;
   try {
@@ -674,7 +699,7 @@ const handleSaveTagConfig = (updatedComponent) => {
   height={svgData.height} 
   style={{ 
     pointerEvents: 'none',
-    filter: comp.tagName ? `drop-shadow(0 0 6px ${componentColor})` : 'none'
+    filter: comp.tagName ? `${getSVGColorFilter(componentColor)} drop-shadow(0 0 6px ${componentColor})` : 'none'
   }} 
 />                     
  </g>
