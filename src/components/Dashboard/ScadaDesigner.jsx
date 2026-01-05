@@ -721,9 +721,18 @@ const handleSaveTagConfig = (updatedComponent) => {
     {tagValues[comp.tagName] && `: ${tagValues[comp.tagName]}`}
   </text>
 )}
-</g>
+                    </g>
+                  );
+                })}
 
-            {components.length === 0 && (
+                {drawingLine && (
+                  <g>
+                    <line x1={drawingLine.startX} y1={drawingLine.startY} x2={drawingLine.endX} y2={drawingLine.endY} stroke={lineColor} strokeWidth={lineWidth} strokeDasharray="8,4" strokeLinecap="round" opacity="0.7" />
+                  </g>
+                )}
+              </g>
+
+              {components.length === 0 && (
               <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', textAlign: 'center', color: theme.textSecondary, pointerEvents: 'none' }}>
                 <div style={{ fontSize: '48px', marginBottom: '16px', opacity: 0.3 }}>⚙️</div>
                 <h3 style={{ margin: '0 0 8px', fontSize: '18px', fontWeight: '600', color: theme.text }}>Start Building</h3>
