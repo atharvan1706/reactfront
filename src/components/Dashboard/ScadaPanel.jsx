@@ -394,23 +394,32 @@ export default function ScadaPanel({ config, darkMode }) {
           <div style={{ fontWeight: '700', marginBottom: '8px', fontSize: '12px' }}>
             Status Legend
           </div>
-          {[...new Set(
+          {(() => {
+            // Get unique color mappings based on label+color combination
+            const uniqueMappings = new Map();
             config.components
               .filter(c => c.colorMappings)
               .flatMap(c => c.colorMappings)
-              .map(m => JSON.stringify(m))
-          )].map(m => JSON.parse(m)).map((mapping, i) => (
-            <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '25px' }}>
-              <div style={{
-                width: '12px',
-                height: '12px',
-                background: mapping.color,
-                borderRadius: '3px',
-                border: `1px solid ${theme.border}`
-              }} />
-              <span>{mapping.label || mapping.value}</span>
-            </div>
-          ))}
+              .forEach(m => {
+                const key = `${m.label}-${m.color}`;
+                if (!uniqueMappings.has(key)) {
+                  uniqueMappings.set(key, m);
+                }
+              });
+            
+            return Array.from(uniqueMappings.values()).map((mapping, i) => (
+              <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px' }}>
+                <div style={{
+                  width: '12px',
+                  height: '12px',
+                  background: mapping.color,
+                  borderRadius: '3px',
+                  border: `1px solid ${theme.border}`
+                }} />
+                <span>{mapping.label || mapping.value}</span>
+              </div>
+            ));
+          })()}
         </div>
       )}
     </div>
