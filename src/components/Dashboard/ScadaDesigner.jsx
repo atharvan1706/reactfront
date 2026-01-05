@@ -670,29 +670,7 @@ const handleSaveTagConfig = (updatedComponent) => {
                           <rect x={-6} y={-6} width={svgData.width + 12} height={svgData.height + 12} fill="none" stroke="#667eea" strokeWidth={3} rx={10} opacity="0.6" style={{ pointerEvents: 'none' }} />
                         )}
                         <rect x={0} y={0} width={svgData.width} height={svgData.height} fill="transparent" style={{ cursor: selectedTool === 'select' ? 'move' : selectedTool === 'line' ? 'pointer' : 'default' }} onMouseDown={(e) => handleComponentMouseDown(e, comp)} />
-                       {comp.tagName && (
-  <>
-    <rect
-      x={-4}
-      y={-4}
-      width={svgData.width + 8}
-      height={svgData.height + 8}
-      fill={componentColor}
-      rx="8"
-      opacity="0.25"
-    />
-    <rect
-      x={-2}
-      y={-2}
-      width={svgData.width + 4}
-      height={svgData.height + 4}
-      fill="none"
-      stroke={componentColor}
-      strokeWidth="2.5"
-      rx="6"
-    />
-  </>
-)}
+                      
 <g>
   <image 
     href={svgData.svg} 
@@ -700,17 +678,15 @@ const handleSaveTagConfig = (updatedComponent) => {
     height={svgData.height} 
     style={{ pointerEvents: 'none' }}
   />
-  {comp.tagName && (
-    <rect
-      x={0}
-      y={0}
-      width={svgData.width}
-      height={svgData.height}
-      fill={componentColor}
-      opacity="0.6"
-      style={{ mixBlendMode: 'multiply', pointerEvents: 'none' }}
-    />
-  )}
+  <rect
+    x={0}
+    y={0}
+    width={svgData.width}
+    height={svgData.height}
+    fill={componentColor}
+    opacity="0.6"
+    style={{ mixBlendMode: 'multiply', pointerEvents: 'none' }}
+  />
 </g>
  </g>
                      <text x={svgData.width / 2} y={svgData.height + 20} textAnchor="middle" fill={theme.text} fontSize="12" fontWeight="600" style={{ pointerEvents: 'none' }}>
