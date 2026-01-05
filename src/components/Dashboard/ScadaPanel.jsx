@@ -335,16 +335,25 @@ export default function ScadaPanel({ config, darkMode }) {
                 />
                 
                 {/* SVG Image */}
-                <image
-                  href={svgData.svg}
-                  width={svgData.width}
-                  height={svgData.height}
-                  style={{ 
-                    filter: comp.tagName 
-                      ? `${getSVGColorFilter(componentColor)} drop-shadow(0 0 8px ${componentColor})`
-                      : 'none'
-                  }}
-                />
+                {/* SVG with color overlay */}
+                <g>
+                  <image
+                    href={svgData.svg}
+                    width={svgData.width}
+                    height={svgData.height}
+                  />
+                  {comp.tagName && (
+                    <rect
+                      x={0}
+                      y={0}
+                      width={svgData.width}
+                      height={svgData.height}
+                      fill={componentColor}
+                      opacity="0.6"
+                      style={{ mixBlendMode: 'multiply' }}
+                    />
+                  )}
+                </g>
               </g>
               
               {/* Label */}
