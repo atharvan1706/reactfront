@@ -374,7 +374,7 @@ export default function ScadaPanel({ config, darkMode }) {
               .flatMap(c => c.colorMappings)
               .map(m => JSON.stringify(m))
           )].map(m => JSON.parse(m)).map((mapping, i) => (
-            <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '15px' }}>
+            <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '25px' }}>
               <div style={{
                 width: '12px',
                 height: '12px',
