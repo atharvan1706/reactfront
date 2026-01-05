@@ -155,8 +155,8 @@ export default function Dashboard({ onLogout }) {
         ...config,
         x: 0,
         y: getNextAvailableY(),
-        width: 10,  // Use config width or default to 4
-        height: 5
+        width: 12,  // Use config width or default to 4
+        height: 6
       };
       updatedDashboard.panels.push(newPanel);
     }
