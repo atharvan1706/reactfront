@@ -354,7 +354,7 @@ export default function ScadaPanel({ config, darkMode }) {
       {config.components?.some(c => c.tagName) && (
         <div style={{
           position: 'absolute',
-          bottom: '14px',
+          bottom: '10px',
           right: '12px',
           background: darkMode ? 'rgba(26, 29, 41, 0.95)' : 'rgba(255, 255, 255, 0.95)',
           border: `1px solid ${theme.border}`,
