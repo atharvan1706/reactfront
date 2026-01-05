@@ -354,7 +354,7 @@ export default function ScadaPanel({ config, darkMode }) {
       {config.components?.some(c => c.tagName) && (
         <div style={{
           position: 'absolute',
-          bottom: '12px',
+          bottom: '14px',
           right: '12px',
           background: darkMode ? 'rgba(26, 29, 41, 0.95)' : 'rgba(255, 255, 255, 0.95)',
           border: `1px solid ${theme.border}`,
@@ -365,7 +365,7 @@ export default function ScadaPanel({ config, darkMode }) {
           maxWidth: '200px',
           boxShadow: '0 4px 12px rgba(0,0,0,0.15)'
         }}>
-          <div style={{ fontWeight: '700', marginBottom: '8px', fontSize: '12px' }}>
+          <div style={{ fontWeight: '700', marginBottom: '12px', fontSize: '12px' }}>
             Status Legend
           </div>
           {[...new Set(
