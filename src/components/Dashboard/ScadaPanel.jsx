@@ -312,47 +312,25 @@ export default function ScadaPanel({ config, darkMode }) {
             >
               <g transform={`rotate(${comp.rotation || 0}, ${svgData.width/2}, ${svgData.height/2})`}>
                 {/* Color indicator background */}
-                <rect
-                  x={-4}
-                  y={-4}
-                  width={svgData.width + 8}
-                  height={svgData.height + 8}
-                  fill={componentColor}
-                  rx="8"
-                  opacity="0.3"
-                />
-                
-                {/* Colored border */}
-                <rect
-                  x={-2}
-                  y={-2}
-                  width={svgData.width + 4}
-                  height={svgData.height + 4}
-                  fill="none"
-                  stroke={componentColor}
-                  strokeWidth="3"
-                  rx="6"
-                />
+               
                 
                 {/* SVG Image */}
                 {/* SVG with color overlay */}
-                <g>
+                 <g>
                   <image
                     href={svgData.svg}
                     width={svgData.width}
                     height={svgData.height}
                   />
-                  {comp.tagName && (
-                    <rect
-                      x={0}
-                      y={0}
-                      width={svgData.width}
-                      height={svgData.height}
-                      fill={componentColor}
-                      opacity="0.6"
-                      style={{ mixBlendMode: 'multiply' }}
-                    />
-                  )}
+                  <rect
+                    x={0}
+                    y={0}
+                    width={svgData.width}
+                    height={svgData.height}
+                    fill={componentColor}
+                    opacity="0.6"
+                    style={{ mixBlendMode: 'multiply' }}
+                  />
                 </g>
               </g>
               
