@@ -209,6 +209,7 @@ export default function ScadaDesigner({ config, onSave, onClose, darkMode }) {
   const [showTagModal, setShowTagModal] = useState(false);
   const [editingComponentTag, setEditingComponentTag] = useState(null);
   const [availableTags, setAvailableTags] = useState([]);
+  const [tagValues, setTagValues] = useState({}); 
   const canvasRef = useRef(null);
 
   const theme = darkMode ? {
@@ -222,13 +223,11 @@ export default function ScadaDesigner({ config, onSave, onClose, darkMode }) {
   useEffect(() => {
   const fetchTags = async () => {
     try {
-      // Get column names from scada_wide table
       const sql = `SELECT * FROM scada_wide LIMIT 1`;
       const result = await questdbService.query(sql);
       
       if (result.length > 0) {
-        // Get all column names except 'timestamp'
-        const columns = Object.keys(result[0]).filter(col => col !== 'timestamp');
+        const columns = Object.keys(result[0]).filter(col => col !== 'timestamp' && col !== 'bridge_id');
         setAvailableTags(columns);
       }
     } catch (error) {
@@ -237,6 +236,83 @@ export default function ScadaDesigner({ config, onSave, onClose, darkMode }) {
   };
   fetchTags();
 }, []);
+
+// NEW useEffect - ADD THIS RIGHT AFTER THE ABOVE
+useEffect(() => {
+  const fetchTagValues = async () => {
+    try {
+      const tagNames = [...new Set(
+        components.filter(comp => comp.tagName).map(comp => comp.tagName)
+      )];
+      
+      if (tagNames.length === 0) return;
+
+      const columnsToSelect = ['timestamp', ...tagNames].join(', ');
+      const sql = `SELECT ${columnsToSelect} FROM scada_wide ORDER BY timestamp DESC LIMIT 1`;
+      
+      const result = await questdbService.query(sql);
+      
+      if (result.length > 0) {
+        const valueMap = {};
+        const latestRow = result[0];
+        
+        tagNames.forEach(tagName => {
+          if (latestRow[tagName] !== undefined && latestRow[tagName] !== null) {
+            valueMap[tagName] = String(latestRow[tagName]);
+          }
+        });
+        
+        setTagValues(valueMap);
+      }
+    } catch (error) {
+      console.error('Error fetching tag values:', error);
+    }
+  };
+
+  fetchTagValues();
+  const interval = setInterval(fetchTagValues, 2000);
+  return () => clearInterval(interval);
+}, [components]);
+
+// ADD THESE THREE FUNCTIONS
+const getComponentColor = (comp) => {
+  if (!comp.tagName || !tagValues[comp.tagName]) {
+    return comp.defaultColor || '#64748b';
+  }
+
+  const tagValue = tagValues[comp.tagName];
+  const mapping = comp.colorMappings?.find(m => String(m.value) === String(tagValue));
+  
+  return mapping ? mapping.color : (comp.defaultColor || '#64748b');
+};
+
+const getComponentStatus = (comp) => {
+  if (!comp.tagName || !tagValues[comp.tagName]) {
+    return null;
+  }
+
+  const tagValue = tagValues[comp.tagName];
+  const mapping = comp.colorMappings?.find(m => String(m.value) === String(tagValue));
+  
+  return mapping?.label || tagValue;
+};
+
+const fetchSingleTagValue = async (tagName) => {
+  if (!tagName) return;
+  try {
+    const sql = `SELECT timestamp, ${tagName} FROM scada_wide ORDER BY timestamp DESC LIMIT 1`;
+    const result = await questdbService.query(sql);
+    
+    if (result.length > 0 && result[0][tagName] !== undefined) {
+      setTagValues(prev => ({
+        ...prev,
+        [tagName]: String(result[0][tagName])
+      }));
+    }
+  } catch (error) {
+    console.error('Error fetching single tag value:', error);
+  }
+};
 
   const handleCanvasClick = (e) => {
     const rect = canvasRef.current.getBoundingClientRect();
@@ -324,11 +400,13 @@ export default function ScadaDesigner({ config, onSave, onClose, darkMode }) {
     }
   };
 
-  const handleSaveTagConfig = (updatedComponent) => {
-    setComponents(components.map(c => c.id === updatedComponent.id ? updatedComponent : c));
-    setShowTagModal(false);
-    setEditingComponentTag(null);
-  };
+const handleSaveTagConfig = (updatedComponent) => {
+  setComponents(components.map(c => c.id === updatedComponent.id ? updatedComponent : c));
+  setShowTagModal(false);
+  setEditingComponentTag(null);
+  // Immediately fetch the tag value
+  fetchSingleTagValue(updatedComponent.tagName);
+};
 
   const handleDeleteComponent = () => {
     if (selectedComponent) {
@@ -554,31 +632,96 @@ export default function ScadaDesigner({ config, onSave, onClose, darkMode }) {
                   </g>
                 )}
 
-                {components.map(comp => {
-                  const svgData = SVG_COMPONENTS[comp.type];
-                  const isSelected = selectedComponent === comp.id;
-                  return (
-                    <g key={comp.id} transform={`translate(${comp.x}, ${comp.y})`}>
+               {components.map(comp => {
+  const svgData = SVG_COMPONENTS[comp.type];
+  const isSelected = selectedComponent === comp.id;
+  const componentColor = getComponentColor(comp);
+  const status = getComponentStatus(comp);
+  
+  return (
+    <g key={comp.id} transform={`translate(${comp.x}, ${comp.y})`}>
                       <g transform={`rotate(${comp.rotation || 0}, ${svgData.width/2}, ${svgData.height/2})`}>
                         {isSelected && (
                           <rect x={-6} y={-6} width={svgData.width + 12} height={svgData.height + 12} fill="none" stroke="#667eea" strokeWidth={3} rx={10} opacity="0.6" style={{ pointerEvents: 'none' }} />
                         )}
                         <rect x={0} y={0} width={svgData.width} height={svgData.height} fill="transparent" style={{ cursor: selectedTool === 'select' ? 'move' : selectedTool === 'line' ? 'pointer' : 'default' }} onMouseDown={(e) => handleComponentMouseDown(e, comp)} />
-                        <image href={svgData.svg} width={svgData.width} height={svgData.height} style={{ pointerEvents: 'none', filter: comp.tagName ? 'grayscale(1)' : 'none' }} />
-                      </g>
-                      <text x={svgData.width / 2} y={svgData.height + 20} textAnchor="middle" fill={theme.text} fontSize="12" fontWeight="600" style={{ pointerEvents: 'none' }}>
-                        {comp.label}
-                      </text>
-                      {comp.tagName && (
-                        <text x={svgData.width / 2} y={svgData.height + 35} textAnchor="middle" fill={theme.accent} fontSize="10" fontWeight="500" style={{ pointerEvents: 'none' }}>
-                          🏷️ {comp.tagName}
-                        </text>
-                      )}
-                    </g>
-                  );
-                })}
-              </g>
-            </svg>
+                       {comp.tagName && (
+  <>
+    <rect
+      x={-4}
+      y={-4}
+      width={svgData.width + 8}
+      height={svgData.height + 8}
+      fill={componentColor}
+      rx="8"
+      opacity="0.25"
+    />
+    <rect
+      x={-2}
+      y={-2}
+      width={svgData.width + 4}
+      height={svgData.height + 4}
+      fill="none"
+      stroke={componentColor}
+      strokeWidth="2.5"
+      rx="6"
+    />
+  </>
+)}
+<image 
+  href={svgData.svg} 
+  width={svgData.width} 
+  height={svgData.height} 
+  style={{ 
+    pointerEvents: 'none',
+    filter: comp.tagName ? `drop-shadow(0 0 6px ${componentColor})` : 'none'
+  }} 
+/>                     
+ </g>
+                     <text x={svgData.width / 2} y={svgData.height + 20} textAnchor="middle" fill={theme.text} fontSize="12" fontWeight="600" style={{ pointerEvents: 'none' }}>
+  {comp.label}
+</text>
+
+{status && (
+  <g>
+    <rect
+      x={svgData.width / 2 - 30}
+      y={svgData.height + 30}
+      width="60"
+      height="18"
+      fill={componentColor}
+      rx="4"
+      opacity="0.9"
+    />
+    <text
+      x={svgData.width / 2}
+      y={svgData.height + 42}
+      textAnchor="middle"
+      fill="white"
+      fontSize="10"
+      fontWeight="700"
+      style={{ pointerEvents: 'none' }}
+    >
+      {status}
+    </text>
+  </g>
+)}
+
+{comp.tagName && (
+  <text 
+    x={svgData.width / 2} 
+    y={svgData.height + (status ? 56 : 35)} 
+    textAnchor="middle" 
+    fill={theme.accent} 
+    fontSize="9" 
+    fontWeight="500" 
+    style={{ pointerEvents: 'none' }}
+  >
+    🏷️ {comp.tagName}
+    {tagValues[comp.tagName] && `: ${tagValues[comp.tagName]}`}
+  </text>
+)}
+</g>
 
             {components.length === 0 && (
               <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', textAlign: 'center', color: theme.textSecondary, pointerEvents: 'none' }}>
