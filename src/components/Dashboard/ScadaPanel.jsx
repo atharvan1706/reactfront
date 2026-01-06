@@ -9,9 +9,9 @@ import ClassicPump1 from '../svg/Classic_pump_1';
 import RegulatorExternalPressure from '../svg/RegulatorExternalPressure';
 import RegulatorSelfContained from '../svg/RegulatorSelfContained';
 import RotaryPlugValve from '../svg/RotaryPlugValve';
-import ValveLongShaft from '../../renderer/assets/3-D Valve with long shaft.svg';
-import ValveFailLocked from '../../renderer/assets/3-D Valve, fail locked.svg';
-import ControlValveHandActuator from '../../renderer/assets/3-D_Control_valve_with_hand_actuator.svg';
+import ValveLongShaft from '../svg/ValveLongShaft';
+import ValveFailLocked from '../svg/ValveFailLocked';
+import ControlValveHandActuator from '../svg/ControlValveHandActuator';
 import HandControlValve from '../../renderer/assets/3-D_Hand_control_valve.svg';
 import Pump3D from '../../renderer/assets/3-D_Pump.svg';
 import Valve3D from '../../renderer/assets/3-D_Valve.svg';
@@ -88,9 +88,30 @@ const SVG_COMPONENTS = {
     type: 'component', // Flag to identify React components
     color: '#ef4444' 
   },
-  valveLongShaft: { name: 'Valve (Long Shaft)', width: 60, height: 90, svg: ValveLongShaft, type: 'svg', color: '#f59e0b' },
-  valveFailLocked: { name: 'Valve (Fail Locked)', width: 70, height: 80, svg: ValveFailLocked, type: 'svg', color: '#ef4444' },
-  controlValveHandActuator: { name: 'Control Valve (Hand)', width: 70, height: 80, svg: ControlValveHandActuator, type: 'svg', color: '#3b82f6' },
+  valveLongShaft:  { 
+    name: 'Blowdown Valve', 
+    width: 60, 
+    height: 80, 
+    component: ValveLongShaft,
+    type: 'component', // Flag to identify React components
+    color: '#ef4444' 
+  },
+  valveFailLocked:  { 
+    name: 'Blowdown Valve', 
+    width: 60, 
+    height: 80, 
+    component: ValveFailLocked,
+    type: 'component', // Flag to identify React components
+    color: '#ef4444' 
+  },
+  controlValveHandActuator: { 
+    name: 'Blowdown Valve', 
+    width: 60, 
+    height: 80, 
+    component: ControlValveHandActuator,
+    type: 'component', // Flag to identify React components
+    color: '#ef4444' 
+  },
   handControlValve: { name: 'Hand Control Valve', width: 60, height: 70, svg: HandControlValve, type: 'svg', color: '#f59e0b' },
   valve3D: { name: '3D Valve', width: 60, height: 80, svg: Valve3D, type: 'svg', color: '#f59e0b' },
   valveWithActuator: { name: 'Valve with Actuator', width: 70, height: 90, svg: ValveWithActuator, type: 'svg', color: '#10b981' },
