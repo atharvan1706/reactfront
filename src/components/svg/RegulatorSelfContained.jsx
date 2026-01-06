@@ -4,14 +4,13 @@ const PipeValveIcon = ({
   width = 64,
   height = 64,
   className = '',
-  primaryColor = '#5C5C5C',
-  secondaryColor = '#EBEBEB',
-  accentColor = '#D8D8D8',
-  darkColor = '#373737',
-  lightColor = '#F0F0F0'
+  startColor = '#5C5C5C',
+  midColor = '#EBEBEB',
+  endColor = '#FFFFFF'
 }) => {
   const gradientId = `gradient-${Math.random().toString(36).substr(2, 9)}`;
-  
+  const filterId = `filter-${Math.random().toString(36).substr(2, 9)}`;
+
   return (
     <svg
       xmlns="http://www.w3.org/2000/svg"
@@ -21,164 +20,95 @@ const PipeValveIcon = ({
       className={className}
     >
       <defs>
-        {/* Pipe gradient */}
-        <linearGradient id={`${gradientId}_pipe`} x1="0" y1="0" x2="1" y2="0">
-          <stop offset="0%" stopColor={primaryColor} />
-          <stop offset="45%" stopColor={secondaryColor} />
-          <stop offset="57%" stopColor={accentColor} />
-          <stop offset="77%" stopColor="#B2B2B2" />
-          <stop offset="100%" stopColor={primaryColor} />
+        {/* Depth / soft shadow */}
+        <filter id={filterId} x="-20%" y="-20%" width="140%" height="140%">
+          <feOffset dy="1" />
+          <feGaussianBlur stdDeviation="1.5" />
+          <feComposite in2="SourceGraphic" operator="over" />
+        </filter>
+
+        {/* Generic metallic gradient */}
+        <linearGradient id={`${gradientId}_metal`} x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor={startColor} />
+          <stop offset="45%" stopColor={midColor} />
+          <stop offset="100%" stopColor={endColor} />
         </linearGradient>
 
-        {/* Valve gradient */}
-        <radialGradient id={`${gradientId}_valve`} cx="50%" cy="50%" r="50%">
+        {/* Valve radial gradient */}
+        <radialGradient id={`${gradientId}_valve`} cx="0.5" cy="0.5" r="0.5">
           <stop offset="0%" stopColor="#6D6D6D" />
-          <stop offset="15%" stopColor="#C4C4C4" />
           <stop offset="36%" stopColor="#EEEEEE" />
-          <stop offset="50%" stopColor={lightColor} />
-          <stop offset="67%" stopColor="#D9D9D9" />
-          <stop offset="90%" stopColor="#959595" />
+          <stop offset="50%" stopColor="#F0F0F0" />
           <stop offset="100%" stopColor="#6D6D6D" />
         </radialGradient>
 
         {/* Port gradient */}
         <linearGradient id={`${gradientId}_port`} x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor={darkColor} />
-          <stop offset="45%" stopColor={secondaryColor} />
-          <stop offset="55%" stopColor={accentColor} />
-          <stop offset="77%" stopColor="#A5A5A5" />
-          <stop offset="100%" stopColor={darkColor} />
+          <stop offset="0%" stopColor="#373737" />
+          <stop offset="45%" stopColor={midColor} />
+          <stop offset="100%" stopColor="#373737" />
         </linearGradient>
-
-        {/* Nozzle gradient */}
-        <radialGradient id={`${gradientId}_nozzle`} cx="20%" cy="50%" r="80%">
-          <stop offset="0%" stopColor="#4C4C4C" />
-          <stop offset="28%" stopColor="#A4A4A4" />
-          <stop offset="49%" stopColor="#DCDCDC" />
-          <stop offset="61%" stopColor="#E0E0E0" />
-          <stop offset="86%" stopColor="#949494" />
-          <stop offset="100%" stopColor="#4C4C4C" />
-        </radialGradient>
-
-        {/* Shadow filter */}
-        <filter id={`${gradientId}_shadow`} x="-50%" y="-50%" width="200%" height="200%">
-          <feDropShadow dx="1" dy="1" stdDeviation="1.5" floodOpacity="0.3"/>
-        </filter>
       </defs>
 
-      {/* Horizontal Pipe (Top) */}
-      <rect 
-        x="30.826" 
-        y="0" 
-        width="55.35" 
-        height="7.875" 
-        fill={`url(#${gradientId}_pipe)`}
-        filter={`url(#${gradientId}_shadow)`}
-      />
+      {/* ===== Horizontal Pipe (Top) ===== */}
+      <g filter={`url(#${filterId})`}>
+        <path d="M30.826,0 l55.35,0 0,7.875 -55.35,0 0,-7.875z" fill={`url(#${gradientId}_metal)`} />
+        <path d="M30.826,0 l55.35,0 0,7.875 -55.35,0 0,-7.875z" fill="none" stroke="#000" strokeWidth="1" opacity="0.2" />
+      </g>
 
-      {/* Vertical Pipe (Left) - Top Section */}
-      <rect 
-        x="30.826" 
-        y="0" 
-        width="7.875" 
-        height="33.144" 
-        fill={`url(#${gradientId}_pipe)`}
-        filter={`url(#${gradientId}_shadow)`}
-      />
+      {/* ===== Vertical Pipe (Left) - Top Section ===== */}
+      <g filter={`url(#${filterId})`}>
+        <path d="M30.826,0 l7.875,0 0,33.144 -7.875,0 0,-33.144z" fill={`url(#${gradientId}_metal)`} />
+        <path d="M30.826,0 l7.875,0 0,33.144" stroke="#000" strokeWidth="1" opacity="0.2" fill="none" />
+      </g>
 
-      {/* Vertical Pipe (Right) */}
-      <rect 
-        x="78.301" 
-        y="0" 
-        width="7.875" 
-        height="48.812" 
-        fill={`url(#${gradientId}_pipe)`}
-        filter={`url(#${gradientId}_shadow)`}
-      />
+      {/* ===== Vertical Pipe (Right) ===== */}
+      <g filter={`url(#${filterId})`}>
+        <path d="M78.301,0 l7.875,0 0,48.812 -7.875,0 0,-48.812z" fill={`url(#${gradientId}_metal)`} />
+        <path d="M78.301,0 l7.875,0 0,48.812" stroke="#000" strokeWidth="1" opacity="0.2" fill="none" />
+      </g>
 
-      {/* Valve - Left Half */}
-      <path 
-        d="M6.976,38.823l28.939-0.083L35.83,10.624C19.89,10.624,6.976,23.353,6.976,38.823"
-        fill={`url(#${gradientId}_valve)`}
-        filter={`url(#${gradientId}_shadow)`}
-      />
+      {/* ===== Valve - Left Half ===== */}
+      <g filter={`url(#${filterId})`}>
+        <path d="M6.976,38.823 l28.939,-0.083 -0.085,-28.116 C19.89,10.624 6.976,23.353 6.976,38.823z" fill={`url(#${gradientId}_valve)`} />
+        <path d="M6.976,38.823 l28.939,-0.083 -0.085,-28.116" stroke="#000" strokeWidth="1" opacity="0.3" fill="none" />
+      </g>
 
-      {/* Valve - Right Half */}
-      <path 
-        d="M35.059,38.693l28.258,0.083c0-15.447-12.612-28.157-28.176-28.157L35.059,38.693z"
-        fill={`url(#${gradientId}_valve)`}
-        filter={`url(#${gradientId}_shadow)`}
-      />
+      {/* ===== Valve - Right Half ===== */}
+      <g filter={`url(#${filterId})`}>
+        <path d="M35.059,38.693 l28.258,0.083 c0,-15.447 -12.612,-28.157 -28.176,-28.157 L35.059,38.693z" fill={`url(#${gradientId}_valve)`} />
+        <path d="M35.059,38.693 l28.258,0.083 c0,-15.447 -12.612,-28.157 -28.176,-28.157" stroke="#000" strokeWidth="1" opacity="0.3" fill="none" />
+      </g>
 
-      {/* Valve Circle Outline */}
-      <circle
-        cx="35"
-        cy="24.7"
-        r="14"
-        fill="none"
-        stroke={primaryColor}
-        strokeWidth="0.5"
-        opacity="0.3"
-      />
+      {/* ===== Vertical Pipe (Left) - Bottom Section ===== */}
+      <g filter={`url(#${filterId})`}>
+        <path d="M30.826,33.145 l7.875,0 0,62.286 -7.875,0 0,-62.286z" fill={`url(#${gradientId}_metal)`} />
+        <path d="M30.826,33.145 l7.875,0 0,62.286" stroke="#000" strokeWidth="1" opacity="0.2" fill="none" />
+      </g>
 
-      {/* Vertical Pipe (Left) - Bottom Section */}
-      <rect 
-        x="30.826" 
-        y="33.145" 
-        width="7.875" 
-        height="62.286" 
-        fill={`url(#${gradientId}_pipe)`}
-        filter={`url(#${gradientId}_shadow)`}
-      />
+      {/* ===== Diagonal Pipe ===== */}
+      <g filter={`url(#${filterId})`}>
+        <rect x="55.369" y="42.352" width="7.875" height="61.543" transform="matrix(-0.7071 -0.7071 0.7071 -0.7071 49.5405 166.7657)" fill={`url(#${gradientId}_metal)`} />
+        <rect x="55.369" y="42.352" width="7.875" height="61.543" transform="matrix(-0.7071 -0.7071 0.7071 -0.7071 49.5405 166.7657)" fill="none" stroke="#000" strokeWidth="1" opacity="0.2" />
+      </g>
 
-      {/* Diagonal Pipe */}
-      <rect 
-        x="55.369" 
-        y="42.352" 
-        width="7.875" 
-        height="61.543" 
-        transform="matrix(-0.7071 -0.7071 0.7071 -0.7071 49.5405 166.7657)"
-        fill={`url(#${gradientId}_pipe)`}
-        filter={`url(#${gradientId}_shadow)`}
-      />
+      {/* ===== Right Nozzle ===== */}
+      <g filter={`url(#${filterId})`}>
+        <path d="M78.301,48.6 l-0.866,0.826 4.326,6.824 c0,0 1.647,-1.431 2.317,-2.203 0.516,-0.594 0.879,-1.365 1.149,-1.833 0.702,-1.21 0.931,-3.149 0.952,-3.348 L85.179,47.85 77.3,47.712 77.3,48.6z" fill={`url(#${gradientId}_metal)`} />
+        <path d="M78.301,48.6 l-0.866,0.826 4.326,6.824 c0,0 1.647,-1.431 2.317,-2.203 0.516,-0.594 0.879,-1.365 1.149,-1.833 0.702,-1.21 0.931,-3.149 0.952,-3.348" stroke="#000" strokeWidth="1" opacity="0.3" fill="none" />
+      </g>
 
-      {/* Right Nozzle */}
-      <path 
-        d="M78.301,48.6l-0.866,0.826l4.326,6.824c0,0,1.647-1.431,2.317-2.203c0.516-0.594,0.879-1.365,1.149-1.833
-        c0.702-1.21,0.931-3.149,0.952-3.348V47.85l-7.879-0.138V48.6z"
-        fill={`url(#${gradientId}_nozzle)`}
-        filter={`url(#${gradientId}_shadow)`}
-      />
+      {/* ===== Left Port ===== */}
+      <g filter={`url(#${filterId})`}>
+        <path d="M0.001,78.384 L34.65,95.277 0.001,112.415 0.001,78.384z" fill={`url(#${gradientId}_port)`} />
+        <path d="M0.001,78.384 L34.65,95.277 0.001,112.415" stroke="#000" strokeWidth="1" opacity="0.3" fill="none" />
+      </g>
 
-      {/* Left Port */}
-      <path 
-        d="M0.001,78.384L34.65,95.277L0.001,112.415V78.384"
-        fill={`url(#${gradientId}_port)`}
-        filter={`url(#${gradientId}_shadow)`}
-      />
-
-      {/* Right Port */}
-      <path 
-        d="M68.807,78.511L34.65,95.203l34.156,16.938V78.511"
-        fill={`url(#${gradientId}_port)`}
-        filter={`url(#${gradientId}_shadow)`}
-      />
-
-      {/* Decorative highlights on ports */}
-      <path 
-        d="M5,85 L30,95 L5,105"
-        fill="none"
-        stroke={lightColor}
-        strokeWidth="0.5"
-        opacity="0.5"
-      />
-      <path 
-        d="M63,85 L38,95 L63,105"
-        fill="none"
-        stroke={lightColor}
-        strokeWidth="0.5"
-        opacity="0.5"
-      />
+      {/* ===== Right Port ===== */}
+      <g filter={`url(#${filterId})`}>
+        <path d="M68.807,78.511 L34.65,95.203 68.806,112.141 68.807,78.511z" fill={`url(#${gradientId}_port)`} />
+        <path d="M68.807,78.511 L34.65,95.203 68.806,112.141" stroke="#000" strokeWidth="1" opacity="0.3" fill="none" />
+      </g>
     </svg>
   );
 };
