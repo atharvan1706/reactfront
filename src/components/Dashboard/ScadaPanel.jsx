@@ -4,6 +4,7 @@ import questdbService from '../../services/questdb';
 // Import React component versions
 import BlowdownValveComponent from '../svg/3D-Blowdown-valve';
 import PressureBalancedDiaphragm from '../svg/3-D Pressure-balanced-diaphragm-actuated';
+import ClassicPump1 from '../svg/Classic_pump_1';
 // Import remaining SVG files (to be converted later)
 import RegulatorExternalPressure from '../../renderer/assets/3-D Regulator with external pressure tap.svg';
 import RegulatorSelfContained from '../../renderer/assets/3-D Regulator, self-contained.svg';
@@ -19,7 +20,7 @@ import BallValve1 from '../../renderer/assets/Ball_valve_1.svg';
 import BlueControlValve from '../../renderer/assets/Blue_control_valve_with_no_flange.svg';
 import CentrifugalPump2 from '../../renderer/assets/Centrifugal_pump_2.svg';
 import CentrifugalPump4 from '../../renderer/assets/Centrifugal_pump_4.svg';
-import ClassicPump1 from '../../renderer/assets/Classic_pump_1.svg';
+
 import CompactValve from '../../renderer/assets/Compact valve.svg';
 import ControlValve3 from '../../renderer/assets/Control valve 3.svg';
 import ControlValveDiaphragm from '../../renderer/assets/Control valve with diaphragm activator.svg';
@@ -88,7 +89,14 @@ const SVG_COMPONENTS = {
   pump3D: { name: '3D Pump', width: 90, height: 80, svg: Pump3D, type: 'svg', color: '#3b82f6' },
   centrifugalPump2: { name: 'Centrifugal Pump 2', width: 90, height: 80, svg: CentrifugalPump2, type: 'svg', color: '#3b82f6' },
   centrifugalPump4: { name: 'Centrifugal Pump 4', width: 80, height: 80, svg: CentrifugalPump4, type: 'svg', color: '#3b82f6' },
-  classicPump1: { name: 'Classic Pump', width: 70, height: 70, svg: ClassicPump1, type: 'svg', color: '#3b82f6' },
+  classicPump1:  { 
+    name: 'Blowdown Valve', 
+    width: 60, 
+    height: 80, 
+    component: ClassicPump1,
+    type: 'component', // Flag to identify React components
+    color: '#ef4444' 
+  },
   coolPump: { name: 'Cool Pump', width: 80, height: 80, svg: CoolPump, type: 'svg', color: '#06b6d4' },
   horizontalPump3: { name: 'Horizontal Pump 3', width: 100, height: 70, svg: HorizontalPump3, type: 'svg', color: '#3b82f6' },
   horizontalPump4: { name: 'Horizontal Pump 4', width: 100, height: 70, svg: HorizontalPump4, type: 'svg', color: '#3b82f6' },
