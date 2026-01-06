@@ -59,7 +59,7 @@ const SVG_COMPONENTS = {
     name: 'Blowdown Valve', 
     width: 60, 
     height: 80, 
-    component: pressureBalancedDiaphragmComponent,
+    component: pressureBalancedDiaphragm,
     type: 'component', // Flag to identify React components
     color: '#ef4444' 
   },
