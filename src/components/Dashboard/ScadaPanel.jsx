@@ -6,7 +6,7 @@ import BlowdownValveComponent from '../svg/3D-Blowdown-valve';
 import PressureBalancedDiaphragm from '../svg/3-D Pressure-balanced-diaphragm-actuated';
 import ClassicPump1 from '../svg/Classic_pump_1';
 // Import remaining SVG files (to be converted later)
-import RegulatorExternalPressure from '../../renderer/assets/3-D Regulator with external pressure tap.svg';
+import RegulatorExternalPressure from '../svg/RegulatorExternalPressure';
 import RegulatorSelfContained from '../../renderer/assets/3-D Regulator, self-contained.svg';
 import RotaryPlugValve from '../../renderer/assets/3-D Rotary plug valve.svg';
 import ValveLongShaft from '../../renderer/assets/3-D Valve with long shaft.svg';
@@ -64,7 +64,14 @@ const SVG_COMPONENTS = {
     type: 'component', // Flag to identify React components
     color: '#ef4444' 
   },
-  regulatorExternalPressure: { name: 'Regulator (External)', width: 80, height: 80, svg: RegulatorExternalPressure, type: 'svg', color: '#8b5cf6' },
+  regulatorExternalPressure:{ 
+    name: 'Blowdown Valve', 
+    width: 60, 
+    height: 80, 
+    component: RegulatorExternalPressure,
+    type: 'component', // Flag to identify React components
+    color: '#ef4444' 
+  },
   regulatorSelfContained: { name: 'Regulator (Self-Contained)', width: 80, height: 80, svg: RegulatorSelfContained, type: 'svg', color: '#8b5cf6' },
   rotaryPlugValve: { name: 'Rotary Plug Valve', width: 70, height: 70, svg: RotaryPlugValve, type: 'svg', color: '#f59e0b' },
   valveLongShaft: { name: 'Valve (Long Shaft)', width: 60, height: 90, svg: ValveLongShaft, type: 'svg', color: '#f59e0b' },
