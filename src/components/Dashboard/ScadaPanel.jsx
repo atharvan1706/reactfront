@@ -3,9 +3,8 @@ import questdbService from '../../services/questdb';
 
 // Import React component versions
 import BlowdownValveComponent from '../svg/3D-Blowdown-valve';
-
+import PressureBalancedDiaphragm from '../svg/3-D Pressure-balanced-diaphragm-actuated';
 // Import remaining SVG files (to be converted later)
-import PressureBalancedDiaphragm from '../../renderer/assets/3-D Pressure-balanced diaphragm actuated.svg';
 import RegulatorExternalPressure from '../../renderer/assets/3-D Regulator with external pressure tap.svg';
 import RegulatorSelfContained from '../../renderer/assets/3-D Regulator, self-contained.svg';
 import RotaryPlugValve from '../../renderer/assets/3-D Rotary plug valve.svg';
@@ -56,7 +55,14 @@ const SVG_COMPONENTS = {
     color: '#ef4444' 
   },
   // Legacy SVG imports (to be converted to React components)
-  pressureBalancedDiaphragm: { name: 'Pressure Balanced Diaphragm', width: 70, height: 90, svg: PressureBalancedDiaphragm, type: 'svg', color: '#06b6d4' },
+  pressureBalancedDiaphragm:  { 
+    name: 'Blowdown Valve', 
+    width: 60, 
+    height: 80, 
+    component: pressureBalancedDiaphragmComponent,
+    type: 'component', // Flag to identify React components
+    color: '#ef4444' 
+  },
   regulatorExternalPressure: { name: 'Regulator (External)', width: 80, height: 80, svg: RegulatorExternalPressure, type: 'svg', color: '#8b5cf6' },
   regulatorSelfContained: { name: 'Regulator (Self-Contained)', width: 80, height: 80, svg: RegulatorSelfContained, type: 'svg', color: '#8b5cf6' },
   rotaryPlugValve: { name: 'Rotary Plug Valve', width: 70, height: 70, svg: RotaryPlugValve, type: 'svg', color: '#f59e0b' },
