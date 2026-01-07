@@ -4,7 +4,26 @@
 import React from 'react';
 import { Filter, Plus, X, TrendingUp, Info } from 'lucide-react';
 
-function TransformationPanel({ transformations, onChange }) {
+function TransformationPanel({ transformations, onChange, darkMode }) {
+  
+  // Dark mode theme
+  const theme = darkMode ? {
+    bg: '#1e293b',
+    card: '#0f172a',
+    hover: '#334155',
+    text: '#f1f5f9',
+    textSecondary: '#cbd5e1',
+    textMuted: '#94a3b8',
+    border: '#334155'
+  } : {
+    bg: 'white',
+    card: '#f9fafb',
+    hover: '#f3f4f6',
+    text: '#111827',
+    textSecondary: '#374151',
+    textMuted: '#6b7280',
+    border: '#e5e7eb'
+  };
   
   const addTransformation = () => {
     onChange([
@@ -73,7 +92,7 @@ function TransformationPanel({ transformations, onChange }) {
       case 'movingAverage':
         return (
           <div>
-            <label style={{ display: 'block', marginBottom: '4px', fontSize: '11px', color: '#6b7280', fontWeight: '600' }}>
+            <label style={{ display: 'block', marginBottom: '4px', fontSize: '11px', color: theme.textMuted, fontWeight: '600' }}>
               Window Size
             </label>
             <input
@@ -85,14 +104,14 @@ function TransformationPanel({ transformations, onChange }) {
               style={{
                 width: '100%',
                 padding: '6px 8px',
-                background: 'white',
-                border: '1px solid #d1d5db',
+                background: theme.bg,
+                border: `1px solid ${theme.border}`,
                 borderRadius: '4px',
-                color: '#111827',
+                color: theme.text,
                 fontSize: '12px'
               }}
             />
-            <div style={{ fontSize: '10px', color: '#9ca3af', marginTop: '2px' }}>
+            <div style={{ fontSize: '10px', color: theme.textMuted, marginTop: '2px' }}>
               5-10 for light smoothing, 20+ for heavy
             </div>
           </div>
@@ -101,7 +120,7 @@ function TransformationPanel({ transformations, onChange }) {
       case 'exponentialMovingAverage':
         return (
           <div>
-            <label style={{ display: 'block', marginBottom: '4px', fontSize: '11px', color: '#6b7280', fontWeight: '600' }}>
+            <label style={{ display: 'block', marginBottom: '4px', fontSize: '11px', color: theme.textMuted, fontWeight: '600' }}>
               Alpha (0-1)
             </label>
             <input
@@ -114,14 +133,14 @@ function TransformationPanel({ transformations, onChange }) {
               style={{
                 width: '100%',
                 padding: '6px 8px',
-                background: 'white',
-                border: '1px solid #d1d5db',
+                background: theme.bg,
+                border: `1px solid ${theme.border}`,
                 borderRadius: '4px',
-                color: '#111827',
+                color: theme.text,
                 fontSize: '12px'
               }}
             />
-            <div style={{ fontSize: '10px', color: '#9ca3af', marginTop: '2px' }}>
+            <div style={{ fontSize: '10px', color: theme.textMuted, marginTop: '2px' }}>
               Higher = more responsive (0.3 is good)
             </div>
           </div>
@@ -130,7 +149,7 @@ function TransformationPanel({ transformations, onChange }) {
       case 'scale':
         return (
           <div>
-            <label style={{ display: 'block', marginBottom: '4px', fontSize: '11px', color: '#6b7280', fontWeight: '600' }}>
+            <label style={{ display: 'block', marginBottom: '4px', fontSize: '11px', color: theme.textMuted, fontWeight: '600' }}>
               Multiply by
             </label>
             <input
@@ -141,14 +160,14 @@ function TransformationPanel({ transformations, onChange }) {
               style={{
                 width: '100%',
                 padding: '6px 8px',
-                background: 'white',
-                border: '1px solid #d1d5db',
+                background: theme.bg,
+                border: `1px solid ${theme.border}`,
                 borderRadius: '4px',
-                color: '#111827',
+                color: theme.text,
                 fontSize: '12px'
               }}
             />
-            <div style={{ fontSize: '10px', color: '#9ca3af', marginTop: '2px' }}>
+            <div style={{ fontSize: '10px', color: theme.textMuted, marginTop: '2px' }}>
               2 = double, 0.5 = half, 1.8 = Celsius to F
             </div>
           </div>
@@ -157,7 +176,7 @@ function TransformationPanel({ transformations, onChange }) {
       case 'offset':
         return (
           <div>
-            <label style={{ display: 'block', marginBottom: '4px', fontSize: '11px', color: '#6b7280', fontWeight: '600' }}>
+            <label style={{ display: 'block', marginBottom: '4px', fontSize: '11px', color: theme.textMuted, fontWeight: '600' }}>
               Add amount
             </label>
             <input
@@ -167,14 +186,14 @@ function TransformationPanel({ transformations, onChange }) {
               style={{
                 width: '100%',
                 padding: '6px 8px',
-                background: 'white',
-                border: '1px solid #d1d5db',
+                background: theme.bg,
+                border: `1px solid ${theme.border}`,
                 borderRadius: '4px',
-                color: '#111827',
+                color: theme.text,
                 fontSize: '12px'
               }}
             />
-            <div style={{ fontSize: '10px', color: '#9ca3af', marginTop: '2px' }}>
+            <div style={{ fontSize: '10px', color: theme.textMuted, marginTop: '2px' }}>
               32 for Celsius to Fahrenheit offset
             </div>
           </div>
@@ -184,7 +203,7 @@ function TransformationPanel({ transformations, onChange }) {
         return (
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
             <div>
-              <label style={{ display: 'block', marginBottom: '4px', fontSize: '11px', color: '#6b7280', fontWeight: '600' }}>
+              <label style={{ display: 'block', marginBottom: '4px', fontSize: '11px', color: theme.textMuted, fontWeight: '600' }}>
                 Min Value
               </label>
               <input
@@ -195,16 +214,16 @@ function TransformationPanel({ transformations, onChange }) {
                 style={{
                   width: '100%',
                   padding: '6px 8px',
-                  background: 'white',
-                  border: '1px solid #d1d5db',
+                  background: theme.bg,
+                  border: `1px solid ${theme.border}`,
                   borderRadius: '4px',
-                  color: '#111827',
+                  color: theme.text,
                   fontSize: '12px'
                 }}
               />
             </div>
             <div>
-              <label style={{ display: 'block', marginBottom: '4px', fontSize: '11px', color: '#6b7280', fontWeight: '600' }}>
+              <label style={{ display: 'block', marginBottom: '4px', fontSize: '11px', color: theme.textMuted, fontWeight: '600' }}>
                 Max Value
               </label>
               <input
@@ -215,10 +234,10 @@ function TransformationPanel({ transformations, onChange }) {
                 style={{
                   width: '100%',
                   padding: '6px 8px',
-                  background: 'white',
-                  border: '1px solid #d1d5db',
+                  background: theme.bg,
+                  border: `1px solid ${theme.border}`,
                   borderRadius: '4px',
-                  color: '#111827',
+                  color: theme.text,
                   fontSize: '12px'
                 }}
               />
@@ -229,7 +248,7 @@ function TransformationPanel({ transformations, onChange }) {
       case 'resample':
         return (
           <div>
-            <label style={{ display: 'block', marginBottom: '4px', fontSize: '11px', color: '#6b7280', fontWeight: '600' }}>
+            <label style={{ display: 'block', marginBottom: '4px', fontSize: '11px', color: theme.textMuted, fontWeight: '600' }}>
               Keep every Nth point
             </label>
             <input
@@ -241,14 +260,14 @@ function TransformationPanel({ transformations, onChange }) {
               style={{
                 width: '100%',
                 padding: '6px 8px',
-                background: 'white',
-                border: '1px solid #d1d5db',
+                background: theme.bg,
+                border: `1px solid ${theme.border}`,
                 borderRadius: '4px',
-                color: '#111827',
+                color: theme.text,
                 fontSize: '12px'
               }}
             />
-            <div style={{ fontSize: '10px', color: '#9ca3af', marginTop: '2px' }}>
+            <div style={{ fontSize: '10px', color: theme.textMuted, marginTop: '2px' }}>
               2 = keep every 2nd point (50% reduction)
             </div>
           </div>
@@ -258,7 +277,7 @@ function TransformationPanel({ transformations, onChange }) {
         return (
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
             <div>
-              <label style={{ display: 'block', marginBottom: '4px', fontSize: '11px', color: '#6b7280', fontWeight: '600' }}>
+              <label style={{ display: 'block', marginBottom: '4px', fontSize: '11px', color: theme.textMuted, fontWeight: '600' }}>
                 Window Size
               </label>
               <input
@@ -269,16 +288,16 @@ function TransformationPanel({ transformations, onChange }) {
                 style={{
                   width: '100%',
                   padding: '6px 8px',
-                  background: 'white',
-                  border: '1px solid #d1d5db',
+                  background: theme.bg,
+                  border: `1px solid ${theme.border}`,
                   borderRadius: '4px',
-                  color: '#111827',
+                  color: theme.text,
                   fontSize: '12px'
                 }}
               />
             </div>
             <div>
-              <label style={{ display: 'block', marginBottom: '4px', fontSize: '11px', color: '#6b7280', fontWeight: '600' }}>
+              <label style={{ display: 'block', marginBottom: '4px', fontSize: '11px', color: theme.textMuted, fontWeight: '600' }}>
                 Method
               </label>
               <select
@@ -287,10 +306,10 @@ function TransformationPanel({ transformations, onChange }) {
                 style={{
                   width: '100%',
                   padding: '6px 8px',
-                  background: 'white',
-                  border: '1px solid #d1d5db',
+                  background: theme.bg,
+                  border: `1px solid ${theme.border}`,
                   borderRadius: '4px',
-                  color: '#111827',
+                  color: theme.text,
                   fontSize: '12px'
                 }}
               >
@@ -309,11 +328,11 @@ function TransformationPanel({ transformations, onChange }) {
         return (
           <div style={{ 
             padding: '6px 8px',
-            background: '#eff6ff',
-            border: '1px solid #dbeafe',
+            background: darkMode ? '#1e3a5f' : '#eff6ff',
+border: `1px solid ${darkMode ? '#2563eb' : '#dbeafe'}`,
             borderRadius: '4px',
             fontSize: '11px',
-            color: '#1e40af',
+            color: darkMode ? '#93c5fd' : '#1e40af',
             marginTop: '4px'
           }}>
             ℹ️ No settings needed
@@ -324,8 +343,8 @@ function TransformationPanel({ transformations, onChange }) {
 
   return (
     <div style={{
-      background: '#f9fafb',
-      border: '1px solid #e5e7eb',
+      background: theme.card,
+      border: `1px solid ${theme.border}`,
       borderRadius: '8px',
       padding: '16px',
       marginTop: '16px'
@@ -341,7 +360,7 @@ function TransformationPanel({ transformations, onChange }) {
           <h3 style={{ 
             margin: 0, 
             fontSize: '14px', 
-            color: '#374151',
+            color: theme.textSecondary,
             fontWeight: '600',
             display: 'flex',
             alignItems: 'center',
@@ -353,7 +372,7 @@ function TransformationPanel({ transformations, onChange }) {
           <p style={{ 
             margin: '4px 0 0', 
             fontSize: '11px', 
-            color: '#6b7280' 
+            color: theme.textMuted 
           }}>
             15 transformations available - apply multiple in sequence
           </p>
@@ -384,11 +403,11 @@ function TransformationPanel({ transformations, onChange }) {
         <div style={{
           padding: '24px',
           textAlign: 'center',
-          color: '#9ca3af',
+          color: theme.textMuted,
           fontSize: '12px',
-          border: '2px dashed #e5e7eb',
+         border: `2px dashed ${theme.border}`,
           borderRadius: '6px',
-          background: 'white'
+          background: theme.bg
         }}>
           <TrendingUp size={24} style={{ opacity: 0.5, marginBottom: '8px' }} />
           <div>No transformations applied</div>
@@ -403,8 +422,8 @@ function TransformationPanel({ transformations, onChange }) {
         <div
           key={index}
           style={{
-            background: 'white',
-            border: '1px solid #e5e7eb',
+            background: theme.bg,
+            border: `1px solid ${theme.border}`,
             borderRadius: '6px',
             padding: '12px',
             marginBottom: '8px'
@@ -417,7 +436,7 @@ function TransformationPanel({ transformations, onChange }) {
                 display: 'block', 
                 marginBottom: '4px', 
                 fontSize: '11px', 
-                color: '#6b7280',
+                color: theme.textMuted,
                 fontWeight: '600'
               }}>
                 Transformation #{index + 1}
@@ -428,10 +447,10 @@ function TransformationPanel({ transformations, onChange }) {
                 style={{
                   width: '100%',
                   padding: '6px 8px',
-                  background: 'white',
-                  border: '1px solid #d1d5db',
+                  background: theme.bg,
+                  border: `1px solid ${theme.border}`,
                   borderRadius: '4px',
-                  color: '#111827',
+                  color: theme.text,
                   fontSize: '12px'
                 }}
               >
@@ -476,11 +495,11 @@ function TransformationPanel({ transformations, onChange }) {
         <div style={{
           marginTop: '12px',
           padding: '8px 12px',
-          background: '#fef3c7',
-          border: '1px solid #fde68a',
+          background: darkMode ? '#451a03' : '#fef3c7',
+          border: `1px solid ${darkMode ? '#78350f' : '#fde68a'}`,
           borderRadius: '6px',
           fontSize: '11px',
-          color: '#92400e',
+          color: darkMode ? '#fcd34d' : '#92400e',
           display: 'flex',
           alignItems: 'flex-start',
           gap: '6px'
@@ -488,7 +507,7 @@ function TransformationPanel({ transformations, onChange }) {
           <Info size={14} style={{ marginTop: '1px', flexShrink: 0 }} />
           <span>
             <strong>Transformations apply in order:</strong> Each transformation processes 
-            the output of the previous one. Drag to reorder (coming soon!).
+            the output of the previous one. 
           </span>
         </div>
       )}

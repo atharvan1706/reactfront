@@ -15,7 +15,7 @@ import SimpleTransformations from './simpleTransformations';
 import TransformationPanel from './TransformationPanel';
 
 const X = LucideX;
-function PanelConfigModal({ panel, onSave, onClose, allTables }) {
+function PanelConfigModal({ panel, onSave, onClose, allTables, darkMode }) {
   const [config, setConfig] = useState(panel || {
   ...DEFAULT_PANEL_CONFIG,
   id: `panel_${Date.now()}`,
@@ -27,6 +27,28 @@ function PanelConfigModal({ panel, onSave, onClose, allTables }) {
   const [previewLoading, setPreviewLoading] = useState(false);
   const [previewError, setPreviewError] = useState(null);
   const [availableFields, setAvailableFields] = useState([]);
+
+// Dark mode theme
+  const theme = darkMode ? {
+    bg: '#1e293b',
+    card: '#0f172a',
+    hover: '#334155',
+    text: '#f1f5f9',
+    textSecondary: '#cbd5e1',
+    textMuted: '#94a3b8',
+    border: '#334155',
+    borderLight: '#475569'
+  } : {
+    bg: 'white',
+    card: '#f9fafb',
+    hover: '#f3f4f6',
+    text: '#111827',
+    textSecondary: '#374151',
+    textMuted: '#6b7280',
+    border: '#e5e7eb',
+    borderLight: '#d1d5db'
+  };
+
 
   useEffect(() => {
     if (config.table && config.dataSource === 'table') {
@@ -150,7 +172,7 @@ function PanelConfigModal({ panel, onSave, onClose, allTables }) {
             <CartesianGrid strokeDasharray="3 3" stroke="rgba(0,0,0,0.1)" />
             <XAxis dataKey="_time" tick={{ fill: '#6b7280', fontSize: 10 }} />
             <YAxis tick={{ fill: '#6b7280', fontSize: 10 }} />
-            <Tooltip contentStyle={{ background: 'white', border: '1px solid #e5e7eb' }} />
+            <Tooltip contentStyle={{ background: theme.bg, border: `1px solid ${theme.border}` }} />
             <Legend />
             {yFields.map((yField, idx) => (
               <Line 
@@ -170,7 +192,7 @@ function PanelConfigModal({ panel, onSave, onClose, allTables }) {
             <CartesianGrid strokeDasharray="3 3" stroke="rgba(0,0,0,0.1)" />
             <XAxis dataKey="_time" tick={{ fill: '#6b7280', fontSize: 10 }} />
             <YAxis tick={{ fill: '#6b7280', fontSize: 10 }} />
-            <Tooltip contentStyle={{ background: 'white', border: '1px solid #e5e7eb' }} />
+            <Tooltip contentStyle={{ background: theme.bg, border: `1px solid ${theme.border}` }} />
             <Legend />
             {yFields.map((yField, idx) => (
               <Bar 
@@ -187,7 +209,7 @@ function PanelConfigModal({ panel, onSave, onClose, allTables }) {
             <CartesianGrid strokeDasharray="3 3" stroke="rgba(0,0,0,0.1)" />
             <XAxis dataKey="_time" tick={{ fill: '#6b7280', fontSize: 10 }} />
             <YAxis tick={{ fill: '#6b7280', fontSize: 10 }} />
-            <Tooltip contentStyle={{ background: 'white', border: '1px solid #e5e7eb' }} />
+            <Tooltip contentStyle={{ background: theme.bg, border: `1px solid ${theme.border}` }} />
             <Legend />
             {yFields.map((yField, idx) => (
               <Area 
@@ -217,7 +239,7 @@ function PanelConfigModal({ panel, onSave, onClose, allTables }) {
                 <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
               ))}
             </Pie>
-            <Tooltip contentStyle={{ background: 'white', border: '1px solid #e5e7eb' }} />
+            <Tooltip contentStyle={{ background: theme.bg, border: `1px solid ${theme.border}` }} />
             <Legend />
           </PieChart>
         )}
@@ -226,7 +248,7 @@ function PanelConfigModal({ panel, onSave, onClose, allTables }) {
             <CartesianGrid strokeDasharray="3 3" stroke="rgba(0,0,0,0.1)" />
             <XAxis dataKey="_time" tick={{ fill: '#6b7280', fontSize: 10 }} />
             <YAxis tick={{ fill: '#6b7280', fontSize: 10 }} />
-            <Tooltip contentStyle={{ background: 'white', border: '1px solid #e5e7eb' }} />
+            <Tooltip contentStyle={{ background: theme.bg, border: `1px solid ${theme.border}` }} />
             <Legend />
             {yFields.map((yField, idx) => (
               <Scatter 
@@ -267,7 +289,7 @@ function PanelConfigModal({ panel, onSave, onClose, allTables }) {
             <div style={{ fontSize: '36px', fontWeight: 'bold', color: getColor(0) }}>
               {previewData[previewData.length - 1]?.[yFields[0]]?.toFixed(2) || 'N/A'}
             </div>
-            <div style={{ fontSize: '12px', color: '#6b7280', marginTop: '8px' }}>
+            <div style={{ fontSize: '12px', color: theme.textMuted, marginTop: '8px' }}>
               {yFields[0] || 'No field selected'}
             </div>
           </div>
@@ -276,7 +298,7 @@ function PanelConfigModal({ panel, onSave, onClose, allTables }) {
           <div style={{ height: '200px', overflow: 'auto' }}>
             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '11px' }}>
               <thead>
-                <tr style={{ background: '#f9fafb' }}>
+                <tr style={{ background: theme.card }}>
                   {Object.keys(previewData[0] || {}).filter(k => !k.startsWith('_')).map(col => (
                     <th key={col} style={{ 
                       padding: '6px', 
@@ -291,7 +313,7 @@ function PanelConfigModal({ panel, onSave, onClose, allTables }) {
               </thead>
               <tbody>
                 {previewData.slice(0, 5).map((row, i) => (
-                  <tr key={i} style={{ borderBottom: '1px solid #e5e7eb' }}>
+                  <tr key={i} style={{ borderBottom: `1px solid ${theme.border}` }}>
                     {Object.keys(row).filter(k => !k.startsWith('_')).map(col => (
                       <td key={col} style={{ padding: '6px' }}>
                         {typeof row[col] === 'number' ? row[col].toFixed(2) : row[col]}
@@ -322,7 +344,7 @@ function PanelConfigModal({ panel, onSave, onClose, allTables }) {
       padding: '20px'
     }}>
       <div style={{
-        background: 'white',
+        background: theme.bg,
         borderRadius: '16px',
         width: '100%',
         maxWidth: '1000px',
@@ -334,24 +356,24 @@ function PanelConfigModal({ panel, onSave, onClose, allTables }) {
       }}>
         <div style={{
           padding: '20px 24px',
-          borderBottom: '1px solid #e5e7eb',
+          borderBottom: `1px solid ${theme.border}`,
           display: 'flex',
           justifyContent: 'space-between',
           alignItems: 'center',
-          background: '#f9fafb'
+          background: theme.card
         }}>
           <div>
-            <h2 style={{ margin: 0, fontSize: '20px', color: '#111827', fontWeight: '700' }}>
+            <h2 style={{ margin: 0, fontSize: '20px', color: theme.text, fontWeight: '700' }}>
               {panel ? 'Edit Panel' : 'Add New Panel'}
             </h2>
-            <p style={{ margin: '4px 0 0', fontSize: '13px', color: '#6b7280' }}>
+            <p style={{ margin: '4px 0 0', fontSize: '13px', color: theme.textMuted }}>
               Configure your visualization settings
             </p>
           </div>
           <button onClick={onClose} style={{
             background: 'none',
             border: 'none',
-            color: '#6b7280',
+            color: theme.textMuted,
             cursor: 'pointer',
             padding: '8px'
           }}>
@@ -365,7 +387,7 @@ function PanelConfigModal({ panel, onSave, onClose, allTables }) {
             <div>
               {/* Panel Title */}
               <div style={{ marginBottom: '20px' }}>
-                <label style={{ display: 'block', marginBottom: '8px', fontSize: '13px', color: '#374151', fontWeight: '600' }}>
+                <label style={{ display: 'block', marginBottom: '8px', fontSize: '13px', color: theme.textSecondary, fontWeight: '600' }}>
                   Panel Title
                 </label>
                 <input
@@ -376,10 +398,10 @@ function PanelConfigModal({ panel, onSave, onClose, allTables }) {
                   style={{
                     width: '100%',
                     padding: '10px 12px',
-                    background: 'white',
-                    border: '2px solid #e5e7eb',
+                    background: theme.bg,
+                    border: `2px solid ${theme.border}`,
                     borderRadius: '8px',
-                    color: '#111827',
+                    color: theme.text,
                     fontSize: '14px'
                   }}
                 />
@@ -387,7 +409,7 @@ function PanelConfigModal({ panel, onSave, onClose, allTables }) {
 
               {/* Visualization Type */}
               <div style={{ marginBottom: '20px' }}>
-                <label style={{ display: 'block', marginBottom: '12px', fontSize: '13px', color: '#374151', fontWeight: '600' }}>
+                <label style={{ display: 'block', marginBottom: '12px', fontSize: '13px', color: theme.textSecondary, fontWeight: '600' }}>
                   Visualization Type
                 </label>
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
@@ -400,11 +422,11 @@ function PanelConfigModal({ panel, onSave, onClose, allTables }) {
                         onClick={() => setConfig({ ...config, vizType: type.id })}
                         style={{
                           padding: '12px',
-                          background: isSelected ? '#667eea' : '#f9fafb',
+                          background: isSelected ? '#667eea' : theme.card,
                           border: '2px solid',
-                          borderColor: isSelected ? '#667eea' : '#e5e7eb',
+                          borderColor: isSelected ? '#667eea' : theme.border,
                           borderRadius: '8px',
-                          color: isSelected ? 'white' : '#374151',
+                          color: isSelected ? 'white' : theme.text,
                           cursor: 'pointer',
                           display: 'flex',
                           alignItems: 'center',
@@ -427,7 +449,7 @@ function PanelConfigModal({ panel, onSave, onClose, allTables }) {
 
               {/* Data Source */}
               <div style={{ marginBottom: '20px' }}>
-                <label style={{ display: 'block', marginBottom: '8px', fontSize: '13px', color: '#374151', fontWeight: '600' }}>
+                <label style={{ display: 'block', marginBottom: '8px', fontSize: '13px', color: theme.textSecondary, fontWeight: '600' }}>
                   Data Source
                 </label>
                 <div style={{ display: 'flex', gap: '8px', marginBottom: '12px' }}>
@@ -436,11 +458,11 @@ function PanelConfigModal({ panel, onSave, onClose, allTables }) {
                     style={{
                       flex: 1,
                       padding: '10px',
-                      background: config.dataSource === 'table' ? '#667eea' : '#f9fafb',
+                      background: config.dataSource === 'table' ? '#667eea' : theme.card,
                       border: '2px solid',
-                      borderColor: config.dataSource === 'table' ? '#667eea' : '#e5e7eb',
+                      borderColor: config.dataSource === 'table' ? '#667eea' : theme.border,
                       borderRadius: '8px',
-                      color: config.dataSource === 'table' ? 'white' : '#374151',
+                      color: config.dataSource === 'table' ? 'white' : theme.text,
                       cursor: 'pointer',
                       fontSize: '13px',
                       fontWeight: '600'
@@ -454,11 +476,11 @@ function PanelConfigModal({ panel, onSave, onClose, allTables }) {
                     style={{
                       flex: 1,
                       padding: '10px',
-                      background: config.dataSource === 'custom' ? '#667eea' : '#f9fafb',
+                      background: config.dataSource === 'custom' ? '#667eea' : theme.card,
                       border: '2px solid',
-                      borderColor: config.dataSource === 'custom' ? '#667eea' : '#e5e7eb',
+                      borderColor: config.dataSource === 'custom' ? '#667eea' : theme.border,
                       borderRadius: '8px',
-                      color: config.dataSource === 'custom' ? 'white' : '#374151',
+                      color: config.dataSource === 'custom' ? 'white' : theme.text,
                       cursor: 'pointer',
                       fontSize: '13px',
                       fontWeight: '600'
@@ -476,10 +498,10 @@ function PanelConfigModal({ panel, onSave, onClose, allTables }) {
                       style={{
                         width: '100%',
                         padding: '10px 12px',
-                        background: 'white',
-                        border: '2px solid #e5e7eb',
+                        background: theme.bg,
+                        border: `2px solid ${theme.border}`,
                         borderRadius: '8px',
-                        color: '#111827',
+                        color: theme.text,
                         fontSize: '14px'
                       }}
                     >
@@ -515,10 +537,10 @@ function PanelConfigModal({ panel, onSave, onClose, allTables }) {
                     style={{
                       width: '100%',
                       padding: '10px 12px',
-                      background: 'white',
-                      border: '2px solid #e5e7eb',
+                      background: theme.bg,
+                      border: `2px solid ${theme.border}`,
                       borderRadius: '8px',
-                      color: '#111827',
+                      color: theme.text,
                       fontSize: '13px',
                       fontFamily: 'monospace',
                       resize: 'vertical'
@@ -529,12 +551,12 @@ function PanelConfigModal({ panel, onSave, onClose, allTables }) {
 
               {/* Field Configuration */}
               <div style={{ marginBottom: '20px' }}>
-                <label style={{ display: 'block', marginBottom: '12px', fontSize: '13px', color: '#374151', fontWeight: '600' }}>
+                <label style={{ display: 'block', marginBottom: '12px', fontSize: '13px', color: theme.textSecondary, fontWeight: '600' }}>
                   Field Configuration
                 </label>
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '12px' }}>
                   <div>
-                    <label style={{ display: 'block', marginBottom: '6px', fontSize: '12px', color: '#6b7280' }}>
+                    <label style={{ display: 'block', marginBottom: '6px', fontSize: '12px', color: theme.textMuted }}>
                       Timestamp Field
                     </label>
                     {availableFields.length > 0 ? (
@@ -544,10 +566,10 @@ function PanelConfigModal({ panel, onSave, onClose, allTables }) {
                         style={{
                           width: '100%',
                           padding: '8px',
-                          background: 'white',
-                          border: '2px solid #e5e7eb',
+                          background: theme.bg,
+                          border: `2px solid ${theme.border}`,
                           borderRadius: '6px',
-                          color: '#111827',
+                          color: theme.text,
                           fontSize: '13px'
                         }}
                       >
@@ -564,24 +586,24 @@ function PanelConfigModal({ panel, onSave, onClose, allTables }) {
                         style={{
                           width: '100%',
                           padding: '8px',
-                          background: 'white',
-                          border: '2px solid #e5e7eb',
+                          background: theme.bg,
+                          border: `2px solid ${theme.border}`,
                           borderRadius: '6px',
-                          color: '#111827',
+                          color: theme.text,
                           fontSize: '13px'
                         }}
                       />
                     )}
                   </div>
                   <div>
-                    <label style={{ display: 'block', marginBottom: '6px', fontSize: '12px', color: '#6b7280' }}>
+                    <label style={{ display: 'block', marginBottom: '6px', fontSize: '12px', color: theme.textMuted }}>
                       Value Fields (Y-Axis) - Select Multiple
                     </label>
                     {availableFields.length > 0 ? (
                       <div style={{
-                        border: '2px solid #e5e7eb',
+                        border: `2px solid ${theme.border}`,
                         borderRadius: '6px',
-                        background: 'white',
+                        background: theme.bg,
                         maxHeight: '150px',
                         overflow: 'auto',
                         padding: '8px'
@@ -597,7 +619,7 @@ function PanelConfigModal({ panel, onSave, onClose, allTables }) {
                               cursor: 'pointer',
                               borderRadius: '4px',
                               fontSize: '13px',
-                              color: '#111827',
+                              color: theme.text,
                               transition: 'background 0.2s'
                             }}
                             onMouseEnter={(e) => e.currentTarget.style.background = '#f3f4f6'}
@@ -638,16 +660,16 @@ function PanelConfigModal({ panel, onSave, onClose, allTables }) {
                         style={{
                           width: '100%',
                           padding: '8px',
-                          background: 'white',
-                          border: '2px solid #e5e7eb',
+                          background: theme.bg,
+                          border: `2px solid ${theme.border}`,
                           borderRadius: '6px',
-                          color: '#111827',
+                          color: theme.text,
                           fontSize: '13px'
                         }}
                       />
                     )}
                     {config.yAxes && config.yAxes.length > 0 && (
-                      <div style={{ marginTop: '6px', fontSize: '11px', color: '#6b7280' }}>
+                      <div style={{ marginTop: '6px', fontSize: '11px', color: theme.textMuted }}>
                         Selected: {config.yAxes.join(', ')} ({config.yAxes.length} field{config.yAxes.length !== 1 ? 's' : ''})
                       </div>
                     )}
@@ -657,12 +679,12 @@ function PanelConfigModal({ panel, onSave, onClose, allTables }) {
 
               {/* Size Configuration */}
               <div style={{ marginBottom: '20px' }}>
-                <label style={{ display: 'block', marginBottom: '12px', fontSize: '13px', color: '#374151', fontWeight: '600' }}>
+                <label style={{ display: 'block', marginBottom: '12px', fontSize: '13px', color: theme.textSecondary, fontWeight: '600' }}>
                   Panel Size
                 </label>
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
                   <div>
-                    <label style={{ display: 'block', marginBottom: '6px', fontSize: '12px', color: '#6b7280' }}>
+                    <label style={{ display: 'block', marginBottom: '6px', fontSize: '12px', color: theme.textMuted }}>
                       Width (columns)
                     </label>
                     <input
@@ -674,16 +696,16 @@ function PanelConfigModal({ panel, onSave, onClose, allTables }) {
                       style={{
                         width: '100%',
                         padding: '8px',
-                        background: 'white',
-                        border: '2px solid #e5e7eb',
+                        background: theme.bg,
+                        border: `2px solid ${theme.border}`,
                         borderRadius: '6px',
-                        color: '#111827',
+                        color: theme.text,
                         fontSize: '13px'
                       }}
                     />
                   </div>
                   <div>
-                    <label style={{ display: 'block', marginBottom: '6px', fontSize: '12px', color: '#6b7280' }}>
+                    <label style={{ display: 'block', marginBottom: '6px', fontSize: '12px', color: theme.textMuted }}>
                       Height (rows)
                     </label>
                     <input
@@ -695,10 +717,10 @@ function PanelConfigModal({ panel, onSave, onClose, allTables }) {
                       style={{
                         width: '100%',
                         padding: '8px',
-                        background: 'white',
-                        border: '2px solid #e5e7eb',
+                        background: theme.bg,
+                        border: `2px solid ${theme.border}`,
                         borderRadius: '6px',
-                        color: '#111827',
+                        color: theme.text,
                         fontSize: '13px'
                       }}
                     />
@@ -709,7 +731,7 @@ function PanelConfigModal({ panel, onSave, onClose, allTables }) {
               {/* Data Limit & Refresh */}
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
                 <div>
-                  <label style={{ display: 'block', marginBottom: '8px', fontSize: '13px', color: '#374151', fontWeight: '600' }}>
+                  <label style={{ display: 'block', marginBottom: '8px', fontSize: '13px', color: theme.textSecondary, fontWeight: '600' }}>
                     Data Limit
                   </label>
                   <input
@@ -721,16 +743,16 @@ function PanelConfigModal({ panel, onSave, onClose, allTables }) {
                     style={{
                       width: '100%',
                       padding: '10px 12px',
-                      background: 'white',
-                      border: '2px solid #e5e7eb',
+                      background: theme.bg,
+                      border: `2px solid ${theme.border}`,
                       borderRadius: '8px',
-                      color: '#111827',
+                      color: theme.text,
                       fontSize: '14px'
                     }}
                   />
                 </div>
                 <div>
-                  <label style={{ display: 'block', marginBottom: '8px', fontSize: '13px', color: '#374151', fontWeight: '600' }}>
+                  <label style={{ display: 'block', marginBottom: '8px', fontSize: '13px', color: theme.textSecondary, fontWeight: '600' }}>
                     Auto Refresh
                   </label>
                   <select
@@ -739,10 +761,10 @@ function PanelConfigModal({ panel, onSave, onClose, allTables }) {
                     style={{
                       width: '100%',
                       padding: '10px 12px',
-                      background: 'white',
-                      border: '2px solid #e5e7eb',
+                      background: theme.bg,
+                      border: `2px solid ${theme.border}`,
                       borderRadius: '8px',
-                      color: '#111827',
+                      color: theme.text,
                       fontSize: '14px'
                     }}
                   >
@@ -761,7 +783,7 @@ function PanelConfigModal({ panel, onSave, onClose, allTables }) {
             <div>
               <div style={{ marginBottom: '20px' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
-                  <label style={{ fontSize: '13px', color: '#374151', fontWeight: '600' }}>
+                  <label style={{ fontSize: '13px', color: theme.textSecondary, fontWeight: '600' }}>
                     Preview
                   </label>
                   <button
@@ -786,8 +808,8 @@ function PanelConfigModal({ panel, onSave, onClose, allTables }) {
                   </button>
                 </div>
                 <div style={{
-                  background: '#f9fafb',
-                  border: '2px solid #e5e7eb',
+                  background: theme.card,
+                  border: `2px solid ${theme.border}`,
                   borderRadius: '8px',
                   padding: '16px',
                   minHeight: '200px'
@@ -795,7 +817,7 @@ function PanelConfigModal({ panel, onSave, onClose, allTables }) {
                   {renderPreviewChart()}
                 </div>
                 {previewData.length > 0 && (
-                  <div style={{ marginTop: '8px', fontSize: '12px', color: '#6b7280' }}>
+                  <div style={{ marginTop: '8px', fontSize: '12px', color: theme.textMuted }}>
                     {previewData.length} data points loaded
                   </div>
                 )}
@@ -804,21 +826,22 @@ function PanelConfigModal({ panel, onSave, onClose, allTables }) {
 <TransformationPanel
   transformations={config.transformations || []}
   onChange={(transforms) => setConfig({ ...config, transformations: transforms })}
+  darkMode={darkMode}  
 />
               {/* Style Options */}
               <div>
-                <label style={{ display: 'block', marginBottom: '12px', fontSize: '13px', color: '#374151', fontWeight: '600' }}>
+                <label style={{ display: 'block', marginBottom: '12px', fontSize: '13px', color: theme.textSecondary, fontWeight: '600' }}>
                   Style Options
                 </label>
                 
                 <div style={{ marginBottom: '12px' }}>
-                  <label style={{ display: 'block', marginBottom: '6px', fontSize: '12px', color: '#6b7280' }}>
+                  <label style={{ display: 'block', marginBottom: '6px', fontSize: '12px', color: theme.textMuted }}>
                     Chart Colors (for multiple Y-axes)
                   </label>
                   <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: '8px' }}>
                     {[0, 1, 2, 3, 4].map((colorIdx) => (
                       <div key={colorIdx} style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                        <div style={{ fontSize: '10px', color: '#9ca3af', textAlign: 'center' }}>Y{colorIdx + 1}</div>
+                        <div style={{ fontSize: '10px', color: theme.textMuted, textAlign: 'center' }}>Y{colorIdx + 1}</div>
                         <select
                           value={config.colors?.[colorIdx] || COLORS[colorIdx]}
                           onChange={(e) => {
@@ -830,7 +853,7 @@ function PanelConfigModal({ panel, onSave, onClose, allTables }) {
                             width: '100%',
                             height: '36px',
                             background: config.colors?.[colorIdx] || COLORS[colorIdx],
-                            border: '2px solid #e5e7eb',
+                            border: `2px solid ${theme.border}`,
                             borderRadius: '6px',
                             cursor: 'pointer',
                             color: 'transparent'
@@ -849,7 +872,7 @@ function PanelConfigModal({ panel, onSave, onClose, allTables }) {
 
                 {(config.vizType === 'line' || config.vizType === 'area') && (
                   <div style={{ marginBottom: '12px' }}>
-                    <label style={{ display: 'block', marginBottom: '6px', fontSize: '12px', color: '#6b7280' }}>
+                    <label style={{ display: 'block', marginBottom: '6px', fontSize: '12px', color: theme.textMuted }}>
                       Line Width: {config.lineWidth}px
                     </label>
                     <input
@@ -865,7 +888,7 @@ function PanelConfigModal({ panel, onSave, onClose, allTables }) {
 
                 {config.vizType === 'area' && (
                   <div style={{ marginBottom: '12px' }}>
-                    <label style={{ display: 'block', marginBottom: '6px', fontSize: '12px', color: '#6b7280' }}>
+                    <label style={{ display: 'block', marginBottom: '6px', fontSize: '12px', color: theme.textMuted }}>
                       Fill Opacity: {Math.round(config.fillOpacity * 100)}%
                     </label>
                     <input
@@ -881,7 +904,7 @@ function PanelConfigModal({ panel, onSave, onClose, allTables }) {
                 )}
 
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                  <label style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#374151', fontSize: '13px', cursor: 'pointer' }}>
+                  <label style={{ display: 'flex', alignItems: 'center', gap: '8px', color: theme.textSecondary, fontSize: '13px', cursor: 'pointer' }}>
                     <input
                       type="checkbox"
                       checked={config.showLegend}
@@ -890,7 +913,7 @@ function PanelConfigModal({ panel, onSave, onClose, allTables }) {
                     />
                     Show Legend
                   </label>
-                  <label style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#374151', fontSize: '13px', cursor: 'pointer' }}>
+                  <label style={{ display: 'flex', alignItems: 'center', gap: '8px', color: theme.textSecondary, fontSize: '13px', cursor: 'pointer' }}>
                     <input
                       type="checkbox"
                       checked={config.showGrid}
@@ -900,7 +923,7 @@ function PanelConfigModal({ panel, onSave, onClose, allTables }) {
                     Show Grid Lines
                   </label>
                   {(config.vizType === 'line' || config.vizType === 'area') && (
-                    <label style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#374151', fontSize: '13px', cursor: 'pointer' }}>
+                    <label style={{ display: 'flex', alignItems: 'center', gap: '8px', color: theme.textSecondary, fontSize: '13px', cursor: 'pointer' }}>
                       <input
                         type="checkbox"
                         checked={config.showDots}
@@ -918,20 +941,20 @@ function PanelConfigModal({ panel, onSave, onClose, allTables }) {
 
         <div style={{
           padding: '16px 24px',
-          borderTop: '1px solid #e5e7eb',
+          borderTop: `1px solid ${theme.border}`,
           display: 'flex',
           justifyContent: 'flex-end',
           gap: '12px',
-          background: '#f9fafb'
+          background: theme.card
         }}>
           <button
             onClick={onClose}
             style={{
               padding: '10px 20px',
-              background: 'white',
-              border: '2px solid #e5e7eb',
+              background: theme.bg,
+              border: `2px solid ${theme.border}`,
               borderRadius: '8px',
-              color: '#6b7280',
+              color: theme.textMuted,
               cursor: 'pointer',
               fontSize: '14px',
               fontWeight: '600'
