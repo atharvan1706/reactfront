@@ -9,7 +9,11 @@ import {
   Sparkles,
   ArrowRight,
   Shield,
-  Zap
+  Zap,
+  Ticket,
+  CheckCircle,
+  XCircle,
+  AlertCircle
 } from 'lucide-react';
 
 const API_URL =
@@ -22,14 +26,73 @@ export default function AuthPage({ onAuth }) {
     email: '',
     password: '',
     name: '',
-    plantId: 'plantA'
+    invitationCode: ''
   });
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [invitationStatus, setInvitationStatus] = useState(null);
+  const [verifyingCode, setVerifyingCode] = useState(false);
+
+  // Check for invitation code in URL on mount
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const code = params.get('code');
+    if (code) {
+      setForm(prev => ({ ...prev, invitationCode: code }));
+      setMode('register');
+      verifyInvitationCode(code);
+    }
+  }, []);
 
   const handleChange = e =>
     setForm({ ...form, [e.target.name]: e.target.value });
+
+  const verifyInvitationCode = async (code) => {
+    if (!code || code.length < 8) {
+      setInvitationStatus(null);
+      return;
+    }
+
+    setVerifyingCode(true);
+    try {
+      const res = await fetch(`${API_URL}/auth/verify-invitation?code=${code}`);
+      const data = await res.json();
+
+      if (data.success && data.valid) {
+        setInvitationStatus({
+          valid: true,
+          plantId: data.plantId,
+          role: data.role,
+          expiresAt: data.expiresAt
+        });
+      } else {
+        setInvitationStatus({
+          valid: false,
+          message: data.message || 'Invalid code'
+        });
+      }
+    } catch (err) {
+      setInvitationStatus({
+        valid: false,
+        message: 'Unable to verify code'
+      });
+    } finally {
+      setVerifyingCode(false);
+    }
+  };
+
+  const handleCodeChange = (e) => {
+    const code = e.target.value.toUpperCase();
+    setForm({ ...form, invitationCode: code });
+    
+    // Auto-verify as user types
+    if (code.length >= 8) {
+      verifyInvitationCode(code);
+    } else {
+      setInvitationStatus(null);
+    }
+  };
 
   const handleSubmit = async () => {
     setError('');
@@ -47,7 +110,31 @@ export default function AuthPage({ onAuth }) {
       });
 
       const data = await res.json();
-      if (!data.success) throw new Error(data.message);
+      
+      if (!data.success) {
+        // Handle pending approval case
+        if (data.requiresApproval) {
+          setError('Account created but requires admin approval. You will be notified when approved.');
+          setTimeout(() => {
+            setMode('login');
+            setForm({ email: form.email, password: '', name: '', invitationCode: '' });
+            setError('');
+          }, 3000);
+          return;
+        }
+        throw new Error(data.message);
+      }
+
+      // Check if registration successful but pending
+      if (mode === 'register' && data.requiresApproval) {
+        setError('Account created! Awaiting admin approval. You will be notified via email.');
+        setTimeout(() => {
+          setMode('login');
+          setForm({ email: form.email, password: '', name: '', invitationCode: '' });
+          setError('');
+        }, 3000);
+        return;
+      }
 
       localStorage.setItem('token', data.token);
       localStorage.setItem('user', JSON.stringify(data.user));
@@ -56,6 +143,40 @@ export default function AuthPage({ onAuth }) {
       setError(err.message || 'Something went wrong');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const renderInvitationStatus = () => {
+    if (!invitationStatus) return null;
+
+    if (verifyingCode) {
+      return (
+        <div style={styles.statusBox}>
+          <AlertCircle size={18} />
+          <span>Verifying code...</span>
+        </div>
+      );
+    }
+
+    if (invitationStatus.valid) {
+      return (
+        <div style={{ ...styles.statusBox, ...styles.statusValid }}>
+          <CheckCircle size={18} />
+          <div>
+            <strong>Valid Code</strong>
+            <div style={styles.statusDetail}>
+              Plant: {invitationStatus.plantId} • Role: {invitationStatus.role}
+            </div>
+          </div>
+        </div>
+      );
+    } else {
+      return (
+        <div style={{ ...styles.statusBox, ...styles.statusInvalid }}>
+          <XCircle size={18} />
+          <span>{invitationStatus.message}</span>
+        </div>
+      );
     }
   };
 
@@ -107,21 +228,35 @@ export default function AuthPage({ onAuth }) {
             <p style={styles.cardSubtitle}>
               {mode === 'login'
                 ? 'Sign in to continue'
-                : 'Start optimizing your plant today'}
+                : 'Register with your invitation code'}
             </p>
 
             {error && <div style={styles.error}>{error}</div>}
 
             {mode === 'register' && (
-              <div style={styles.inputGroup}>
-                <User />
-                <input
-                  name="name"
-                  placeholder="Full Name"
-                  value={form.name}
-                  onChange={handleChange}
-                />
-              </div>
+              <>
+                <div style={styles.inputGroup}>
+                  <Ticket />
+                  <input
+                    name="invitationCode"
+                    placeholder="Invitation Code (e.g. PLANTA-ABC123)"
+                    value={form.invitationCode}
+                    onChange={handleCodeChange}
+                    style={{ textTransform: 'uppercase' }}
+                  />
+                </div>
+                {renderInvitationStatus()}
+
+                <div style={styles.inputGroup}>
+                  <User />
+                  <input
+                    name="name"
+                    placeholder="Full Name"
+                    value={form.name}
+                    onChange={handleChange}
+                  />
+                </div>
+              </>
             )}
 
             <div style={styles.inputGroup}>
@@ -151,25 +286,14 @@ export default function AuthPage({ onAuth }) {
               </button>
             </div>
 
-            {mode === 'register' && (
-              <div style={styles.inputGroup}>
-                <Building2 />
-                <select
-                  name="plantId"
-                  value={form.plantId}
-                  onChange={handleChange}
-                >
-                  <option value="plantA">Plant A</option>
-                  <option value="plantB">Plant B</option>
-                  <option value="plantC">Plant C</option>
-                </select>
-              </div>
-            )}
-
             <button
               onClick={handleSubmit}
-              disabled={loading}
-              style={styles.primaryBtn}
+              disabled={loading || (mode === 'register' && (!invitationStatus?.valid))}
+              style={{
+                ...styles.primaryBtn,
+                opacity: loading || (mode === 'register' && !invitationStatus?.valid) ? 0.5 : 1,
+                cursor: loading || (mode === 'register' && !invitationStatus?.valid) ? 'not-allowed' : 'pointer'
+              }}
             >
               {loading ? 'Processing…' : mode === 'login' ? 'Sign In' : 'Register'}
               <ArrowRight />
@@ -179,6 +303,7 @@ export default function AuthPage({ onAuth }) {
               onClick={() => {
                 setMode(mode === 'login' ? 'register' : 'login');
                 setError('');
+                setInvitationStatus(null);
               }}
               style={styles.switchBtn}
             >
@@ -186,6 +311,12 @@ export default function AuthPage({ onAuth }) {
                 ? 'Create new account'
                 : 'Already have an account?'}
             </button>
+
+            {mode === 'register' && (
+              <p style={styles.helpText}>
+                Don't have an invitation code? Contact your administrator.
+              </p>
+            )}
           </div>
         </div>
       </div>
@@ -308,22 +439,52 @@ const styles = {
     background: '#7f1d1d',
     padding: 12,
     borderRadius: 8,
-    marginBottom: 16
+    marginBottom: 16,
+    fontSize: 14
   },
 
- inputGroup: {
-  position: 'relative',
-  display: 'flex',
-  alignItems: 'center',
-  gap: 10,
-  marginBottom: 16,
-  background: '#020617',
-  borderRadius: 12,
-  padding: '14px 16px',
-  border: '1px solid #1e293b',
-  color: '#e5e7eb'
-},
+  inputGroup: {
+    position: 'relative',
+    display: 'flex',
+    alignItems: 'center',
+    gap: 10,
+    marginBottom: 16,
+    background: '#020617',
+    borderRadius: 12,
+    padding: '14px 16px',
+    border: '1px solid #1e293b',
+    color: '#e5e7eb'
+  },
 
+  statusBox: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: 10,
+    padding: 12,
+    borderRadius: 8,
+    marginBottom: 16,
+    fontSize: 14,
+    background: '#1e293b',
+    color: '#9ca3af'
+  },
+
+  statusValid: {
+    background: 'rgba(34, 197, 94, 0.1)',
+    border: '1px solid rgba(34, 197, 94, 0.3)',
+    color: '#86efac'
+  },
+
+  statusInvalid: {
+    background: 'rgba(239, 68, 68, 0.1)',
+    border: '1px solid rgba(239, 68, 68, 0.3)',
+    color: '#fca5a5'
+  },
+
+  statusDetail: {
+    fontSize: 12,
+    marginTop: 4,
+    opacity: 0.8
+  },
 
   eyeBtn: {
     background: 'none',
@@ -337,8 +498,7 @@ const styles = {
     width: '100%',
     padding: 16,
     borderRadius: 14,
-    background:
-      'linear-gradient(90deg,#7c3aed,#22d3ee)',
+    background: 'linear-gradient(90deg,#7c3aed,#22d3ee)',
     color: '#fff',
     fontSize: 16,
     fontWeight: 700,
@@ -357,6 +517,13 @@ const styles = {
     border: 'none',
     color: '#a78bfa',
     cursor: 'pointer'
+  },
+
+  helpText: {
+    marginTop: 16,
+    textAlign: 'center',
+    fontSize: 13,
+    color: '#6b7280'
   }
 };
 
