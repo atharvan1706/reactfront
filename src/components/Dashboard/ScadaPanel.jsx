@@ -12,11 +12,11 @@ import RotaryPlugValve from '../svg/RotaryPlugValve';
 import ValveLongShaft from '../svg/ValveLongShaft';
 import ValveFailLocked from '../svg/ValveFailLocked';
 import ControlValveHandActuator from '../svg/ControlValveHandActuator';
-import HandControlValve from '../../renderer/assets/3-D_Hand_control_valve.svg';
-import Pump3D from '../../renderer/assets/3-D_Pump.svg';
-import Valve3D from '../../renderer/assets/3-D_Valve.svg';
-import ValveWithActuator from '../../renderer/assets/3-D_Valve_with_actuator.svg';
-import BallValve1 from '../../renderer/assets/Ball_valve_1.svg';
+import HandControlValveIcon from '../svg/HandControlValveIcon';
+import Pump3DIcon from '../svg/Pump3DIcon';
+import Valve3DIcon from '../svg/Valve3DIcon';
+import ValveWithActuatorIcon from '../svg/ValveWithActuatorIcon';
+import BallValve1Icon from '../svg/BallValve1Icon';
 import BlueControlValve from '../../renderer/assets/Blue_control_valve_with_no_flange.svg';
 import CentrifugalPump2 from '../../renderer/assets/Centrifugal_pump_2.svg';
 import CentrifugalPump4 from '../../renderer/assets/Centrifugal_pump_4.svg';
@@ -112,10 +112,38 @@ const SVG_COMPONENTS = {
     type: 'component', // Flag to identify React components
     color: '#ef4444' 
   },
-  handControlValve: { name: 'Hand Control Valve', width: 60, height: 70, svg: HandControlValve, type: 'svg', color: '#f59e0b' },
-  valve3D: { name: '3D Valve', width: 60, height: 80, svg: Valve3D, type: 'svg', color: '#f59e0b' },
-  valveWithActuator: { name: 'Valve with Actuator', width: 70, height: 90, svg: ValveWithActuator, type: 'svg', color: '#10b981' },
-  ballValve1: { name: 'Ball Valve', width: 70, height: 70, svg: BallValve1, type: 'svg', color: '#64748b' },
+  handControlValve: { 
+    name: 'Blowdown Valve', 
+    width: 60, 
+    height: 80, 
+    component: HandControlValveIcon,
+    type: 'component', // Flag to identify React components
+    color: '#ef4444' 
+  },
+  valve3D:  { 
+    name: 'Blowdown Valve', 
+    width: 60, 
+    height: 80, 
+    component: Valve3DIcon,
+    type: 'component', // Flag to identify React components
+    color: '#ef4444' 
+  },
+  valveWithActuator:  { 
+    name: 'Blowdown Valve', 
+    width: 60, 
+    height: 80, 
+    component: ValveWithActuatorIcon,
+    type: 'component', // Flag to identify React components
+    color: '#ef4444' 
+  },
+  ballValve1:{ 
+    name: 'Blowdown Valve', 
+    width: 60, 
+    height: 80, 
+    component: BallValve1Icon,
+    type: 'component', // Flag to identify React components
+    color: '#ef4444' 
+  },
   pvcTwoWayBallValve: { name: 'PVC Ball Valve', width: 60, height: 70, svg: PVCTwoWayBallValve, type: 'svg', color: '#64748b' },
   blueControlValve: { name: 'Control Valve (Blue)', width: 70, height: 90, svg: BlueControlValve, type: 'svg', color: '#3b82f6' },
   compactValve: { name: 'Compact Valve', width: 60, height: 70, svg: CompactValve, type: 'svg', color: '#06b6d4' },
@@ -128,7 +156,14 @@ const SVG_COMPONENTS = {
   handValve1: { name: 'Hand Valve 1', width: 60, height: 80, svg: HandValve1, type: 'svg', color: '#f59e0b' },
   handValve3: { name: 'Hand Valve 3', width: 70, height: 80, svg: HandValve3, type: 'svg', color: '#f59e0b' },
   handValve4: { name: 'Hand Valve 4', width: 70, height: 80, svg: HandValve4, type: 'svg', color: '#f59e0b' },
-  pump3D: { name: '3D Pump', width: 90, height: 80, svg: Pump3D, type: 'svg', color: '#3b82f6' },
+  pump3D: { 
+    name: 'Blowdown Valve', 
+    width: 60, 
+    height: 80, 
+    component: Pump3DIcon,
+    type: 'component', // Flag to identify React components
+    color: '#ef4444' 
+  },
   centrifugalPump2: { name: 'Centrifugal Pump 2', width: 90, height: 80, svg: CentrifugalPump2, type: 'svg', color: '#3b82f6' },
   centrifugalPump4: { name: 'Centrifugal Pump 4', width: 80, height: 80, svg: CentrifugalPump4, type: 'svg', color: '#3b82f6' },
   classicPump1:  { 
