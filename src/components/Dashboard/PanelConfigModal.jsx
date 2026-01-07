@@ -7,7 +7,7 @@ import {
 import {
   X as LucideX, Database, Eye, Save, RefreshCw, AlertCircle
 } from 'lucide-react';
-import SimpleQueryBuilder from './SimpleQueryBuilder';
+
 import { COLORS, VIZ_TYPES, DEFAULT_PANEL_CONFIG } from './constants';
 import questdbService from '../../services/questdb';
 const X = LucideX;
@@ -22,8 +22,6 @@ function PanelConfigModal({ panel, onSave, onClose, allTables }) {
   const [previewLoading, setPreviewLoading] = useState(false);
   const [previewError, setPreviewError] = useState(null);
   const [availableFields, setAvailableFields] = useState([]);
-
-  const [useQueryBuilder, setUseQueryBuilder] = useState(false);
 
   useEffect(() => {
     if (config.table && config.dataSource === 'table') {
@@ -456,71 +454,7 @@ function PanelConfigModal({ panel, onSave, onClose, allTables }) {
                     Custom SQL
                   </button>
                 </div>
-                
-                {/* NEW: Query Builder Toggle */}
-<div style={{ marginTop: '12px' }}>
-  <button
-    onClick={() => setUseQueryBuilder(!useQueryBuilder)}
-    style={{
-      padding: '8px 16px',
-      background: useQueryBuilder ? '#667eea' : 'white',
-      border: '2px solid #667eea',
-      borderRadius: '6px',
-      color: useQueryBuilder ? 'white' : '#667eea',
-      cursor: 'pointer',
-      fontSize: '13px',
-      fontWeight: '600',
-      width: '100%'
-    }}
-  >
-    {useQueryBuilder ? '✓ Using Query Builder' : '🔧 Use Query Builder (Easy Mode)'}
-  </button>
-</div>
 
-{/* NEW: Show Query Builder if enabled */}
-{useQueryBuilder && config.dataSource === 'table' && (
-  <div style={{ marginTop: '16px' }}>
-    <SimpleQueryBuilder
-      table={config.table}
-      allTables={allTables}
-      onTableChange={(table) => {
-        setConfig({ ...config, table });
-        fetchTableFields(table);
-      }}
-      onQueryChange={(query) => {
-        setConfig({ ...config, query });
-      }}
-    />
-    
-    {/* Show the generated query */}
-    {config.query && (
-      <div style={{ marginTop: '12px' }}>
-        <label style={{ 
-          display: 'block', 
-          marginBottom: '6px', 
-          fontSize: '12px', 
-          color: '#6b7280',
-          fontWeight: '600'
-        }}>
-          Generated SQL:
-        </label>
-        <div style={{
-          padding: '12px',
-          background: '#1f2937',
-          border: '1px solid #374151',
-          borderRadius: '6px',
-          fontFamily: 'monospace',
-          fontSize: '12px',
-          color: '#10b981',
-          whiteSpace: 'pre-wrap',
-          wordBreak: 'break-all'
-        }}>
-          {config.query}
-        </div>
-      </div>
-    )}
-  </div>
-)}
                 {config.dataSource === 'table' ? (
                   <>
                     <select
