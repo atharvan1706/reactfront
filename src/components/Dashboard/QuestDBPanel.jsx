@@ -42,7 +42,9 @@ function QuestDBPanel({ config, onEdit, onDelete, onDuplicate, onResize, style, 
     chartText: '#6b7280'
   };
 
-  const fetchData = async () => {
+  // Debug version of fetchData - Add console.logs to see what's happening
+
+const fetchData = async () => {
   try {
     setError(null);
     const startTime = Date.now();
@@ -59,12 +61,19 @@ function QuestDBPanel({ config, onEdit, onDelete, onDuplicate, onResize, style, 
     const result = await questdbService.query(query);
     const formatted = questdbService.formatForChart(result, config.timestampField);
     
-    // ↓ NEW: Apply transformations if configured ↓
+    // DEBUG: Let's see what we have
+    console.log('🔍 DEBUG - Config transformations:', config.transformations);
+    console.log('🔍 DEBUG - Formatted data (first 3 items):', formatted.slice(0, 3));
+    
+    // Apply transformations if configured
     let finalData = formatted;
     if (config.transformations && config.transformations.length > 0) {
+      console.log('✅ Applying transformations!');
       finalData = SimpleTransformations.applyTransformations(formatted, config.transformations);
+      console.log('🔍 DEBUG - Transformed data (first 3 items):', finalData.slice(0, 3));
+    } else {
+      console.log('⚠️ No transformations to apply');
     }
-    // ↑ END OF NEW CODE ↑
     
     const endTime = Date.now();
     setQueryTime(new Date(endTime));
@@ -73,7 +82,7 @@ function QuestDBPanel({ config, onEdit, onDelete, onDuplicate, onResize, style, 
       setLatestRecordTime(new Date(result[0][config.timestampField]));
     }
     
-    setData(finalData);  // ← Changed from 'formatted' to 'finalData'
+    setData(finalData);
     setLoading(false);
   } catch (err) {
     console.error('Error fetching data:', err);
