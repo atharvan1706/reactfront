@@ -10,13 +10,18 @@ import {
 
 import { COLORS, VIZ_TYPES, DEFAULT_PANEL_CONFIG } from './constants';
 import questdbService from '../../services/questdb';
+
+import SimpleTransformations from './simpleTransformations';
+import TransformationPanel from './TransformationPanel';
+
 const X = LucideX;
 function PanelConfigModal({ panel, onSave, onClose, allTables }) {
   const [config, setConfig] = useState(panel || {
-    ...DEFAULT_PANEL_CONFIG,
-    id: `panel_${Date.now()}`,
-    colors: [COLORS[0], COLORS[1], COLORS[2], COLORS[3], COLORS[4]]
-  });
+  ...DEFAULT_PANEL_CONFIG,
+  id: `panel_${Date.now()}`,
+  colors: [COLORS[0], COLORS[1], COLORS[2], COLORS[3], COLORS[4]],
+  transformations: []  // ← ADD THIS LINE
+});
 
   const [previewData, setPreviewData] = useState([]);
   const [previewLoading, setPreviewLoading] = useState(false);
@@ -59,9 +64,17 @@ function PanelConfigModal({ panel, onSave, onClose, allTables }) {
         return;
       }
 
-      const result = await questdbService.query(query);
-      const formatted = questdbService.formatForChart(result, config.timestampField);
-      setPreviewData(formatted);
+    const result = await questdbService.query(query);
+    const formatted = questdbService.formatForChart(result, config.timestampField);
+    
+    // ↓ ADD THESE 5 LINES ↓
+    // Apply transformations if any
+    let finalData = formatted;
+    if (config.transformations && config.transformations.length > 0) {
+      finalData = SimpleTransformations.applyTransformations(formatted, config.transformations);
+    }
+    
+    setPreviewData(finalData);  // ← Change 'formatted' to 'finalData'
       
       if (formatted.length > 0 && (!config.yAxes || config.yAxes.length === 0)) {
         const numericFields = Object.keys(formatted[0]).filter(key => 
@@ -787,7 +800,11 @@ function PanelConfigModal({ panel, onSave, onClose, allTables }) {
                   </div>
                 )}
               </div>
-
+              {/* NEW: Transformations Panel */}
+<TransformationPanel
+  transformations={config.transformations || []}
+  onChange={(transforms) => setConfig({ ...config, transformations: transforms })}
+/>
               {/* Style Options */}
               <div>
                 <label style={{ display: 'block', marginBottom: '12px', fontSize: '13px', color: '#374151', fontWeight: '600' }}>

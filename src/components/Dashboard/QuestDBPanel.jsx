@@ -10,6 +10,7 @@ import {
 } from 'lucide-react';
 import { COLORS } from './constants';
 import questdbService from '../../services/questdb';
+import SimpleTransformations from './simpleTransformations';
 
 function QuestDBPanel({ config, onEdit, onDelete, onDuplicate, onResize, style, darkMode }) {
   const [data, setData] = useState([]);
@@ -42,37 +43,44 @@ function QuestDBPanel({ config, onEdit, onDelete, onDuplicate, onResize, style, 
   };
 
   const fetchData = async () => {
-    try {
-      setError(null);
-      const startTime = Date.now();
-      let query = config.query;
-      
-      if (config.dataSource === 'table' && config.table) {
-        query = `SELECT * FROM ${config.table} ORDER BY ${config.timestampField} DESC LIMIT ${config.limit}`;
-      }
-
-      if (!query) {
-        throw new Error('No query specified');
-      }
-
-      const result = await questdbService.query(query);
-      const formatted = questdbService.formatForChart(result, config.timestampField);
-      
-      const endTime = Date.now();
-      setQueryTime(new Date(endTime));
-      
-      if (result.length > 0 && result[0][config.timestampField]) {
-        setLatestRecordTime(new Date(result[0][config.timestampField]));
-      }
-      
-      setData(formatted);
-      setLoading(false);
-    } catch (err) {
-      console.error('Error fetching data:', err);
-      setError(err.message);
-      setLoading(false);
+  try {
+    setError(null);
+    const startTime = Date.now();
+    let query = config.query;
+    
+    if (config.dataSource === 'table' && config.table) {
+      query = `SELECT * FROM ${config.table} ORDER BY ${config.timestampField} DESC LIMIT ${config.limit}`;
     }
-  };
+
+    if (!query) {
+      throw new Error('No query specified');
+    }
+
+    const result = await questdbService.query(query);
+    const formatted = questdbService.formatForChart(result, config.timestampField);
+    
+    // ↓ NEW: Apply transformations if configured ↓
+    let finalData = formatted;
+    if (config.transformations && config.transformations.length > 0) {
+      finalData = SimpleTransformations.applyTransformations(formatted, config.transformations);
+    }
+    // ↑ END OF NEW CODE ↑
+    
+    const endTime = Date.now();
+    setQueryTime(new Date(endTime));
+    
+    if (result.length > 0 && result[0][config.timestampField]) {
+      setLatestRecordTime(new Date(result[0][config.timestampField]));
+    }
+    
+    setData(finalData);  // ← Changed from 'formatted' to 'finalData'
+    setLoading(false);
+  } catch (err) {
+    console.error('Error fetching data:', err);
+    setError(err.message);
+    setLoading(false);
+  }
+};
 
   useEffect(() => {
     setLoading(true);
