@@ -1,31 +1,32 @@
-// simpleTransformations.js - UPDATED VERSION
-// This version works with ANY field, not just "value"
+// simpleTransformations.js - FINAL WORKING VERSION
+// This transforms ALL numeric fields in your data
 
 class SimpleTransformations {
   
-  // Helper: Get the first numeric field from data
-  static getNumericField(data) {
-    if (!data || data.length === 0) return null;
+  // Helper: Get ALL numeric fields from data
+  static getNumericFields(data) {
+    if (!data || data.length === 0) return [];
     
     const firstItem = data[0];
-    // Find first numeric field (skip timestamp fields)
+    const numericFields = [];
+    
     for (const key in firstItem) {
       if (typeof firstItem[key] === 'number' && 
           !key.includes('timestamp') && 
           !key.startsWith('_')) {
-        return key;
+        numericFields.push(key);
       }
     }
-    return null;
+    
+    return numericFields;
   }
   
   // 1. MOVING AVERAGE - Smooths out data
-  static movingAverage(data, windowSize = 5, fieldName = null) {
+  static movingAverage(data, windowSize = 5) {
     if (!data || data.length === 0) return data;
     
-    // Auto-detect field if not provided
-    const field = fieldName || this.getNumericField(data);
-    if (!field) return data;
+    const fields = this.getNumericFields(data);
+    if (fields.length === 0) return data;
     
     const result = [];
     
@@ -33,26 +34,32 @@ class SimpleTransformations {
       const start = Math.max(0, i - windowSize + 1);
       const window = data.slice(start, i + 1);
       
-      const sum = window.reduce((total, item) => total + (item[field] || 0), 0);
-      const avg = sum / window.length;
+      const newItem = { ...data[i] };
       
-      result.push({
-        ...data[i],
-        [field]: avg,
-        [`_original_${field}`]: data[i][field]
+      // Apply moving average to ALL numeric fields
+      fields.forEach(field => {
+        const sum = window.reduce((total, item) => total + (item[field] || 0), 0);
+        const avg = sum / window.length;
+        newItem[field] = avg;
+        newItem[`_original_${field}`] = data[i][field];
       });
+      
+      result.push(newItem);
     }
     
+    console.log(`✅ Applied moving average to fields: ${fields.join(', ')}`);
     return result;
   }
   
   // 2. REMOVE OUTLIERS - Remove crazy high/low values
-  static removeOutliers(data, fieldName = null) {
+  static removeOutliers(data) {
     if (!data || data.length === 0) return data;
     
-    const field = fieldName || this.getNumericField(data);
-    if (!field) return data;
+    const fields = this.getNumericFields(data);
+    if (fields.length === 0) return data;
     
+    // Use the first numeric field to detect outliers
+    const field = fields[0];
     const values = data.map(item => item[field]).filter(v => v != null);
     
     const sorted = [...values].sort((a, b) => a - b);
@@ -63,78 +70,105 @@ class SimpleTransformations {
     const lowerBound = q1 - 1.5 * iqr;
     const upperBound = q3 + 1.5 * iqr;
     
-    return data.filter(item => {
+    const filtered = data.filter(item => {
       const val = item[field];
       return val >= lowerBound && val <= upperBound;
     });
+    
+    console.log(`✅ Removed ${data.length - filtered.length} outliers based on ${field}`);
+    return filtered;
   }
   
-  // 3. FILL MISSING VALUES - Replace null/undefined with average
-  static fillMissing(data, fieldName = null) {
+  // 3. FILL MISSING VALUES - Replace null/undefined with interpolated values
+  static fillMissing(data) {
     if (!data || data.length === 0) return data;
     
-    const field = fieldName || this.getNumericField(data);
-    if (!field) return data;
+    const fields = this.getNumericFields(data);
+    if (fields.length === 0) return data;
     
     const result = [...data];
     
-    for (let i = 0; i < result.length; i++) {
-      if (result[i][field] == null) {
-        let prevValue = null;
-        for (let j = i - 1; j >= 0; j--) {
-          if (result[j][field] != null) {
-            prevValue = result[j][field];
-            break;
+    // Fill missing values for each numeric field
+    fields.forEach(field => {
+      for (let i = 0; i < result.length; i++) {
+        if (result[i][field] == null) {
+          let prevValue = null;
+          for (let j = i - 1; j >= 0; j--) {
+            if (result[j][field] != null) {
+              prevValue = result[j][field];
+              break;
+            }
           }
-        }
-        
-        let nextValue = null;
-        for (let j = i + 1; j < result.length; j++) {
-          if (result[j][field] != null) {
-            nextValue = result[j][field];
-            break;
+          
+          let nextValue = null;
+          for (let j = i + 1; j < result.length; j++) {
+            if (result[j][field] != null) {
+              nextValue = result[j][field];
+              break;
+            }
           }
-        }
-        
-        if (prevValue != null && nextValue != null) {
-          result[i][field] = (prevValue + nextValue) / 2;
-        } else if (prevValue != null) {
-          result[i][field] = prevValue;
-        } else if (nextValue != null) {
-          result[i][field] = nextValue;
+          
+          if (prevValue != null && nextValue != null) {
+            result[i][field] = (prevValue + nextValue) / 2;
+          } else if (prevValue != null) {
+            result[i][field] = prevValue;
+          } else if (nextValue != null) {
+            result[i][field] = nextValue;
+          }
         }
       }
-    }
+    });
     
+    console.log(`✅ Filled missing values in fields: ${fields.join(', ')}`);
     return result;
   }
   
-  // 4. SCALE VALUES - Multiply all values by a number
-  static scale(data, multiplier = 1, fieldName = null) {
+  // 4. SCALE VALUES - Multiply ALL numeric values by a number
+  static scale(data, multiplier = 1) {
     if (!data || data.length === 0) return data;
     
-    const field = fieldName || this.getNumericField(data);
-    if (!field) return data;
+    const fields = this.getNumericFields(data);
+    if (fields.length === 0) return data;
     
-    return data.map(item => ({
-      ...item,
-      [field]: (item[field] || 0) * multiplier
-    }));
+    console.log(`📊 Scaling fields: ${fields.join(', ')} by ${multiplier}`);
+    
+    const result = data.map(item => {
+      const newItem = { ...item };
+      
+      // Scale ALL numeric fields
+      fields.forEach(field => {
+        newItem[field] = (item[field] || 0) * multiplier;
+      });
+      
+      return newItem;
+    });
+    
+    console.log(`✅ Scaled ${fields.length} fields by ${multiplier}`);
+    return result;
   }
   
-  // 5. OFFSET VALUES - Add/subtract a number from all values
-  static offset(data, amount = 0, fieldName = null) {
+  // 5. OFFSET VALUES - Add/subtract a number from ALL numeric values
+  static offset(data, amount = 0) {
     if (!data || data.length === 0) return data;
     
-    const field = fieldName || this.getNumericField(data);
-    if (!field) return data;
+    const fields = this.getNumericFields(data);
+    if (fields.length === 0) return data;
     
-    console.log(`📊 Applying offset of ${amount} to field: ${field}`);
+    console.log(`📊 Offsetting fields: ${fields.join(', ')} by ${amount}`);
     
-    return data.map(item => ({
-      ...item,
-      [field]: (item[field] || 0) + amount
-    }));
+    const result = data.map(item => {
+      const newItem = { ...item };
+      
+      // Offset ALL numeric fields
+      fields.forEach(field => {
+        newItem[field] = (item[field] || 0) + amount;
+      });
+      
+      return newItem;
+    });
+    
+    console.log(`✅ Offset ${fields.length} fields by ${amount}`);
+    return result;
   }
   
   // MAIN FUNCTION: Apply multiple transformations in order
@@ -149,29 +183,27 @@ class SimpleTransformations {
       
       switch (transform.type) {
         case 'movingAverage':
-          result = this.movingAverage(result, transform.window || 5, transform.field);
-          console.log(`✅ Applied moving average (window: ${transform.window || 5})`);
+          result = this.movingAverage(result, transform.window || 5);
           break;
         case 'removeOutliers':
-          result = this.removeOutliers(result, transform.field);
-          console.log(`✅ Removed outliers (${beforeCount - result.length} points removed)`);
+          result = this.removeOutliers(result);
           break;
         case 'fillMissing':
-          result = this.fillMissing(result, transform.field);
-          console.log(`✅ Filled missing values`);
+          result = this.fillMissing(result);
           break;
         case 'scale':
-          result = this.scale(result, transform.multiplier || 1, transform.field);
-          console.log(`✅ Scaled by ${transform.multiplier || 1}`);
+          result = this.scale(result, transform.multiplier || 1);
           break;
         case 'offset':
-          result = this.offset(result, transform.amount || 0, transform.field);
-          console.log(`✅ Offset by ${transform.amount || 0}`);
+          result = this.offset(result, transform.amount || 0);
           break;
+        default:
+          console.warn(`⚠️ Unknown transformation type: ${transform.type}`);
       }
     }
     
     console.log('📊 Final data (first item):', result[0]);
+    console.log('✅ All transformations applied!');
     
     return result;
   }
