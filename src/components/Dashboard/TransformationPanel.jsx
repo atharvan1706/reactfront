@@ -1,12 +1,11 @@
-// TransformationPanel.jsx
-// Put this file in the same folder as your PanelConfigModal.jsx
+// TransformationPanel.jsx - ADVANCED VERSION
+// UI for all 15 transformations
 
 import React from 'react';
-import { Filter, Plus, X, TrendingUp } from 'lucide-react';
+import { Filter, Plus, X, TrendingUp, Info } from 'lucide-react';
 
 function TransformationPanel({ transformations, onChange }) {
   
-  // Add a new transformation
   const addTransformation = () => {
     onChange([
       ...transformations,
@@ -14,18 +13,315 @@ function TransformationPanel({ transformations, onChange }) {
     ]);
   };
   
-  // Remove a transformation
   const removeTransformation = (index) => {
     onChange(transformations.filter((_, i) => i !== index));
   };
   
-  // Update a transformation
   const updateTransformation = (index, updates) => {
     const newTransforms = [...transformations];
     newTransforms[index] = { ...newTransforms[index], ...updates };
     onChange(newTransforms);
   };
   
+  // Transform options grouped by category
+  const transformOptions = [
+    { 
+      category: '📊 Basic Smoothing',
+      options: [
+        { value: 'movingAverage', label: 'Moving Average', desc: 'Smooth noisy data' },
+        { value: 'exponentialMovingAverage', label: 'EMA (Exponential)', desc: 'Smoother, weights recent data' }
+      ]
+    },
+    {
+      category: '🔢 Math Operations',
+      options: [
+        { value: 'scale', label: 'Scale (Multiply)', desc: 'Multiply all values' },
+        { value: 'offset', label: 'Offset (Add/Subtract)', desc: 'Add or subtract from values' },
+        { value: 'logTransform', label: 'Log Transform', desc: 'Reduce exponential growth' },
+        { value: 'clip', label: 'Clip Values', desc: 'Cap at min/max' }
+      ]
+    },
+    {
+      category: '📈 Change Analysis',
+      options: [
+        { value: 'rateOfChange', label: 'Rate of Change', desc: 'Show change between points' },
+        { value: 'percentChange', label: 'Percent Change', desc: 'Change as percentage' },
+        { value: 'cumulativeSum', label: 'Cumulative Sum', desc: 'Running total' }
+      ]
+    },
+    {
+      category: '🎯 Data Cleaning',
+      options: [
+        { value: 'removeOutliers', label: 'Remove Outliers', desc: 'Remove extreme values' },
+        { value: 'fillMissing', label: 'Fill Missing', desc: 'Interpolate null values' },
+        { value: 'normalize', label: 'Normalize (0-1)', desc: 'Scale to 0-1 range' },
+        { value: 'zScore', label: 'Z-Score', desc: 'Standardize (mean=0, std=1)' }
+      ]
+    },
+    {
+      category: '⏱️ Data Reduction',
+      options: [
+        { value: 'resample', label: 'Resample', desc: 'Keep every Nth point' },
+        { value: 'aggregateByWindow', label: 'Aggregate', desc: 'Combine points in windows' }
+      ]
+    }
+  ];
+
+  // Render settings based on transformation type
+  const renderSettings = (transform, index) => {
+    switch (transform.type) {
+      case 'movingAverage':
+        return (
+          <div>
+            <label style={{ display: 'block', marginBottom: '4px', fontSize: '11px', color: '#6b7280', fontWeight: '600' }}>
+              Window Size
+            </label>
+            <input
+              type="number"
+              min="2"
+              max="100"
+              value={transform.window || 5}
+              onChange={(e) => updateTransformation(index, { window: parseInt(e.target.value) })}
+              style={{
+                width: '100%',
+                padding: '6px 8px',
+                background: 'white',
+                border: '1px solid #d1d5db',
+                borderRadius: '4px',
+                color: '#111827',
+                fontSize: '12px'
+              }}
+            />
+            <div style={{ fontSize: '10px', color: '#9ca3af', marginTop: '2px' }}>
+              5-10 for light smoothing, 20+ for heavy
+            </div>
+          </div>
+        );
+      
+      case 'exponentialMovingAverage':
+        return (
+          <div>
+            <label style={{ display: 'block', marginBottom: '4px', fontSize: '11px', color: '#6b7280', fontWeight: '600' }}>
+              Alpha (0-1)
+            </label>
+            <input
+              type="number"
+              min="0"
+              max="1"
+              step="0.1"
+              value={transform.alpha || 0.3}
+              onChange={(e) => updateTransformation(index, { alpha: parseFloat(e.target.value) })}
+              style={{
+                width: '100%',
+                padding: '6px 8px',
+                background: 'white',
+                border: '1px solid #d1d5db',
+                borderRadius: '4px',
+                color: '#111827',
+                fontSize: '12px'
+              }}
+            />
+            <div style={{ fontSize: '10px', color: '#9ca3af', marginTop: '2px' }}>
+              Higher = more responsive (0.3 is good)
+            </div>
+          </div>
+        );
+      
+      case 'scale':
+        return (
+          <div>
+            <label style={{ display: 'block', marginBottom: '4px', fontSize: '11px', color: '#6b7280', fontWeight: '600' }}>
+              Multiply by
+            </label>
+            <input
+              type="number"
+              step="0.1"
+              value={transform.multiplier || 1}
+              onChange={(e) => updateTransformation(index, { multiplier: parseFloat(e.target.value) })}
+              style={{
+                width: '100%',
+                padding: '6px 8px',
+                background: 'white',
+                border: '1px solid #d1d5db',
+                borderRadius: '4px',
+                color: '#111827',
+                fontSize: '12px'
+              }}
+            />
+            <div style={{ fontSize: '10px', color: '#9ca3af', marginTop: '2px' }}>
+              2 = double, 0.5 = half, 1.8 = Celsius to F
+            </div>
+          </div>
+        );
+      
+      case 'offset':
+        return (
+          <div>
+            <label style={{ display: 'block', marginBottom: '4px', fontSize: '11px', color: '#6b7280', fontWeight: '600' }}>
+              Add amount
+            </label>
+            <input
+              type="number"
+              value={transform.amount || 0}
+              onChange={(e) => updateTransformation(index, { amount: parseFloat(e.target.value) })}
+              style={{
+                width: '100%',
+                padding: '6px 8px',
+                background: 'white',
+                border: '1px solid #d1d5db',
+                borderRadius: '4px',
+                color: '#111827',
+                fontSize: '12px'
+              }}
+            />
+            <div style={{ fontSize: '10px', color: '#9ca3af', marginTop: '2px' }}>
+              32 for Celsius to Fahrenheit offset
+            </div>
+          </div>
+        );
+      
+      case 'clip':
+        return (
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+            <div>
+              <label style={{ display: 'block', marginBottom: '4px', fontSize: '11px', color: '#6b7280', fontWeight: '600' }}>
+                Min Value
+              </label>
+              <input
+                type="number"
+                value={transform.min ?? ''}
+                placeholder="No min"
+                onChange={(e) => updateTransformation(index, { min: e.target.value ? parseFloat(e.target.value) : null })}
+                style={{
+                  width: '100%',
+                  padding: '6px 8px',
+                  background: 'white',
+                  border: '1px solid #d1d5db',
+                  borderRadius: '4px',
+                  color: '#111827',
+                  fontSize: '12px'
+                }}
+              />
+            </div>
+            <div>
+              <label style={{ display: 'block', marginBottom: '4px', fontSize: '11px', color: '#6b7280', fontWeight: '600' }}>
+                Max Value
+              </label>
+              <input
+                type="number"
+                value={transform.max ?? ''}
+                placeholder="No max"
+                onChange={(e) => updateTransformation(index, { max: e.target.value ? parseFloat(e.target.value) : null })}
+                style={{
+                  width: '100%',
+                  padding: '6px 8px',
+                  background: 'white',
+                  border: '1px solid #d1d5db',
+                  borderRadius: '4px',
+                  color: '#111827',
+                  fontSize: '12px'
+                }}
+              />
+            </div>
+          </div>
+        );
+      
+      case 'resample':
+        return (
+          <div>
+            <label style={{ display: 'block', marginBottom: '4px', fontSize: '11px', color: '#6b7280', fontWeight: '600' }}>
+              Keep every Nth point
+            </label>
+            <input
+              type="number"
+              min="2"
+              max="100"
+              value={transform.factor || 2}
+              onChange={(e) => updateTransformation(index, { factor: parseInt(e.target.value) })}
+              style={{
+                width: '100%',
+                padding: '6px 8px',
+                background: 'white',
+                border: '1px solid #d1d5db',
+                borderRadius: '4px',
+                color: '#111827',
+                fontSize: '12px'
+              }}
+            />
+            <div style={{ fontSize: '10px', color: '#9ca3af', marginTop: '2px' }}>
+              2 = keep every 2nd point (50% reduction)
+            </div>
+          </div>
+        );
+      
+      case 'aggregateByWindow':
+        return (
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+            <div>
+              <label style={{ display: 'block', marginBottom: '4px', fontSize: '11px', color: '#6b7280', fontWeight: '600' }}>
+                Window Size
+              </label>
+              <input
+                type="number"
+                min="2"
+                value={transform.windowSize || 5}
+                onChange={(e) => updateTransformation(index, { windowSize: parseInt(e.target.value) })}
+                style={{
+                  width: '100%',
+                  padding: '6px 8px',
+                  background: 'white',
+                  border: '1px solid #d1d5db',
+                  borderRadius: '4px',
+                  color: '#111827',
+                  fontSize: '12px'
+                }}
+              />
+            </div>
+            <div>
+              <label style={{ display: 'block', marginBottom: '4px', fontSize: '11px', color: '#6b7280', fontWeight: '600' }}>
+                Method
+              </label>
+              <select
+                value={transform.method || 'avg'}
+                onChange={(e) => updateTransformation(index, { method: e.target.value })}
+                style={{
+                  width: '100%',
+                  padding: '6px 8px',
+                  background: 'white',
+                  border: '1px solid #d1d5db',
+                  borderRadius: '4px',
+                  color: '#111827',
+                  fontSize: '12px'
+                }}
+              >
+                <option value="avg">Average</option>
+                <option value="sum">Sum</option>
+                <option value="min">Minimum</option>
+                <option value="max">Maximum</option>
+                <option value="first">First</option>
+                <option value="last">Last</option>
+              </select>
+            </div>
+          </div>
+        );
+      
+      default:
+        return (
+          <div style={{ 
+            padding: '6px 8px',
+            background: '#eff6ff',
+            border: '1px solid #dbeafe',
+            borderRadius: '4px',
+            fontSize: '11px',
+            color: '#1e40af',
+            marginTop: '4px'
+          }}>
+            ℹ️ No settings needed
+          </div>
+        );
+    }
+  };
+
   return (
     <div style={{
       background: '#f9fafb',
@@ -52,14 +348,14 @@ function TransformationPanel({ transformations, onChange }) {
             gap: '6px'
           }}>
             <Filter size={14} />
-            Data Transformations (ETL)
+            Data Transformations (Advanced ETL)
           </h3>
           <p style={{ 
             margin: '4px 0 0', 
             fontSize: '11px', 
             color: '#6b7280' 
           }}>
-            Clean and transform your data before displaying
+            15 transformations available - apply multiple in sequence
           </p>
         </div>
         <button
@@ -83,7 +379,7 @@ function TransformationPanel({ transformations, onChange }) {
         </button>
       </div>
       
-      {/* Show message if no transformations */}
+      {/* Empty state */}
       {transformations.length === 0 && (
         <div style={{
           padding: '24px',
@@ -97,12 +393,12 @@ function TransformationPanel({ transformations, onChange }) {
           <TrendingUp size={24} style={{ opacity: 0.5, marginBottom: '8px' }} />
           <div>No transformations applied</div>
           <div style={{ marginTop: '4px', fontSize: '11px' }}>
-            Click "Add" to start transforming your data
+            Click "Add" to transform your data
           </div>
         </div>
       )}
       
-      {/* List of transformations */}
+      {/* Transformations list */}
       {transformations.map((transform, index) => (
         <div
           key={index}
@@ -115,7 +411,7 @@ function TransformationPanel({ transformations, onChange }) {
           }}
         >
           <div style={{ display: 'flex', gap: '8px', alignItems: 'flex-start' }}>
-            {/* Transformation Type */}
+            {/* Type selector */}
             <div style={{ flex: 1 }}>
               <label style={{ 
                 display: 'block', 
@@ -139,126 +435,21 @@ function TransformationPanel({ transformations, onChange }) {
                   fontSize: '12px'
                 }}
               >
-                <option value="movingAverage">Moving Average (Smooth data)</option>
-                <option value="removeOutliers">Remove Outliers (Remove bad values)</option>
-                <option value="fillMissing">Fill Missing Values</option>
-                <option value="scale">Scale (Multiply all values)</option>
-                <option value="offset">Offset (Add to all values)</option>
+                {transformOptions.map(group => (
+                  <optgroup key={group.category} label={group.category}>
+                    {group.options.map(opt => (
+                      <option key={opt.value} value={opt.value}>
+                        {opt.label} - {opt.desc}
+                      </option>
+                    ))}
+                  </optgroup>
+                ))}
               </select>
             </div>
             
-            {/* Settings for each type */}
+            {/* Settings */}
             <div style={{ flex: 1 }}>
-              {transform.type === 'movingAverage' && (
-                <div>
-                  <label style={{ 
-                    display: 'block', 
-                    marginBottom: '4px', 
-                    fontSize: '11px', 
-                    color: '#6b7280',
-                    fontWeight: '600'
-                  }}>
-                    Window Size
-                  </label>
-                  <input
-                    type="number"
-                    min="2"
-                    max="50"
-                    value={transform.window || 5}
-                    onChange={(e) => updateTransformation(index, { window: parseInt(e.target.value) })}
-                    style={{
-                      width: '100%',
-                      padding: '6px 8px',
-                      background: 'white',
-                      border: '1px solid #d1d5db',
-                      borderRadius: '4px',
-                      color: '#111827',
-                      fontSize: '12px'
-                    }}
-                  />
-                  <div style={{ fontSize: '10px', color: '#9ca3af', marginTop: '2px' }}>
-                    Higher = smoother (try 5-10)
-                  </div>
-                </div>
-              )}
-              
-              {transform.type === 'scale' && (
-                <div>
-                  <label style={{ 
-                    display: 'block', 
-                    marginBottom: '4px', 
-                    fontSize: '11px', 
-                    color: '#6b7280',
-                    fontWeight: '600'
-                  }}>
-                    Multiply by
-                  </label>
-                  <input
-                    type="number"
-                    step="0.1"
-                    value={transform.multiplier || 1}
-                    onChange={(e) => updateTransformation(index, { multiplier: parseFloat(e.target.value) })}
-                    style={{
-                      width: '100%',
-                      padding: '6px 8px',
-                      background: 'white',
-                      border: '1px solid #d1d5db',
-                      borderRadius: '4px',
-                      color: '#111827',
-                      fontSize: '12px'
-                    }}
-                  />
-                  <div style={{ fontSize: '10px', color: '#9ca3af', marginTop: '2px' }}>
-                    Example: 2 = double all values
-                  </div>
-                </div>
-              )}
-              
-              {transform.type === 'offset' && (
-                <div>
-                  <label style={{ 
-                    display: 'block', 
-                    marginBottom: '4px', 
-                    fontSize: '11px', 
-                    color: '#6b7280',
-                    fontWeight: '600'
-                  }}>
-                    Add amount
-                  </label>
-                  <input
-                    type="number"
-                    step="1"
-                    value={transform.amount || 0}
-                    onChange={(e) => updateTransformation(index, { amount: parseFloat(e.target.value) })}
-                    style={{
-                      width: '100%',
-                      padding: '6px 8px',
-                      background: 'white',
-                      border: '1px solid #d1d5db',
-                      borderRadius: '4px',
-                      color: '#111827',
-                      fontSize: '12px'
-                    }}
-                  />
-                  <div style={{ fontSize: '10px', color: '#9ca3af', marginTop: '2px' }}>
-                    Example: 10 = add 10 to all values
-                  </div>
-                </div>
-              )}
-              
-              {(transform.type === 'removeOutliers' || transform.type === 'fillMissing') && (
-                <div style={{ 
-                  padding: '6px 8px',
-                  background: '#eff6ff',
-                  border: '1px solid #dbeafe',
-                  borderRadius: '4px',
-                  fontSize: '11px',
-                  color: '#1e40af',
-                  marginTop: '18px'
-                }}>
-                  ℹ️ No settings needed - automatic
-                </div>
-              )}
+              {renderSettings(transform, index)}
             </div>
             
             {/* Delete button */}
@@ -291,13 +482,13 @@ function TransformationPanel({ transformations, onChange }) {
           fontSize: '11px',
           color: '#92400e',
           display: 'flex',
-          alignItems: 'center',
+          alignItems: 'flex-start',
           gap: '6px'
         }}>
-          <span>💡</span>
+          <Info size={14} style={{ marginTop: '1px', flexShrink: 0 }} />
           <span>
-            Transformations apply in order. The first one processes raw data, 
-            the second processes the result of the first, etc.
+            <strong>Transformations apply in order:</strong> Each transformation processes 
+            the output of the previous one. Drag to reorder (coming soon!).
           </span>
         </div>
       )}
