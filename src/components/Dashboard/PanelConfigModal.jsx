@@ -5,7 +5,7 @@ import {
   XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer
 } from 'recharts';
 import {
-  X as LucideX, Database, Eye, Save, RefreshCw, AlertCircle
+  X as LucideX, Database, Eye, Save, RefreshCw, AlertCircle, Sparkles, TrendingUp
 } from 'lucide-react';
 
 import { COLORS, VIZ_TYPES, DEFAULT_PANEL_CONFIG } from './constants';
@@ -15,40 +15,49 @@ import SimpleTransformations from './simpleTransformations';
 import TransformationPanel from './TransformationPanel';
 
 const X = LucideX;
+
 function PanelConfigModal({ panel, onSave, onClose, allTables, darkMode }) {
   const [config, setConfig] = useState(panel || {
-  ...DEFAULT_PANEL_CONFIG,
-  id: `panel_${Date.now()}`,
-  colors: [COLORS[0], COLORS[1], COLORS[2], COLORS[3], COLORS[4]],
-  transformations: []  // ← ADD THIS LINE
-});
+    ...DEFAULT_PANEL_CONFIG,
+    id: `panel_${Date.now()}`,
+    colors: [COLORS[0], COLORS[1], COLORS[2], COLORS[3], COLORS[4]],
+    transformations: []
+  });
 
   const [previewData, setPreviewData] = useState([]);
   const [previewLoading, setPreviewLoading] = useState(false);
   const [previewError, setPreviewError] = useState(null);
   const [availableFields, setAvailableFields] = useState([]);
 
-// Dark mode theme
   const theme = darkMode ? {
-    bg: '#1e293b',
+    bg: 'linear-gradient(145deg, #0f172a 0%, #1e293b 100%)',
+    bgSolid: '#1e293b',
     card: '#0f172a',
     hover: '#334155',
     text: '#f1f5f9',
     textSecondary: '#cbd5e1',
     textMuted: '#94a3b8',
-    border: '#334155',
-    borderLight: '#475569'
+    border: 'rgba(255, 255, 255, 0.06)',
+    borderLight: 'rgba(255, 255, 255, 0.08)',
+    input: 'rgba(255, 255, 255, 0.03)',
+    inputBorder: 'rgba(255, 255, 255, 0.08)',
+    accent: 'rgba(99, 102, 241, 0.1)',
+    accentBorder: 'rgba(99, 102, 241, 0.3)'
   } : {
-    bg: 'white',
+    bg: 'linear-gradient(145deg, #ffffff 0%, #f8fafc 100%)',
+    bgSolid: 'white',
     card: '#f9fafb',
     hover: '#f3f4f6',
     text: '#111827',
     textSecondary: '#374151',
     textMuted: '#6b7280',
-    border: '#e5e7eb',
-    borderLight: '#d1d5db'
+    border: 'rgba(0, 0, 0, 0.06)',
+    borderLight: 'rgba(0, 0, 0, 0.04)',
+    input: 'white',
+    inputBorder: 'rgba(0, 0, 0, 0.08)',
+    accent: 'rgba(99, 102, 241, 0.06)',
+    accentBorder: 'rgba(99, 102, 241, 0.2)'
   };
-
 
   useEffect(() => {
     if (config.table && config.dataSource === 'table') {
@@ -86,17 +95,15 @@ function PanelConfigModal({ panel, onSave, onClose, allTables, darkMode }) {
         return;
       }
 
-    const result = await questdbService.query(query);
-    const formatted = questdbService.formatForChart(result, config.timestampField);
-    
-    // ↓ ADD THESE 5 LINES ↓
-    // Apply transformations if any
-    let finalData = formatted;
-    if (config.transformations && config.transformations.length > 0) {
-      finalData = SimpleTransformations.applyTransformations(formatted, config.transformations);
-    }
-    
-    setPreviewData(finalData);  // ← Change 'formatted' to 'finalData'
+      const result = await questdbService.query(query);
+      const formatted = questdbService.formatForChart(result, config.timestampField);
+      
+      let finalData = formatted;
+      if (config.transformations && config.transformations.length > 0) {
+        finalData = SimpleTransformations.applyTransformations(formatted, config.transformations);
+      }
+      
+      setPreviewData(finalData);
       
       if (formatted.length > 0 && (!config.yAxes || config.yAxes.length === 0)) {
         const numericFields = Object.keys(formatted[0]).filter(key => 
@@ -124,7 +131,14 @@ function PanelConfigModal({ panel, onSave, onClose, allTables, darkMode }) {
     if (previewLoading) {
       return (
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '200px' }}>
-          <RefreshCw size={24} color="#667eea" style={{ animation: 'spin 1s linear infinite' }} />
+          <div style={{
+            width: '48px',
+            height: '48px',
+            borderRadius: '50%',
+            border: '3px solid',
+            borderColor: `${theme.border} ${theme.border} ${theme.border} #6366f1`,
+            animation: 'spin 0.8s linear infinite'
+          }} />
         </div>
       );
     }
@@ -136,13 +150,19 @@ function PanelConfigModal({ panel, onSave, onClose, allTables, darkMode }) {
           alignItems: 'center', 
           justifyContent: 'center', 
           height: '200px',
-          color: '#ef4444',
+          color: darkMode ? '#fca5a5' : '#dc2626',
           textAlign: 'center',
           padding: '20px'
         }}>
           <div>
-            <AlertCircle size={32} style={{ marginBottom: '8px' }} />
-            <div>{previewError}</div>
+            <AlertCircle size={36} style={{ marginBottom: '10px', opacity: 0.9 }} />
+            <div style={{ 
+              fontFamily: "'Outfit', sans-serif",
+              fontSize: '14px',
+              fontWeight: '600'
+            }}>
+              {previewError}
+            </div>
           </div>
         </div>
       );
@@ -155,7 +175,9 @@ function PanelConfigModal({ panel, onSave, onClose, allTables, darkMode }) {
           alignItems: 'center', 
           justifyContent: 'center', 
           height: '200px',
-          color: '#9ca3af'
+          color: theme.textMuted,
+          fontFamily: "'Outfit', sans-serif",
+          fontSize: '14px'
         }}>
           Click "Preview" to test your configuration
         </div>
@@ -169,11 +191,17 @@ function PanelConfigModal({ panel, onSave, onClose, allTables, darkMode }) {
       <ResponsiveContainer width="100%" height={200}>
         {config.vizType === 'line' && (
           <LineChart {...chartProps}>
-            <CartesianGrid strokeDasharray="3 3" stroke="rgba(0,0,0,0.1)" />
-            <XAxis dataKey="_time" tick={{ fill: '#6b7280', fontSize: 10 }} />
-            <YAxis tick={{ fill: '#6b7280', fontSize: 10 }} />
-            <Tooltip contentStyle={{ background: theme.bg, border: `1px solid ${theme.border}` }} />
-            <Legend />
+            <CartesianGrid strokeDasharray="3 3" stroke={darkMode ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)'} />
+            <XAxis dataKey="_time" tick={{ fill: theme.textMuted, fontSize: 10, fontFamily: "'Outfit', sans-serif" }} stroke={theme.border} />
+            <YAxis tick={{ fill: theme.textMuted, fontSize: 10, fontFamily: "'Outfit', sans-serif" }} stroke={theme.border} />
+            <Tooltip contentStyle={{ 
+              background: theme.bgSolid, 
+              border: `1px solid ${theme.border}`,
+              borderRadius: '10px',
+              fontFamily: "'Outfit', sans-serif",
+              fontSize: '12px'
+            }} />
+            <Legend wrapperStyle={{ fontFamily: "'Outfit', sans-serif", fontSize: '12px' }} />
             {yFields.map((yField, idx) => (
               <Line 
                 key={yField}
@@ -189,11 +217,17 @@ function PanelConfigModal({ panel, onSave, onClose, allTables, darkMode }) {
         )}
         {config.vizType === 'bar' && (
           <BarChart {...chartProps}>
-            <CartesianGrid strokeDasharray="3 3" stroke="rgba(0,0,0,0.1)" />
-            <XAxis dataKey="_time" tick={{ fill: '#6b7280', fontSize: 10 }} />
-            <YAxis tick={{ fill: '#6b7280', fontSize: 10 }} />
-            <Tooltip contentStyle={{ background: theme.bg, border: `1px solid ${theme.border}` }} />
-            <Legend />
+            <CartesianGrid strokeDasharray="3 3" stroke={darkMode ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)'} />
+            <XAxis dataKey="_time" tick={{ fill: theme.textMuted, fontSize: 10, fontFamily: "'Outfit', sans-serif" }} stroke={theme.border} />
+            <YAxis tick={{ fill: theme.textMuted, fontSize: 10, fontFamily: "'Outfit', sans-serif" }} stroke={theme.border} />
+            <Tooltip contentStyle={{ 
+              background: theme.bgSolid, 
+              border: `1px solid ${theme.border}`,
+              borderRadius: '10px',
+              fontFamily: "'Outfit', sans-serif",
+              fontSize: '12px'
+            }} />
+            <Legend wrapperStyle={{ fontFamily: "'Outfit', sans-serif", fontSize: '12px' }} />
             {yFields.map((yField, idx) => (
               <Bar 
                 key={yField}
@@ -206,128 +240,108 @@ function PanelConfigModal({ panel, onSave, onClose, allTables, darkMode }) {
         )}
         {config.vizType === 'area' && (
           <AreaChart {...chartProps}>
-            <CartesianGrid strokeDasharray="3 3" stroke="rgba(0,0,0,0.1)" />
-            <XAxis dataKey="_time" tick={{ fill: '#6b7280', fontSize: 10 }} />
-            <YAxis tick={{ fill: '#6b7280', fontSize: 10 }} />
-            <Tooltip contentStyle={{ background: theme.bg, border: `1px solid ${theme.border}` }} />
-            <Legend />
+            <CartesianGrid strokeDasharray="3 3" stroke={darkMode ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)'} />
+            <XAxis dataKey="_time" tick={{ fill: theme.textMuted, fontSize: 10, fontFamily: "'Outfit', sans-serif" }} stroke={theme.border} />
+            <YAxis tick={{ fill: theme.textMuted, fontSize: 10, fontFamily: "'Outfit', sans-serif" }} stroke={theme.border} />
+            <Tooltip contentStyle={{ 
+              background: theme.bgSolid, 
+              border: `1px solid ${theme.border}`,
+              borderRadius: '10px',
+              fontFamily: "'Outfit', sans-serif",
+              fontSize: '12px'
+            }} />
+            <Legend wrapperStyle={{ fontFamily: "'Outfit', sans-serif", fontSize: '12px' }} />
             {yFields.map((yField, idx) => (
               <Area 
                 key={yField}
                 type="monotone" 
                 dataKey={yField} 
                 stroke={getColor(idx)} 
-                fill={getColor(idx)} 
+                fill={getColor(idx)}
                 fillOpacity={config.fillOpacity}
+                strokeWidth={config.lineWidth}
                 name={yField}
               />
             ))}
           </AreaChart>
         )}
-        {config.vizType === 'pie' && (
-          <PieChart>
-            <Pie 
-              data={previewData.slice(0, 10)} 
-              dataKey={yFields[0] || config.yAxis} 
-              nameKey="_time" 
-              cx="50%" 
-              cy="50%" 
-              outerRadius={60} 
-              label
-            >
-              {previewData.slice(0, 10).map((entry, index) => (
-                <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-              ))}
-            </Pie>
-            <Tooltip contentStyle={{ background: theme.bg, border: `1px solid ${theme.border}` }} />
-            <Legend />
-          </PieChart>
-        )}
-        {config.vizType === 'scatter' && (
-          <ScatterChart {...chartProps}>
-            <CartesianGrid strokeDasharray="3 3" stroke="rgba(0,0,0,0.1)" />
-            <XAxis dataKey="_time" tick={{ fill: '#6b7280', fontSize: 10 }} />
-            <YAxis tick={{ fill: '#6b7280', fontSize: 10 }} />
-            <Tooltip contentStyle={{ background: theme.bg, border: `1px solid ${theme.border}` }} />
-            <Legend />
-            {yFields.map((yField, idx) => (
-              <Scatter 
-                key={yField}
-                dataKey={yField} 
-                fill={getColor(idx)}
-                name={yField}
-              />
-            ))}
-          </ScatterChart>
-        )}
-        {config.vizType === 'radar' && (
-          <RadarChart data={previewData.slice(0, 8)}>
-            <PolarGrid stroke="rgba(0,0,0,0.1)" />
-            <PolarAngleAxis dataKey="_time" tick={{ fill: '#6b7280', fontSize: 10 }} />
-            <PolarRadiusAxis tick={{ fill: '#6b7280', fontSize: 10 }} />
-            {yFields.map((yField, idx) => (
-              <Radar 
-                key={yField}
-                dataKey={yField} 
-                stroke={getColor(idx)} 
-                fill={getColor(idx)} 
-                fillOpacity={config.fillOpacity || 0.5}
-                name={yField}
-              />
-            ))}
-            <Legend />
-          </RadarChart>
-        )}
-        {config.vizType === 'stat' && (
-          <div style={{ 
-            display: 'flex', 
-            alignItems: 'center', 
-            justifyContent: 'center', 
-            height: '200px',
-            flexDirection: 'column'
-          }}>
-            <div style={{ fontSize: '36px', fontWeight: 'bold', color: getColor(0) }}>
-              {previewData[previewData.length - 1]?.[yFields[0]]?.toFixed(2) || 'N/A'}
-            </div>
-            <div style={{ fontSize: '12px', color: theme.textMuted, marginTop: '8px' }}>
-              {yFields[0] || 'No field selected'}
-            </div>
-          </div>
-        )}
-        {config.vizType === 'table' && (
-          <div style={{ height: '200px', overflow: 'auto' }}>
-            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '11px' }}>
-              <thead>
-                <tr style={{ background: theme.card }}>
-                  {Object.keys(previewData[0] || {}).filter(k => !k.startsWith('_')).map(col => (
-                    <th key={col} style={{ 
-                      padding: '6px', 
-                      textAlign: 'left', 
-                      borderBottom: '2px solid #e5e7eb',
-                      fontSize: '10px'
-                    }}>
-                      {col}
-                    </th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {previewData.slice(0, 5).map((row, i) => (
-                  <tr key={i} style={{ borderBottom: `1px solid ${theme.border}` }}>
-                    {Object.keys(row).filter(k => !k.startsWith('_')).map(col => (
-                      <td key={col} style={{ padding: '6px' }}>
-                        {typeof row[col] === 'number' ? row[col].toFixed(2) : row[col]}
-                      </td>
-                    ))}
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
       </ResponsiveContainer>
     );
   };
+
+  const InputLabel = ({ children, icon: Icon }) => (
+    <label style={{ 
+      display: 'flex',
+      alignItems: 'center',
+      gap: '8px',
+      marginBottom: '10px', 
+      fontSize: '13px', 
+      color: theme.textSecondary,
+      fontFamily: "'Outfit', sans-serif",
+      fontWeight: '600',
+      letterSpacing: '0.01em'
+    }}>
+      {Icon && <Icon size={14} strokeWidth={2.5} />}
+      {children}
+    </label>
+  );
+
+  const StyledInput = ({ ...props }) => (
+    <input
+      {...props}
+      style={{
+        width: '100%',
+        padding: '11px 14px',
+        background: theme.input,
+        border: `1px solid ${theme.inputBorder}`,
+        borderRadius: '10px',
+        color: theme.text,
+        fontSize: '14px',
+        fontFamily: "'Outfit', sans-serif",
+        outline: 'none',
+        transition: 'all 0.2s ease',
+        ...(props.style || {})
+      }}
+      onFocus={(e) => {
+        e.target.style.borderColor = '#6366f1';
+        e.target.style.boxShadow = '0 0 0 3px rgba(99, 102, 241, 0.1)';
+      }}
+      onBlur={(e) => {
+        e.target.style.borderColor = theme.inputBorder;
+        e.target.style.boxShadow = 'none';
+      }}
+    />
+  );
+
+  const StyledSelect = ({ children, ...props }) => (
+    <select
+      {...props}
+      style={{
+        width: '100%',
+        padding: '11px 14px',
+        background: theme.input,
+        border: `1px solid ${theme.inputBorder}`,
+        borderRadius: '10px',
+        color: theme.text,
+        fontSize: '14px',
+        fontFamily: "'Outfit', sans-serif",
+        outline: 'none',
+        cursor: 'pointer',
+        transition: 'all 0.2s ease',
+        ...(props.style || {})
+      }}
+      onFocus={(e) => {
+        e.target.style.borderColor = '#6366f1';
+        e.target.style.boxShadow = '0 0 0 3px rgba(99, 102, 241, 0.1)';
+      }}
+      onBlur={(e) => {
+        e.target.style.borderColor = theme.inputBorder;
+        e.target.style.boxShadow = 'none';
+      }}
+    >
+      {children}
+    </select>
+  );
 
   return (
     <div style={{
@@ -336,512 +350,518 @@ function PanelConfigModal({ panel, onSave, onClose, allTables, darkMode }) {
       left: 0,
       right: 0,
       bottom: 0,
-      background: 'rgba(0,0,0,0.75)',
+      background: 'rgba(0, 0, 0, 0.85)',
+      backdropFilter: 'blur(8px)',
       display: 'flex',
       alignItems: 'center',
       justifyContent: 'center',
       zIndex: 10000,
-      padding: '20px'
+      padding: '20px',
+      animation: 'fadeIn 0.2s ease-out'
     }}>
-      <div style={{
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+        
+        @keyframes fadeIn {
+          from { opacity: 0; }
+          to { opacity: 1; }
+        }
+        
+        @keyframes slideUp {
+          from { 
+            opacity: 0;
+            transform: translateY(20px) scale(0.95);
+          }
+          to { 
+            opacity: 1;
+            transform: translateY(0) scale(1);
+          }
+        }
+        
+        @keyframes spin {
+          0% { transform: rotate(0deg); }
+          100% { transform: rotate(360deg); }
+        }
+        
+        .modal-container {
+          animation: slideUp 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+        
+        .section-card {
+          background: ${theme.card};
+          border: 1px solid ${theme.border};
+          borderRadius: 14px;
+          padding: 20px;
+          marginBottom: 16px;
+          transition: all 0.2s ease;
+        }
+        
+        .section-card:hover {
+          border-color: ${theme.borderLight};
+        }
+        
+        .gradient-text {
+          background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 50%, #d946ef 100%);
+          -webkit-background-clip: text;
+          -webkit-text-fill-color: transparent;
+          background-clip: text;
+        }
+        
+        .action-btn {
+          transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        
+        .action-btn:hover {
+          transform: translateY(-1px);
+        }
+        
+        .action-btn:active {
+          transform: translateY(0);
+        }
+      `}</style>
+
+      <div className="modal-container" style={{
         background: theme.bg,
-        borderRadius: '16px',
+        borderRadius: '24px',
         width: '100%',
-        maxWidth: '1000px',
+        maxWidth: '900px',
         maxHeight: '90vh',
         overflow: 'hidden',
         display: 'flex',
         flexDirection: 'column',
-        boxShadow: '0 20px 60px rgba(0,0,0,0.3)'
+        boxShadow: darkMode 
+          ? '0 25px 80px rgba(0, 0, 0, 0.6), 0 0 1px rgba(255, 255, 255, 0.05) inset'
+          : '0 25px 80px rgba(0, 0, 0, 0.15), 0 0 1px rgba(0, 0, 0, 0.05) inset',
+        border: `1px solid ${theme.border}`
       }}>
+        {/* Header */}
         <div style={{
-          padding: '20px 24px',
+          padding: '28px 32px',
           borderBottom: `1px solid ${theme.border}`,
           display: 'flex',
           justifyContent: 'space-between',
           alignItems: 'center',
-          background: theme.card
+          background: theme.accent,
+          position: 'relative',
+          overflow: 'hidden'
         }}>
+          <div style={{
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            right: 0,
+            height: '2px',
+            background: 'linear-gradient(90deg, transparent, #6366f1, #8b5cf6, #d946ef, transparent)',
+            backgroundSize: '200% 100%',
+            animation: 'shimmer 3s linear infinite'
+          }} />
+          
           <div>
-            <h2 style={{ margin: 0, fontSize: '20px', color: theme.text, fontWeight: '700' }}>
-              {panel ? 'Edit Panel' : 'Add New Panel'}
-            </h2>
-            <p style={{ margin: '4px 0 0', fontSize: '13px', color: theme.textMuted }}>
-              Configure your visualization settings
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '6px' }}>
+              <Sparkles size={24} color="#8b5cf6" strokeWidth={2.5} />
+              <h2 style={{ 
+                margin: 0, 
+                fontSize: '26px', 
+                fontFamily: "'Outfit', sans-serif",
+                fontWeight: '700',
+                letterSpacing: '-0.02em',
+                color: theme.text
+              }}>
+                Panel <span className="gradient-text">Configuration</span>
+              </h2>
+            </div>
+            <p style={{ 
+              margin: 0, 
+              fontSize: '14px', 
+              color: theme.textMuted,
+              fontFamily: "'Outfit', sans-serif",
+              fontWeight: '400'
+            }}>
+              {panel ? 'Edit your panel settings' : 'Create a new data visualization panel'}
             </p>
           </div>
-          <button onClick={onClose} style={{
-            background: 'none',
-            border: 'none',
+          
+          <button onClick={onClose} className="action-btn" style={{
+            background: theme.input,
+            border: `1px solid ${theme.inputBorder}`,
             color: theme.textMuted,
             cursor: 'pointer',
-            padding: '8px'
+            padding: '10px',
+            borderRadius: '12px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center'
           }}>
-            <X size={20} />
+            <X size={20} strokeWidth={2} />
           </button>
         </div>
 
-        <div style={{ flex: 1, overflow: 'auto', padding: '24px' }}>
+        {/* Content */}
+        <div style={{ 
+          flex: 1, 
+          overflow: 'auto', 
+          padding: '32px',
+          background: darkMode ? 'rgba(99, 102, 241, 0.02)' : 'rgba(99, 102, 241, 0.01)'
+        }}>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px' }}>
-            
+            {/* Left Column */}
             <div>
-              {/* Panel Title */}
-              <div style={{ marginBottom: '20px' }}>
-                <label style={{ display: 'block', marginBottom: '8px', fontSize: '13px', color: theme.textSecondary, fontWeight: '600' }}>
-                  Panel Title
-                </label>
-                <input
-                  type="text"
-                  value={config.title}
-                  onChange={(e) => setConfig({ ...config, title: e.target.value })}
-                  placeholder="My Panel Title"
-                  style={{
-                    width: '100%',
-                    padding: '10px 12px',
-                    background: theme.bg,
-                    border: `2px solid ${theme.border}`,
-                    borderRadius: '8px',
-                    color: theme.text,
-                    fontSize: '14px'
-                  }}
-                />
-              </div>
+              {/* Basic Settings */}
+              <div className="section-card">
+                <h3 style={{
+                  margin: '0 0 18px 0',
+                  fontSize: '16px',
+                  fontFamily: "'Outfit', sans-serif",
+                  fontWeight: '700',
+                  color: theme.text,
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px'
+                }}>
+                  <div style={{
+                    width: '3px',
+                    height: '16px',
+                    background: 'linear-gradient(180deg, #6366f1, #8b5cf6)',
+                    borderRadius: '2px'
+                  }} />
+                  Basic Settings
+                </h3>
+                
+                <div style={{ marginBottom: '16px' }}>
+                  <InputLabel>Panel Title</InputLabel>
+                  <StyledInput
+                    type="text"
+                    value={config.title}
+                    onChange={(e) => setConfig({ ...config, title: e.target.value })}
+                    placeholder="Enter panel title..."
+                  />
+                </div>
 
-              {/* Visualization Type */}
-              <div style={{ marginBottom: '20px' }}>
-                <label style={{ display: 'block', marginBottom: '12px', fontSize: '13px', color: theme.textSecondary, fontWeight: '600' }}>
-                  Visualization Type
-                </label>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
-                  {VIZ_TYPES.map(type => {
-                    const Icon = type.icon;
-                    const isSelected = config.vizType === type.id;
-                    return (
-                      <button
-                        key={type.id}
-                        onClick={() => setConfig({ ...config, vizType: type.id })}
-                        style={{
-                          padding: '12px',
-                          background: isSelected ? '#667eea' : theme.card,
-                          border: '2px solid',
-                          borderColor: isSelected ? '#667eea' : theme.border,
-                          borderRadius: '8px',
-                          color: isSelected ? 'white' : theme.text,
-                          cursor: 'pointer',
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: '10px',
-                          fontSize: '13px',
-                          transition: 'all 0.2s',
-                          textAlign: 'left'
-                        }}
-                      >
-                       {Icon && <Icon size={18} />}
-                        <div>
-                          <div style={{ fontWeight: '600' }}>{type.name}</div>
-                          <div style={{ fontSize: '11px', opacity: 0.7 }}>{type.description}</div>
-                        </div>
-                      </button>
-                    );
-                  })}
+                <div style={{ marginBottom: '16px' }}>
+                  <InputLabel icon={TrendingUp}>Visualization Type</InputLabel>
+                  <StyledSelect
+                    value={config.vizType}
+                    onChange={(e) => setConfig({ ...config, vizType: e.target.value })}
+                  >
+                    {VIZ_TYPES.map(type => (
+                      <option key={type} value={type}>{type.charAt(0).toUpperCase() + type.slice(1)}</option>
+                    ))}
+                  </StyledSelect>
+                </div>
+
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                  <div>
+                    <InputLabel>Width</InputLabel>
+                    <StyledInput
+                      type="number"
+                      value={config.width}
+                      onChange={(e) => setConfig({ ...config, width: parseInt(e.target.value) })}
+                      min="1"
+                      max="12"
+                    />
+                  </div>
+                  <div>
+                    <InputLabel>Height</InputLabel>
+                    <StyledInput
+                      type="number"
+                      value={config.height}
+                      onChange={(e) => setConfig({ ...config, height: parseInt(e.target.value) })}
+                      min="1"
+                      max="6"
+                    />
+                  </div>
                 </div>
               </div>
 
               {/* Data Source */}
-              <div style={{ marginBottom: '20px' }}>
-                <label style={{ display: 'block', marginBottom: '8px', fontSize: '13px', color: theme.textSecondary, fontWeight: '600' }}>
+              <div className="section-card">
+                <h3 style={{
+                  margin: '0 0 18px 0',
+                  fontSize: '16px',
+                  fontFamily: "'Outfit', sans-serif",
+                  fontWeight: '700',
+                  color: theme.text,
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px'
+                }}>
+                  <div style={{
+                    width: '3px',
+                    height: '16px',
+                    background: 'linear-gradient(180deg, #6366f1, #8b5cf6)',
+                    borderRadius: '2px'
+                  }} />
                   Data Source
-                </label>
-                <div style={{ display: 'flex', gap: '8px', marginBottom: '12px' }}>
-                  <button
-                    onClick={() => setConfig({ ...config, dataSource: 'table' })}
-                    style={{
-                      flex: 1,
-                      padding: '10px',
-                      background: config.dataSource === 'table' ? '#667eea' : theme.card,
-                      border: '2px solid',
-                      borderColor: config.dataSource === 'table' ? '#667eea' : theme.border,
-                      borderRadius: '8px',
-                      color: config.dataSource === 'table' ? 'white' : theme.text,
-                      cursor: 'pointer',
-                      fontSize: '13px',
-                      fontWeight: '600'
-                    }}
+                </h3>
+
+                <div style={{ marginBottom: '16px' }}>
+                  <InputLabel icon={Database}>Source Type</InputLabel>
+                  <StyledSelect
+                    value={config.dataSource}
+                    onChange={(e) => setConfig({ ...config, dataSource: e.target.value })}
                   >
-                    <Database size={16} style={{ display: 'inline', marginRight: '6px' }} />
-                    From Table
-                  </button>
-                  <button
-                    onClick={() => setConfig({ ...config, dataSource: 'custom' })}
-                    style={{
-                      flex: 1,
-                      padding: '10px',
-                      background: config.dataSource === 'custom' ? '#667eea' : theme.card,
-                      border: '2px solid',
-                      borderColor: config.dataSource === 'custom' ? '#667eea' : theme.border,
-                      borderRadius: '8px',
-                      color: config.dataSource === 'custom' ? 'white' : theme.text,
-                      cursor: 'pointer',
-                      fontSize: '13px',
-                      fontWeight: '600'
-                    }}
-                  >
-                    Custom SQL
-                  </button>
+                    <option value="table">Table</option>
+                    <option value="custom">Custom Query</option>
+                  </StyledSelect>
                 </div>
 
                 {config.dataSource === 'table' ? (
                   <>
-                    <select
-                      value={config.table}
-                      onChange={(e) => setConfig({ ...config, table: e.target.value })}
-                      style={{
-                        width: '100%',
-                        padding: '10px 12px',
-                        background: theme.bg,
-                        border: `2px solid ${theme.border}`,
-                        borderRadius: '8px',
-                        color: theme.text,
-                        fontSize: '14px'
-                      }}
-                    >
-                      <option value="">Select a table...</option>
-                      {allTables && allTables.length > 0 ? (
-                        allTables.map(table => (
+                    <div style={{ marginBottom: '16px' }}>
+                      <InputLabel>Table</InputLabel>
+                      <StyledSelect
+                        value={config.table}
+                        onChange={(e) => setConfig({ ...config, table: e.target.value })}
+                      >
+                        <option value="">Select a table...</option>
+                        {allTables.map(table => (
                           <option key={table} value={table}>{table}</option>
-                        ))
-                      ) : (
-                        <option value="" disabled>No tables available</option>
-                      )}
-                    </select>
-                    {allTables.length === 0 && (
-                      <div style={{ 
-                        marginTop: '8px', 
-                        padding: '8px 12px',
-                        background: '#fef3c7',
-                        border: '1px solid #fbbf24',
-                        borderRadius: '6px',
-                        fontSize: '12px',
-                        color: '#92400e'
-                      }}>
-                        ⚠️ No tables found in QuestDB. Please create tables first.
-                      </div>
-                    )}
-                  </>
-                ) : (
-                  <textarea
-                    value={config.query}
-                    onChange={(e) => setConfig({ ...config, query: e.target.value })}
-                    rows={4}
-                    placeholder="SELECT * FROM your_table WHERE condition ORDER BY timestamp DESC LIMIT 100"
-                    style={{
-                      width: '100%',
-                      padding: '10px 12px',
-                      background: theme.bg,
-                      border: `2px solid ${theme.border}`,
-                      borderRadius: '8px',
-                      color: theme.text,
-                      fontSize: '13px',
-                      fontFamily: 'monospace',
-                      resize: 'vertical'
-                    }}
-                  />
-                )}
-              </div>
+                        ))}
+                      </StyledSelect>
+                    </div>
 
-              {/* Field Configuration */}
-              <div style={{ marginBottom: '20px' }}>
-                <label style={{ display: 'block', marginBottom: '12px', fontSize: '13px', color: theme.textSecondary, fontWeight: '600' }}>
-                  Field Configuration
-                </label>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '12px' }}>
-                  <div>
-                    <label style={{ display: 'block', marginBottom: '6px', fontSize: '12px', color: theme.textMuted }}>
-                      Timestamp Field
-                    </label>
-                    {availableFields.length > 0 ? (
-                      <select
+                    <div style={{ marginBottom: '16px' }}>
+                      <InputLabel>Timestamp Field</InputLabel>
+                      <StyledSelect
                         value={config.timestampField}
                         onChange={(e) => setConfig({ ...config, timestampField: e.target.value })}
-                        style={{
-                          width: '100%',
-                          padding: '8px',
-                          background: theme.bg,
-                          border: `2px solid ${theme.border}`,
-                          borderRadius: '6px',
-                          color: theme.text,
-                          fontSize: '13px'
-                        }}
                       >
+                        <option value="">Select field...</option>
                         {availableFields.map(field => (
                           <option key={field} value={field}>{field}</option>
                         ))}
-                      </select>
-                    ) : (
-                      <input
-                        type="text"
-                        value={config.timestampField}
-                        onChange={(e) => setConfig({ ...config, timestampField: e.target.value })}
-                        placeholder="timestamp"
+                      </StyledSelect>
+                    </div>
+
+                    <div style={{ marginBottom: '16px' }}>
+                      <InputLabel>Y-Axis Fields (Multi-select)</InputLabel>
+                      <select
+                        multiple
+                        value={config.yAxes || []}
+                        onChange={(e) => {
+                          const selected = Array.from(e.target.selectedOptions, option => option.value);
+                          setConfig({ ...config, yAxes: selected, yAxis: selected[0] || '' });
+                        }}
                         style={{
                           width: '100%',
-                          padding: '8px',
-                          background: theme.bg,
-                          border: `2px solid ${theme.border}`,
-                          borderRadius: '6px',
+                          padding: '11px 14px',
+                          background: theme.input,
+                          border: `1px solid ${theme.inputBorder}`,
+                          borderRadius: '10px',
                           color: theme.text,
-                          fontSize: '13px'
+                          fontSize: '14px',
+                          fontFamily: "'Outfit', sans-serif",
+                          minHeight: '120px',
+                          outline: 'none'
                         }}
-                      />
-                    )}
-                  </div>
-                  <div>
-                    <label style={{ display: 'block', marginBottom: '6px', fontSize: '12px', color: theme.textMuted }}>
-                      Value Fields (Y-Axis) - Select Multiple
-                    </label>
-                    {availableFields.length > 0 ? (
-                      <div style={{
-                        border: `2px solid ${theme.border}`,
-                        borderRadius: '6px',
-                        background: theme.bg,
-                        maxHeight: '150px',
-                        overflow: 'auto',
-                        padding: '8px'
-                      }}>
-                        {availableFields.filter(f => f !== config.timestampField).map((field, idx) => (
-                          <label 
-                            key={field}
-                            style={{ 
-                              display: 'flex', 
-                              alignItems: 'center', 
-                              gap: '8px', 
-                              padding: '6px',
-                              cursor: 'pointer',
-                              borderRadius: '4px',
-                              fontSize: '13px',
-                              color: theme.text,
-                              transition: 'background 0.2s'
-                            }}
-                            onMouseEnter={(e) => e.currentTarget.style.background = '#f3f4f6'}
-                            onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
-                          >
-                            <input
-                              type="checkbox"
-                              checked={config.yAxes?.includes(field)}
-                              onChange={(e) => {
-                                const newYAxes = e.target.checked
-                                  ? [...(config.yAxes || []), field]
-                                  : (config.yAxes || []).filter(y => y !== field);
-                                setConfig({ ...config, yAxes: newYAxes, yAxis: newYAxes[0] || '' });
-                              }}
-                              style={{ width: '16px', height: '16px' }}
-                            />
-                            <div style={{
-                              width: '12px',
-                              height: '12px',
-                              borderRadius: '3px',
-                              background: getColor((config.yAxes || []).indexOf(field)),
-                              marginLeft: 'auto'
-                            }} />
-                            {field}
-                          </label>
+                      >
+                        {availableFields.filter(f => f !== config.timestampField).map(field => (
+                          <option key={field} value={field}>{field}</option>
                         ))}
+                      </select>
+                      <div style={{ 
+                        fontSize: '11px', 
+                        color: theme.textMuted, 
+                        marginTop: '6px',
+                        fontFamily: "'Outfit', sans-serif"
+                      }}>
+                        Hold Ctrl/Cmd to select multiple
                       </div>
-                    ) : (
-                      <input
-                        type="text"
-                        value={(config.yAxes || []).join(', ')}
-                        onChange={(e) => setConfig({ 
-                          ...config, 
-                          yAxes: e.target.value.split(',').map(s => s.trim()).filter(Boolean),
-                          yAxis: e.target.value.split(',')[0]?.trim() || ''
-                        })}
-                        placeholder="value1, value2, value3"
-                        style={{
-                          width: '100%',
-                          padding: '8px',
-                          background: theme.bg,
-                          border: `2px solid ${theme.border}`,
-                          borderRadius: '6px',
-                          color: theme.text,
-                          fontSize: '13px'
-                        }}
+                    </div>
+
+                    <div>
+                      <InputLabel>Limit</InputLabel>
+                      <StyledInput
+                        type="number"
+                        value={config.limit}
+                        onChange={(e) => setConfig({ ...config, limit: parseInt(e.target.value) })}
+                        min="1"
+                        max="10000"
                       />
-                    )}
-                    {config.yAxes && config.yAxes.length > 0 && (
-                      <div style={{ marginTop: '6px', fontSize: '11px', color: theme.textMuted }}>
-                        Selected: {config.yAxes.join(', ')} ({config.yAxes.length} field{config.yAxes.length !== 1 ? 's' : ''})
-                      </div>
-                    )}
-                  </div>
-                </div>
-              </div>
-
-              {/* Size Configuration */}
-              <div style={{ marginBottom: '20px' }}>
-                <label style={{ display: 'block', marginBottom: '12px', fontSize: '13px', color: theme.textSecondary, fontWeight: '600' }}>
-                  Panel Size
-                </label>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                    </div>
+                  </>
+                ) : (
                   <div>
-                    <label style={{ display: 'block', marginBottom: '6px', fontSize: '12px', color: theme.textMuted }}>
-                      Width (columns)
-                    </label>
-                    <input
-                      type="number"
-                      value={config.width}
-                      onChange={(e) => setConfig({ ...config, width: Math.max(1, Math.min(12, parseInt(e.target.value) || 1)) })}
-                      min="1"
-                      max="12"
+                    <InputLabel>Custom SQL Query</InputLabel>
+                    <textarea
+                      value={config.query}
+                      onChange={(e) => setConfig({ ...config, query: e.target.value })}
+                      placeholder="SELECT * FROM table WHERE..."
                       style={{
                         width: '100%',
-                        padding: '8px',
-                        background: theme.bg,
-                        border: `2px solid ${theme.border}`,
-                        borderRadius: '6px',
+                        minHeight: '120px',
+                        padding: '11px 14px',
+                        background: theme.input,
+                        border: `1px solid ${theme.inputBorder}`,
+                        borderRadius: '10px',
                         color: theme.text,
-                        fontSize: '13px'
+                        fontSize: '13px',
+                        fontFamily: "'JetBrains Mono', monospace",
+                        resize: 'vertical',
+                        outline: 'none'
+                      }}
+                      onFocus={(e) => {
+                        e.target.style.borderColor = '#6366f1';
+                        e.target.style.boxShadow = '0 0 0 3px rgba(99, 102, 241, 0.1)';
+                      }}
+                      onBlur={(e) => {
+                        e.target.style.borderColor = theme.inputBorder;
+                        e.target.style.boxShadow = 'none';
                       }}
                     />
                   </div>
-                  <div>
-                    <label style={{ display: 'block', marginBottom: '6px', fontSize: '12px', color: theme.textMuted }}>
-                      Height (rows)
-                    </label>
-                    <input
-                      type="number"
-                      value={config.height}
-                      onChange={(e) => setConfig({ ...config, height: Math.max(1, Math.min(10, parseInt(e.target.value) || 1)) })}
-                      min="1"
-                      max="10"
-                      style={{
-                        width: '100%',
-                        padding: '8px',
-                        background: theme.bg,
-                        border: `2px solid ${theme.border}`,
-                        borderRadius: '6px',
-                        color: theme.text,
-                        fontSize: '13px'
-                      }}
-                    />
-                  </div>
-                </div>
+                )}
               </div>
 
-              {/* Data Limit & Refresh */}
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+              {/* Refresh Settings */}
+              <div className="section-card">
+                <h3 style={{
+                  margin: '0 0 18px 0',
+                  fontSize: '16px',
+                  fontFamily: "'Outfit', sans-serif",
+                  fontWeight: '700',
+                  color: theme.text,
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px'
+                }}>
+                  <div style={{
+                    width: '3px',
+                    height: '16px',
+                    background: 'linear-gradient(180deg, #6366f1, #8b5cf6)',
+                    borderRadius: '2px'
+                  }} />
+                  Refresh Settings
+                </h3>
+
                 <div>
-                  <label style={{ display: 'block', marginBottom: '8px', fontSize: '13px', color: theme.textSecondary, fontWeight: '600' }}>
-                    Data Limit
-                  </label>
-                  <input
+                  <InputLabel>Auto-Refresh Interval (seconds)</InputLabel>
+                  <StyledInput
                     type="number"
-                    value={config.limit}
-                    onChange={(e) => setConfig({ ...config, limit: parseInt(e.target.value) })}
-                    min="10"
-                    max="10000"
-                    style={{
-                      width: '100%',
-                      padding: '10px 12px',
-                      background: theme.bg,
-                      border: `2px solid ${theme.border}`,
-                      borderRadius: '8px',
-                      color: theme.text,
-                      fontSize: '14px'
-                    }}
+                    value={config.refreshInterval / 1000}
+                    onChange={(e) => setConfig({ ...config, refreshInterval: parseInt(e.target.value) * 1000 })}
+                    min="0"
+                    placeholder="0 = Manual only"
                   />
-                </div>
-                <div>
-                  <label style={{ display: 'block', marginBottom: '8px', fontSize: '13px', color: theme.textSecondary, fontWeight: '600' }}>
-                    Auto Refresh
-                  </label>
-                  <select
-                    value={config.refreshInterval}
-                    onChange={(e) => setConfig({ ...config, refreshInterval: parseInt(e.target.value) })}
-                    style={{
-                      width: '100%',
-                      padding: '10px 12px',
-                      background: theme.bg,
-                      border: `2px solid ${theme.border}`,
-                      borderRadius: '8px',
-                      color: theme.text,
-                      fontSize: '14px'
-                    }}
-                  >
-                    <option value={0}>None</option>
-                    <option value={1000}>1s</option>
-                    <option value={5000}>5s</option>
-                    <option value={10000}>10s</option>
-                    <option value={30000}>30s</option>
-                    <option value={60000}>1m</option>
-                  </select>
                 </div>
               </div>
             </div>
 
-            {/* Right Column - Preview & Style */}
+            {/* Right Column */}
             <div>
-              <div style={{ marginBottom: '20px' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
-                  <label style={{ fontSize: '13px', color: theme.textSecondary, fontWeight: '600' }}>
+              {/* Preview */}
+              <div className="section-card">
+                <div style={{ 
+                  display: 'flex', 
+                  justifyContent: 'space-between', 
+                  alignItems: 'center',
+                  marginBottom: '16px'
+                }}>
+                  <h3 style={{
+                    margin: 0,
+                    fontSize: '16px',
+                    fontFamily: "'Outfit', sans-serif",
+                    fontWeight: '700',
+                    color: theme.text,
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '8px'
+                  }}>
+                    <div style={{
+                      width: '3px',
+                      height: '16px',
+                      background: 'linear-gradient(180deg, #6366f1, #8b5cf6)',
+                      borderRadius: '2px'
+                    }} />
                     Preview
-                  </label>
+                  </h3>
                   <button
                     onClick={handlePreview}
                     disabled={previewLoading}
+                    className="action-btn"
                     style={{
-                      padding: '6px 12px',
-                      background: '#667eea',
+                      padding: '8px 16px',
+                      background: 'linear-gradient(135deg, #6366f1, #8b5cf6)',
                       border: 'none',
-                      borderRadius: '6px',
+                      borderRadius: '10px',
                       color: 'white',
                       cursor: previewLoading ? 'not-allowed' : 'pointer',
-                      fontSize: '12px',
+                      fontSize: '13px',
+                      fontFamily: "'Outfit', sans-serif",
                       fontWeight: '600',
                       display: 'flex',
                       alignItems: 'center',
-                      gap: '6px'
+                      gap: '6px',
+                      boxShadow: '0 2px 8px rgba(99, 102, 241, 0.25)'
                     }}
                   >
-                    <Eye size={14} />
+                    <Eye size={16} strokeWidth={2.5} />
                     {previewLoading ? 'Loading...' : 'Preview Data'}
                   </button>
                 </div>
                 <div style={{
-                  background: theme.card,
-                  border: `2px solid ${theme.border}`,
-                  borderRadius: '8px',
+                  background: theme.input,
+                  border: `1px solid ${theme.inputBorder}`,
+                  borderRadius: '12px',
                   padding: '16px',
                   minHeight: '200px'
                 }}>
                   {renderPreviewChart()}
                 </div>
                 {previewData.length > 0 && (
-                  <div style={{ marginTop: '8px', fontSize: '12px', color: theme.textMuted }}>
-                    {previewData.length} data points loaded
+                  <div style={{ 
+                    marginTop: '10px', 
+                    fontSize: '12px', 
+                    color: theme.textMuted,
+                    fontFamily: "'JetBrains Mono', monospace"
+                  }}>
+                    ✓ {previewData.length} data points loaded
                   </div>
                 )}
               </div>
-              {/* NEW: Transformations Panel */}
-<TransformationPanel
-  transformations={config.transformations || []}
-  onChange={(transforms) => setConfig({ ...config, transformations: transforms })}
-  darkMode={darkMode}  
-/>
+
+              {/* Transformations */}
+              <TransformationPanel
+                transformations={config.transformations || []}
+                onChange={(transforms) => setConfig({ ...config, transformations: transforms })}
+                darkMode={darkMode}  
+              />
+
               {/* Style Options */}
-              <div>
-                <label style={{ display: 'block', marginBottom: '12px', fontSize: '13px', color: theme.textSecondary, fontWeight: '600' }}>
+              <div className="section-card">
+                <h3 style={{
+                  margin: '0 0 18px 0',
+                  fontSize: '16px',
+                  fontFamily: "'Outfit', sans-serif",
+                  fontWeight: '700',
+                  color: theme.text,
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px'
+                }}>
+                  <div style={{
+                    width: '3px',
+                    height: '16px',
+                    background: 'linear-gradient(180deg, #6366f1, #8b5cf6)',
+                    borderRadius: '2px'
+                  }} />
                   Style Options
-                </label>
+                </h3>
                 
-                <div style={{ marginBottom: '12px' }}>
-                  <label style={{ display: 'block', marginBottom: '6px', fontSize: '12px', color: theme.textMuted }}>
-                    Chart Colors (for multiple Y-axes)
-                  </label>
+                <div style={{ marginBottom: '16px' }}>
+                  <InputLabel>Chart Colors</InputLabel>
                   <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: '8px' }}>
                     {[0, 1, 2, 3, 4].map((colorIdx) => (
                       <div key={colorIdx} style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                        <div style={{ fontSize: '10px', color: theme.textMuted, textAlign: 'center' }}>Y{colorIdx + 1}</div>
+                        <div style={{ 
+                          fontSize: '10px', 
+                          color: theme.textMuted, 
+                          textAlign: 'center',
+                          fontFamily: "'JetBrains Mono', monospace",
+                          fontWeight: '600'
+                        }}>
+                          Y{colorIdx + 1}
+                        </div>
                         <select
                           value={config.colors?.[colorIdx] || COLORS[colorIdx]}
                           onChange={(e) => {
@@ -851,10 +871,10 @@ function PanelConfigModal({ panel, onSave, onClose, allTables, darkMode }) {
                           }}
                           style={{
                             width: '100%',
-                            height: '36px',
+                            height: '40px',
                             background: config.colors?.[colorIdx] || COLORS[colorIdx],
-                            border: `2px solid ${theme.border}`,
-                            borderRadius: '6px',
+                            border: `2px solid ${theme.inputBorder}`,
+                            borderRadius: '8px',
                             cursor: 'pointer',
                             color: 'transparent'
                           }}
@@ -871,26 +891,22 @@ function PanelConfigModal({ panel, onSave, onClose, allTables, darkMode }) {
                 </div>
 
                 {(config.vizType === 'line' || config.vizType === 'area') && (
-                  <div style={{ marginBottom: '12px' }}>
-                    <label style={{ display: 'block', marginBottom: '6px', fontSize: '12px', color: theme.textMuted }}>
-                      Line Width: {config.lineWidth}px
-                    </label>
+                  <div style={{ marginBottom: '16px' }}>
+                    <InputLabel>Line Width: {config.lineWidth}px</InputLabel>
                     <input
                       type="range"
                       min="1"
                       max="5"
                       value={config.lineWidth}
                       onChange={(e) => setConfig({ ...config, lineWidth: parseInt(e.target.value) })}
-                      style={{ width: '100%' }}
+                      style={{ width: '100%', accentColor: '#6366f1' }}
                     />
                   </div>
                 )}
 
                 {config.vizType === 'area' && (
-                  <div style={{ marginBottom: '12px' }}>
-                    <label style={{ display: 'block', marginBottom: '6px', fontSize: '12px', color: theme.textMuted }}>
-                      Fill Opacity: {Math.round(config.fillOpacity * 100)}%
-                    </label>
+                  <div style={{ marginBottom: '16px' }}>
+                    <InputLabel>Fill Opacity: {Math.round(config.fillOpacity * 100)}%</InputLabel>
                     <input
                       type="range"
                       min="0"
@@ -898,37 +914,79 @@ function PanelConfigModal({ panel, onSave, onClose, allTables, darkMode }) {
                       step="0.1"
                       value={config.fillOpacity}
                       onChange={(e) => setConfig({ ...config, fillOpacity: parseFloat(e.target.value) })}
-                      style={{ width: '100%' }}
+                      style={{ width: '100%', accentColor: '#6366f1' }}
                     />
                   </div>
                 )}
 
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                  <label style={{ display: 'flex', alignItems: 'center', gap: '8px', color: theme.textSecondary, fontSize: '13px', cursor: 'pointer' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                  <label style={{ 
+                    display: 'flex', 
+                    alignItems: 'center', 
+                    gap: '10px', 
+                    color: theme.textSecondary, 
+                    fontSize: '14px', 
+                    cursor: 'pointer',
+                    fontFamily: "'Outfit', sans-serif",
+                    padding: '8px',
+                    borderRadius: '8px',
+                    transition: 'background 0.2s ease'
+                  }}
+                  onMouseEnter={(e) => e.currentTarget.style.background = theme.accent}
+                  onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
+                  >
                     <input
                       type="checkbox"
                       checked={config.showLegend}
                       onChange={(e) => setConfig({ ...config, showLegend: e.target.checked })}
-                      style={{ width: '16px', height: '16px' }}
+                      style={{ width: '18px', height: '18px', accentColor: '#6366f1', cursor: 'pointer' }}
                     />
                     Show Legend
                   </label>
-                  <label style={{ display: 'flex', alignItems: 'center', gap: '8px', color: theme.textSecondary, fontSize: '13px', cursor: 'pointer' }}>
+                  <label style={{ 
+                    display: 'flex', 
+                    alignItems: 'center', 
+                    gap: '10px', 
+                    color: theme.textSecondary, 
+                    fontSize: '14px', 
+                    cursor: 'pointer',
+                    fontFamily: "'Outfit', sans-serif",
+                    padding: '8px',
+                    borderRadius: '8px',
+                    transition: 'background 0.2s ease'
+                  }}
+                  onMouseEnter={(e) => e.currentTarget.style.background = theme.accent}
+                  onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
+                  >
                     <input
                       type="checkbox"
                       checked={config.showGrid}
                       onChange={(e) => setConfig({ ...config, showGrid: e.target.checked })}
-                      style={{ width: '16px', height: '16px' }}
+                      style={{ width: '18px', height: '18px', accentColor: '#6366f1', cursor: 'pointer' }}
                     />
                     Show Grid Lines
                   </label>
                   {(config.vizType === 'line' || config.vizType === 'area') && (
-                    <label style={{ display: 'flex', alignItems: 'center', gap: '8px', color: theme.textSecondary, fontSize: '13px', cursor: 'pointer' }}>
+                    <label style={{ 
+                      display: 'flex', 
+                      alignItems: 'center', 
+                      gap: '10px', 
+                      color: theme.textSecondary, 
+                      fontSize: '14px', 
+                      cursor: 'pointer',
+                      fontFamily: "'Outfit', sans-serif",
+                      padding: '8px',
+                      borderRadius: '8px',
+                      transition: 'background 0.2s ease'
+                    }}
+                    onMouseEnter={(e) => e.currentTarget.style.background = theme.accent}
+                    onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
+                    >
                       <input
                         type="checkbox"
                         checked={config.showDots}
                         onChange={(e) => setConfig({ ...config, showDots: e.target.checked })}
-                        style={{ width: '16px', height: '16px' }}
+                        style={{ width: '18px', height: '18px', accentColor: '#6366f1', cursor: 'pointer' }}
                       />
                       Show Data Points
                     </label>
@@ -939,24 +997,27 @@ function PanelConfigModal({ panel, onSave, onClose, allTables, darkMode }) {
           </div>
         </div>
 
+        {/* Footer */}
         <div style={{
-          padding: '16px 24px',
+          padding: '20px 32px',
           borderTop: `1px solid ${theme.border}`,
           display: 'flex',
           justifyContent: 'flex-end',
           gap: '12px',
-          background: theme.card
+          background: theme.accent
         }}>
           <button
             onClick={onClose}
+            className="action-btn"
             style={{
-              padding: '10px 20px',
-              background: theme.bg,
-              border: `2px solid ${theme.border}`,
-              borderRadius: '8px',
+              padding: '12px 24px',
+              background: theme.input,
+              border: `1px solid ${theme.inputBorder}`,
+              borderRadius: '12px',
               color: theme.textMuted,
               cursor: 'pointer',
               fontSize: '14px',
+              fontFamily: "'Outfit', sans-serif",
               fontWeight: '600'
             }}
           >
@@ -964,32 +1025,28 @@ function PanelConfigModal({ panel, onSave, onClose, allTables, darkMode }) {
           </button>
           <button
             onClick={() => onSave(config)}
+            className="action-btn"
             style={{
-              padding: '10px 20px',
-              background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+              padding: '12px 24px',
+              background: 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)',
               border: 'none',
-              borderRadius: '8px',
+              borderRadius: '12px',
               color: 'white',
               cursor: 'pointer',
               fontSize: '14px',
+              fontFamily: "'Outfit', sans-serif",
               fontWeight: '600',
               display: 'flex',
               alignItems: 'center',
-              gap: '8px'
+              gap: '8px',
+              boxShadow: '0 4px 16px rgba(99, 102, 241, 0.35)'
             }}
           >
-            <Save size={16} />
+            <Save size={18} strokeWidth={2.5} />
             {panel ? 'Save Changes' : 'Add Panel'}
           </button>
         </div>
       </div>
-
-      <style>{`
-        @keyframes spin {
-          0% { transform: rotate(0deg); }
-          100% { transform: rotate(360deg); }
-        }
-      `}</style>
     </div>
   );
 }
