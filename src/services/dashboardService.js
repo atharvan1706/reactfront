@@ -51,25 +51,36 @@ class DashboardService {
   }
 
   async createDashboard(name, plantId, panels = [], isDefault = false) {
-    try {
-      const response = await fetch(`${API_URL}/dashboards`, {
-        method: 'POST',
-        headers: this.getAuthHeaders(),
-        body: JSON.stringify({ name, plantId, panels, isDefault })
-      });
+  try {
+    const normalizedPanels = panels.map((panel) => ({
+      ...panel,
+      type: panel.type || panel.vizType || 'chart', // ✅ guarantee type
+    }));
 
-      const data = await response.json();
-      
-      if (!data.success) {
-        throw new Error(data.message || 'Failed to create dashboard');
-      }
+    const response = await fetch(`${API_URL}/dashboards`, {
+      method: 'POST',
+      headers: this.getAuthHeaders(),
+      body: JSON.stringify({
+        name,
+        plantId,
+        panels: normalizedPanels,
+        isDefault
+      })
+    });
 
-      return data.dashboard;
-    } catch (error) {
-      console.error('Error creating dashboard:', error);
-      throw error;
+    const data = await response.json();
+
+    if (!data.success) {
+      throw new Error(data.message || 'Failed to create dashboard');
     }
+
+    return data.dashboard;
+  } catch (error) {
+    console.error('Error creating dashboard:', error);
+    throw error;
   }
+}
+
 
   async updateDashboard(dashboardId, updates) {
     try {
@@ -112,26 +123,32 @@ class DashboardService {
     }
   }
 
-  async updatePanels(dashboardId, panels) {
-    try {
-      const response = await fetch(`${API_URL}/dashboards/${dashboardId}/panels`, {
-        method: 'PATCH',
-        headers: this.getAuthHeaders(),
-        body: JSON.stringify({ panels })
-      });
+async updatePanels(dashboardId, panels) {
+  try {
+    const normalizedPanels = panels.map((panel) => ({
+      ...panel,
+      type: panel.type || panel.vizType || 'chart'
+    }));
 
-      const data = await response.json();
-      
-      if (!data.success) {
-        throw new Error(data.message || 'Failed to update panels');
-      }
+    const response = await fetch(`${API_URL}/dashboards/${dashboardId}/panels`, {
+      method: 'PATCH',
+      headers: this.getAuthHeaders(),
+      body: JSON.stringify({ panels: normalizedPanels })
+    });
 
-      return data.dashboard;
-    } catch (error) {
-      console.error('Error updating panels:', error);
-      throw error;
+    const data = await response.json();
+
+    if (!data.success) {
+      throw new Error(data.message || 'Failed to update panels');
     }
+
+    return data.dashboard;
+  } catch (error) {
+    console.error('Error updating panels:', error);
+    throw error;
   }
+}
+
 
   // Sync dashboards between localStorage and MongoDB
   async syncDashboards() {
