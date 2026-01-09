@@ -6,7 +6,7 @@ import {
 } from 'recharts';
 import {
   Trash2, Copy, RefreshCw, Settings, Play, Clock, Database, AlertCircle, 
-  Move
+  Move, TrendingUp
 } from 'lucide-react';
 import { COLORS } from './constants';
 import questdbService from '../../services/questdb';
@@ -21,28 +21,36 @@ function QuestDBPanel({ config, onEdit, onDelete, onDuplicate, onResize, style, 
   const timerRef = useRef(null);
 
   const theme = darkMode ? {
-    card: '#1e293b',
+    card: 'linear-gradient(145deg, #0f172a 0%, #1e293b 100%)',
+    cardSolid: '#1e293b',
     hover: '#334155',
     text: '#f1f5f9',
     textSecondary: '#cbd5e1',
     textMuted: '#94a3b8',
-    border: '#334155',
+    border: 'rgba(255, 255, 255, 0.08)',
+    borderGlow: 'rgba(99, 102, 241, 0.2)',
     chartGrid: 'rgba(148, 163, 184, 0.1)',
     chartAxis: '#475569',
-    chartText: '#94a3b8'
+    chartText: '#94a3b8',
+    accent: 'rgba(99, 102, 241, 0.1)',
+    accentBorder: 'rgba(99, 102, 241, 0.3)',
+    glassBg: 'rgba(255, 255, 255, 0.03)'
   } : {
-    card: 'white',
+    card: 'linear-gradient(145deg, #ffffff 0%, #f8fafc 100%)',
+    cardSolid: 'white',
     hover: '#f9fafb',
     text: '#111827',
     textSecondary: '#374151',
     textMuted: '#6b7280',
-    border: '#e5e7eb',
-    chartGrid: 'rgba(0,0,0,0.1)',
+    border: 'rgba(0, 0, 0, 0.06)',
+    borderGlow: 'rgba(99, 102, 241, 0.15)',
+    chartGrid: 'rgba(0,0,0,0.05)',
     chartAxis: '#e5e7eb',
-    chartText: '#6b7280'
+    chartText: '#6b7280',
+    accent: 'rgba(99, 102, 241, 0.06)',
+    accentBorder: 'rgba(99, 102, 241, 0.2)',
+    glassBg: 'rgba(255, 255, 255, 0.6)'
   };
-
-  // Debug version of fetchData - Add console.logs to see what's happening
 
 const fetchData = async () => {
   try {
@@ -61,18 +69,9 @@ const fetchData = async () => {
     const result = await questdbService.query(query);
     const formatted = questdbService.formatForChart(result, config.timestampField);
     
-    // DEBUG: Let's see what we have
-    console.log('🔍 DEBUG - Config transformations:', config.transformations);
-    console.log('🔍 DEBUG - Formatted data (first 3 items):', formatted.slice(0, 3));
-    
-    // Apply transformations if configured
     let finalData = formatted;
     if (config.transformations && config.transformations.length > 0) {
-      console.log('✅ Applying transformations!');
       finalData = SimpleTransformations.applyTransformations(formatted, config.transformations);
-      console.log('🔍 DEBUG - Transformed data (first 3 items):', finalData.slice(0, 3));
-    } else {
-      console.log('⚠️ No transformations to apply');
     }
     
     const endTime = Date.now();
@@ -117,7 +116,6 @@ const fetchData = async () => {
     });
   };
 
-  // Helper function to get color for Y-axis field at given index
   const getColor = (idx) => {
     if (config.colors && config.colors.length > idx && config.colors[idx]) {
       return config.colors[idx];
@@ -130,8 +128,18 @@ const fetchData = async () => {
       return (
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%' }}>
           <div style={{ textAlign: 'center' }}>
-            <RefreshCw size={32} color="#667eea" style={{ animation: 'spin 1s linear infinite' }} />
-            <p style={{ color: '#6b7280', marginTop: '12px', fontSize: '13px' }}>Loading data...</p>
+            <div style={{
+              width: '56px',
+              height: '56px',
+              margin: '0 auto 16px',
+              borderRadius: '50%',
+              border: '3px solid',
+              borderColor: `${theme.border} ${theme.border} ${theme.border} #6366f1`,
+              animation: 'spin 0.8s linear infinite'
+            }} />
+            <p style={{ color: theme.textMuted, fontSize: '14px', fontFamily: "'Outfit', sans-serif", fontWeight: '500' }}>
+              Loading data...
+            </p>
           </div>
         </div>
       );
@@ -141,16 +149,19 @@ const fetchData = async () => {
       return (
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', padding: '20px' }}>
           <div style={{
-            padding: '16px',
-            background: 'rgba(239, 68, 68, 0.1)',
-            border: '1px solid rgba(239, 68, 68, 0.3)',
-            borderRadius: '8px',
-            color: '#ef4444',
-            textAlign: 'center'
+            padding: '24px 32px',
+            background: darkMode ? 'rgba(239, 68, 68, 0.1)' : 'rgba(254, 242, 242, 1)',
+            border: `1px solid ${darkMode ? 'rgba(239, 68, 68, 0.3)' : 'rgba(239, 68, 68, 0.2)'}`,
+            borderRadius: '16px',
+            color: darkMode ? '#fca5a5' : '#dc2626',
+            textAlign: 'center',
+            maxWidth: '400px'
           }}>
-            <AlertCircle size={32} style={{ marginBottom: '8px' }} />
-            <div style={{ fontSize: '14px', fontWeight: '600' }}>Error loading data</div>
-            <div style={{ fontSize: '12px', marginTop: '4px', opacity: 0.8 }}>{error}</div>
+            <AlertCircle size={40} style={{ marginBottom: '12px', opacity: 0.9 }} />
+            <div style={{ fontSize: '15px', fontWeight: '600', fontFamily: "'Outfit', sans-serif", marginBottom: '6px' }}>
+              Error loading data
+            </div>
+            <div style={{ fontSize: '13px', opacity: 0.8, fontFamily: "'Outfit', sans-serif" }}>{error}</div>
           </div>
         </div>
       );
@@ -159,9 +170,11 @@ const fetchData = async () => {
     if (data.length === 0) {
       return (
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%' }}>
-          <div style={{ textAlign: 'center', color: '#6b7280' }}>
-            <Database size={32} style={{ marginBottom: '8px', opacity: 0.5 }} />
-            <p style={{ fontSize: '13px' }}>No data available</p>
+          <div style={{ textAlign: 'center', color: theme.textMuted }}>
+            <Database size={48} style={{ marginBottom: '12px', opacity: 0.4 }} />
+            <p style={{ fontSize: '14px', fontFamily: "'Outfit', sans-serif", fontWeight: '500' }}>
+              No data available
+            </p>
           </div>
         </div>
       );
@@ -172,10 +185,7 @@ const fetchData = async () => {
       margin: { top: 10, right: 20, left: 10, bottom: 5 }
     };
 
-    // Get y-axis fields - support both single and multiple
     const yFields = (config.yAxes && config.yAxes.length > 0) ? config.yAxes : [config.yAxis].filter(Boolean);
-    
-    // Filter out 'value' if it's not explicitly selected
     const filteredYFields = yFields.filter(field => field && field !== 'value');
 
     switch (config.vizType) {
@@ -188,13 +198,16 @@ const fetchData = async () => {
               <YAxis tick={{ fill: theme.chartText, fontSize: 11 }} stroke={theme.chartAxis} />
               <Tooltip 
                 contentStyle={{ 
-                  background: theme.card, 
+                  background: theme.cardSolid, 
                   border: `1px solid ${theme.border}`, 
-                  borderRadius: '6px',
-                  color: theme.text
+                  borderRadius: '10px',
+                  color: theme.text,
+                  fontFamily: "'Outfit', sans-serif",
+                  fontSize: '13px',
+                  boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)'
                 }} 
               />
-              {config.showLegend && <Legend wrapperStyle={{ color: theme.text }} />}
+              {config.showLegend && <Legend wrapperStyle={{ color: theme.text, fontFamily: "'Outfit', sans-serif" }} />}
               {filteredYFields.map((yField, idx) => (
                 <Line 
                   key={yField}
@@ -204,8 +217,8 @@ const fetchData = async () => {
                   strokeWidth={config.lineWidth} 
                   dot={config.showDots}
                   name={yField}
-                  animationDuration={300}
-                  animationEasing="ease-in-out"
+                  animationDuration={600}
+                  animationEasing="ease-out"
                 />
               ))}
             </LineChart>
@@ -221,13 +234,16 @@ const fetchData = async () => {
               <YAxis tick={{ fill: theme.chartText, fontSize: 11 }} stroke={theme.chartAxis} />
               <Tooltip 
                 contentStyle={{ 
-                  background: theme.card, 
+                  background: theme.cardSolid, 
                   border: `1px solid ${theme.border}`, 
-                  borderRadius: '6px',
-                  color: theme.text
+                  borderRadius: '10px',
+                  color: theme.text,
+                  fontFamily: "'Outfit', sans-serif",
+                  fontSize: '13px',
+                  boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)'
                 }} 
               />
-              {config.showLegend && <Legend wrapperStyle={{ color: theme.text }} />}
+              {config.showLegend && <Legend wrapperStyle={{ color: theme.text, fontFamily: "'Outfit', sans-serif" }} />}
               {filteredYFields.map((yField, idx) => (
                 <Area 
                   key={yField}
@@ -238,8 +254,8 @@ const fetchData = async () => {
                   fillOpacity={config.fillOpacity}
                   strokeWidth={config.lineWidth}
                   name={yField}
-                  animationDuration={300}
-                  animationEasing="ease-in-out"
+                  animationDuration={600}
+                  animationEasing="ease-out"
                 />
               ))}
             </AreaChart>
@@ -255,21 +271,24 @@ const fetchData = async () => {
               <YAxis tick={{ fill: theme.chartText, fontSize: 11 }} stroke={theme.chartAxis} />
               <Tooltip 
                 contentStyle={{ 
-                  background: theme.card, 
+                  background: theme.cardSolid, 
                   border: `1px solid ${theme.border}`, 
-                  borderRadius: '6px',
-                  color: theme.text
+                  borderRadius: '10px',
+                  color: theme.text,
+                  fontFamily: "'Outfit', sans-serif",
+                  fontSize: '13px',
+                  boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)'
                 }} 
               />
-              {config.showLegend && <Legend wrapperStyle={{ color: theme.text }} />}
+              {config.showLegend && <Legend wrapperStyle={{ color: theme.text, fontFamily: "'Outfit', sans-serif" }} />}
               {filteredYFields.map((yField, idx) => (
                 <Bar 
                   key={yField}
                   dataKey={yField} 
                   fill={getColor(idx)}
                   name={yField}
-                  animationDuration={300}
-                  animationEasing="ease-in-out"
+                  animationDuration={600}
+                  animationEasing="ease-out"
                 />
               ))}
             </BarChart>
@@ -277,26 +296,38 @@ const fetchData = async () => {
         );
 
       case 'pie':
-        const pieDataKey = filteredYFields[0] || config.yAxis;
+        const pieData = data.slice(0, 10).map((item, idx) => ({
+          name: item._time,
+          value: item[filteredYFields[0]] || 0
+        }));
         return (
           <ResponsiveContainer width="100%" height="100%">
             <PieChart>
-              <Pie 
-                data={data.slice(0, 10)} 
-                dataKey={pieDataKey} 
-                nameKey="_time" 
-                cx="50%" 
-                cy="50%" 
-                outerRadius={80} 
+              <Pie
+                data={pieData}
+                dataKey="value"
+                nameKey="name"
+                cx="50%"
+                cy="50%"
+                outerRadius={80}
                 label
-                isAnimationActive={true}
+                animationDuration={600}
+                animationEasing="ease-out"
               >
-                {data.slice(0, 10).map((entry, index) => (
-                  <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                {pieData.map((entry, index) => (
+                  <Cell key={`cell-${index}`} fill={getColor(index)} />
                 ))}
               </Pie>
-              <Tooltip contentStyle={{ background: theme.card, border: `1px solid ${theme.border}`, borderRadius: '6px', color: theme.text }} />
-              {config.showLegend && <Legend wrapperStyle={{ color: theme.text }} />}
+              <Tooltip 
+                contentStyle={{ 
+                  background: theme.cardSolid, 
+                  border: `1px solid ${theme.border}`, 
+                  borderRadius: '10px',
+                  fontFamily: "'Outfit', sans-serif",
+                  fontSize: '13px'
+                }} 
+              />
+              {config.showLegend && <Legend wrapperStyle={{ fontFamily: "'Outfit', sans-serif" }} />}
             </PieChart>
           </ResponsiveContainer>
         );
@@ -308,15 +339,24 @@ const fetchData = async () => {
               {config.showGrid && <CartesianGrid strokeDasharray="3 3" stroke={theme.chartGrid} />}
               <XAxis dataKey="_time" tick={{ fill: theme.chartText, fontSize: 11 }} stroke={theme.chartAxis} />
               <YAxis tick={{ fill: theme.chartText, fontSize: 11 }} stroke={theme.chartAxis} />
-              <Tooltip contentStyle={{ background: theme.card, border: `1px solid ${theme.border}`, borderRadius: '6px', color: theme.text }} />
-              {config.showLegend && <Legend wrapperStyle={{ color: theme.text }} />}
+              <Tooltip 
+                contentStyle={{ 
+                  background: theme.cardSolid, 
+                  border: `1px solid ${theme.border}`, 
+                  borderRadius: '10px',
+                  fontFamily: "'Outfit', sans-serif",
+                  fontSize: '13px'
+                }} 
+              />
+              {config.showLegend && <Legend wrapperStyle={{ fontFamily: "'Outfit', sans-serif" }} />}
               {filteredYFields.map((yField, idx) => (
                 <Scatter 
                   key={yField}
+                  name={yField} 
                   dataKey={yField} 
-                  fill={getColor(idx)} 
-                  name={yField}
-                  isAnimationActive={true} 
+                  fill={getColor(idx)}
+                  animationDuration={600}
+                  animationEasing="ease-out"
                 />
               ))}
             </ScatterChart>
@@ -328,74 +368,51 @@ const fetchData = async () => {
           <ResponsiveContainer width="100%" height="100%">
             <RadarChart data={data.slice(0, 8)}>
               <PolarGrid stroke={theme.chartGrid} />
-              <PolarAngleAxis dataKey="_time" tick={{ fill: theme.chartText, fontSize: 11 }} />
-              <PolarRadiusAxis tick={{ fill: theme.chartText, fontSize: 11 }} />
+              <PolarAngleAxis dataKey="_time" tick={{ fill: theme.chartText, fontSize: 10 }} />
+              <PolarRadiusAxis tick={{ fill: theme.chartText, fontSize: 10 }} />
+              <Tooltip 
+                contentStyle={{ 
+                  background: theme.cardSolid, 
+                  border: `1px solid ${theme.border}`, 
+                  borderRadius: '10px',
+                  fontFamily: "'Outfit', sans-serif",
+                  fontSize: '13px'
+                }} 
+              />
+              {config.showLegend && <Legend wrapperStyle={{ fontFamily: "'Outfit', sans-serif" }} />}
               {filteredYFields.map((yField, idx) => (
                 <Radar 
                   key={yField}
+                  name={yField} 
                   dataKey={yField} 
                   stroke={getColor(idx)} 
                   fill={getColor(idx)} 
-                  fillOpacity={config.fillOpacity || 0.5}
-                  name={yField}
-                  isAnimationActive={true}
+                  fillOpacity={0.3}
+                  animationDuration={600}
+                  animationEasing="ease-out"
                 />
               ))}
-              {config.showLegend && <Legend wrapperStyle={{ color: theme.text }} />}
             </RadarChart>
           </ResponsiveContainer>
         );
 
-      case 'stat':
-        const statField = filteredYFields[0] || config.yAxis;
-        const values = data.map(d => d[statField] || 0);
-        const latest = values[values.length - 1] || 0;
-        const previous = values[values.length - 2] || 0;
-        const change = latest - previous;
-        const avg = values.reduce((a, b) => a + b, 0) / values.length;
-
-        return (
-          <div style={{
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-            justifyContent: 'center',
-            height: '100%'
-          }}>
-            <div style={{ fontSize: '48px', fontWeight: 'bold', color: getColor(0), marginBottom: '8px' }}>
-              {latest.toFixed(2)}
-            </div>
-            <div style={{
-              fontSize: '16px',
-              color: change >= 0 ? '#10b981' : '#ef4444',
-              marginBottom: '16px',
-              fontWeight: '600'
-            }}>
-              {change >= 0 ? '↑' : '↓'} {Math.abs(change).toFixed(2)} ({((change / previous) * 100).toFixed(1)}%)
-            </div>
-            <div style={{ display: 'flex', gap: '24px', fontSize: '14px', color: theme.textMuted }}>
-              <div>Min: <span style={{ color: theme.text, fontWeight: '600' }}>{Math.min(...values).toFixed(2)}</span></div>
-              <div>Max: <span style={{ color: theme.text, fontWeight: '600' }}>{Math.max(...values).toFixed(2)}</span></div>
-              <div>Avg: <span style={{ color: theme.text, fontWeight: '600' }}>{avg.toFixed(2)}</span></div>
-            </div>
-          </div>
-        );
-
       case 'table':
-        const columns = Object.keys(data[0] || {}).filter(key => !key.startsWith('_'));
+        const columns = data.length > 0 ? Object.keys(data[0]) : [];
         return (
           <div style={{ height: '100%', overflow: 'auto' }}>
-            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px' }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px', fontFamily: "'Outfit', sans-serif" }}>
               <thead>
-                <tr style={{ background: theme.hover, position: 'sticky', top: 0, zIndex: 1 }}>
+                <tr style={{ background: theme.glassBg, position: 'sticky', top: 0, zIndex: 1 }}>
                   {columns.map(col => (
                     <th key={col} style={{ 
-                      padding: '10px', 
+                      padding: '12px 14px', 
                       textAlign: 'left', 
                       borderBottom: `2px solid ${theme.border}`, 
                       color: theme.textSecondary, 
                       fontWeight: '600',
-                      fontSize: '12px'
+                      fontSize: '12px',
+                      letterSpacing: '0.025em',
+                      textTransform: 'uppercase'
                     }}>
                       {col}
                     </th>
@@ -404,9 +421,20 @@ const fetchData = async () => {
               </thead>
               <tbody>
                 {data.map((row, i) => (
-                  <tr key={i} style={{ borderBottom: `1px solid ${theme.border}` }}>
+                  <tr key={i} style={{ 
+                    borderBottom: `1px solid ${theme.border}`,
+                    transition: 'background 0.15s ease'
+                  }}
+                  onMouseEnter={(e) => e.currentTarget.style.background = theme.accent}
+                  onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
+                  >
                     {columns.map(col => (
-                      <td key={col} style={{ padding: '10px', color: theme.text }}>
+                      <td key={col} style={{ 
+                        padding: '12px 14px', 
+                        color: theme.text,
+                        fontSize: '13px',
+                        fontFamily: "'JetBrains Mono', monospace"
+                      }}>
                         {typeof row[col] === 'number' ? row[col].toFixed(2) : row[col]}
                       </td>
                     ))}
@@ -430,150 +458,212 @@ const fetchData = async () => {
         display: 'flex',
         flexDirection: 'column',
         background: theme.card,
-        border: `2px solid ${theme.border}`,
-        borderRadius: '12px',
+        border: `1px solid ${theme.border}`,
+        borderRadius: '16px',
         overflow: 'hidden',
-        boxShadow: darkMode ? '0 8px 24px rgba(0,0,0,0.3)' : '0 4px 6px rgba(0,0,0,0.05)',
-        transition: 'all 0.3s ease',
+        boxShadow: darkMode 
+          ? '0 10px 30px rgba(0,0,0,0.4), 0 0 1px rgba(255, 255, 255, 0.05) inset' 
+          : '0 4px 16px rgba(0,0,0,0.06), 0 0 1px rgba(0, 0, 0, 0.03) inset',
+        transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
         position: 'relative'
       }}
-      onMouseEnter={(e) => e.currentTarget.style.boxShadow = darkMode ? '0 12px 32px rgba(0,0,0,0.4)' : '0 8px 12px rgba(0,0,0,0.1)'}
-      onMouseLeave={(e) => e.currentTarget.style.boxShadow = darkMode ? '0 8px 24px rgba(0,0,0,0.3)' : '0 4px 6px rgba(0,0,0,0.05)'}
+      className="panel-card"
     >
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+        
+        @keyframes spin {
+          0% { transform: rotate(0deg); }
+          100% { transform: rotate(360deg); }
+        }
+        @keyframes pulse {
+          0%, 100% { opacity: 1; transform: scale(1); }
+          50% { opacity: 0.7; transform: scale(0.95); }
+        }
+        @keyframes glow {
+          0%, 100% { box-shadow: 0 0 8px currentColor; }
+          50% { box-shadow: 0 0 16px currentColor; }
+        }
+        
+        .panel-card:hover {
+          box-shadow: ${darkMode 
+            ? '0 16px 40px rgba(0,0,0,0.5), 0 0 1px rgba(99, 102, 241, 0.2) inset' 
+            : '0 8px 24px rgba(0,0,0,0.1), 0 0 1px rgba(99, 102, 241, 0.1) inset'} !important;
+          transform: translateY(-2px);
+        }
+        
+        .action-btn {
+          transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        
+        .action-btn:hover {
+          transform: translateY(-1px) scale(1.05);
+        }
+        
+        .action-btn:active {
+          transform: translateY(0) scale(0.98);
+        }
+      `}</style>
+
+      {/* Header */}
       <div style={{
-        padding: '2px 2px',
-        background: theme.hover,
-        borderBottom: `2px solid ${theme.border}`,
+        padding: '16px 18px',
+        background: theme.glassBg,
+        borderBottom: `1px solid ${theme.border}`,
         display: 'flex',
         justifyContent: 'space-between',
         alignItems: 'center',
-        transition: 'all 0.3s ease'
+        position: 'relative'
       }}>
+        <div style={{
+          position: 'absolute',
+          bottom: 0,
+          left: 0,
+          height: '2px',
+          width: '60px',
+          background: `linear-gradient(90deg, ${getColor(0)}, transparent)`,
+          opacity: 0.6
+        }} />
+        
         <div style={{
           fontWeight: '600',
           color: theme.text,
-          fontSize: '14px',
+          fontSize: '15px',
           flex: 1,
           display: 'flex',
           alignItems: 'center',
-          gap: '8px',
-          transition: 'color 0.3s ease'
+          gap: '10px',
+          fontFamily: "'Outfit', sans-serif",
+          letterSpacing: '-0.01em'
         }}>
           <div style={{
-            width: '8px',
-            height: '8px',
+            width: '6px',
+            height: '6px',
             borderRadius: '50%',
             background: getColor(0),
-            boxShadow: `0 0 8px ${getColor(0)}`,
-            animation: 'pulse 2s infinite'
+            animation: 'glow 2s ease-in-out infinite'
           }} />
           {config.title}
         </div>
+        
         <div style={{ display: 'flex', gap: '4px' }}>
-          <button onClick={() => fetchData()} style={{
-            padding: '6px',
-            background: 'transparent',
-            border: 'none',
-            color: theme.textMuted,
-            cursor: 'pointer',
-            borderRadius: '4px',
-            transition: 'all 0.3s ease'
-          }} 
-          onMouseEnter={(e) => {
-            e.target.style.background = darkMode ? '#475569' : '#e5e7eb';
-            e.target.style.color = theme.text;
-          }}
-          onMouseLeave={(e) => {
-            e.target.style.background = 'transparent';
-            e.target.style.color = theme.textMuted;
-          }}
-          title="Refresh">
-            <RefreshCw size={14} style={{ animation: loading ? 'spin 1s linear infinite' : 'none' }} />
+          <button 
+            onClick={() => fetchData()} 
+            className="action-btn"
+            style={{
+              padding: '8px',
+              background: 'transparent',
+              border: 'none',
+              color: theme.textMuted,
+              cursor: 'pointer',
+              borderRadius: '8px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center'
+            }} 
+            title="Refresh"
+          >
+            <RefreshCw size={15} style={{ animation: loading ? 'spin 1s linear infinite' : 'none' }} strokeWidth={2} />
           </button>
-          <button onClick={() => onDuplicate(config)} style={{
-            padding: '6px',
-            background: 'transparent',
-            border: 'none',
-            color: theme.textMuted,
-            cursor: 'pointer',
-            borderRadius: '4px',
-            transition: 'all 0.3s ease'
-          }}
-          onMouseEnter={(e) => {
-            e.target.style.background = darkMode ? '#475569' : '#e5e7eb';
-            e.target.style.color = theme.text;
-          }}
-          onMouseLeave={(e) => {
-            e.target.style.background = 'transparent';
-            e.target.style.color = theme.textMuted;
-          }}
-          title="Duplicate">
-            <Copy size={14} />
+          <button 
+            onClick={() => onDuplicate(config)} 
+            className="action-btn"
+            style={{
+              padding: '8px',
+              background: 'transparent',
+              border: 'none',
+              color: theme.textMuted,
+              cursor: 'pointer',
+              borderRadius: '8px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center'
+            }}
+            title="Duplicate"
+          >
+            <Copy size={15} strokeWidth={2} />
           </button>
-          <button onClick={() => onEdit(config)} style={{
-            padding: '6px',
-            background: 'transparent',
-            border: 'none',
-            color: theme.textMuted,
-            cursor: 'pointer',
-            borderRadius: '4px',
-            transition: 'all 0.3s ease'
-          }}
-          onMouseEnter={(e) => {
-            e.target.style.background = darkMode ? '#475569' : '#e5e7eb';
-            e.target.style.color = theme.text;
-          }}
-          onMouseLeave={(e) => {
-            e.target.style.background = 'transparent';
-            e.target.style.color = theme.textMuted;
-          }}
-          title="Edit">
-            <Settings size={14} />
+          <button 
+            onClick={() => onEdit(config)} 
+            className="action-btn"
+            style={{
+              padding: '8px',
+              background: 'transparent',
+              border: 'none',
+              color: theme.textMuted,
+              cursor: 'pointer',
+              borderRadius: '8px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center'
+            }}
+            title="Edit"
+          >
+            <Settings size={15} strokeWidth={2} />
           </button>
-          <button onClick={() => onDelete(config.id)} style={{
-            padding: '6px',
-            background: 'transparent',
-            border: 'none',
-            color: '#ef4444',
-            cursor: 'pointer',
-            borderRadius: '4px',
-            transition: 'all 0.3s ease'
-          }}
-          onMouseEnter={(e) => e.target.style.background = 'rgba(239, 68, 68, 0.1)'}
-          onMouseLeave={(e) => e.target.style.background = 'transparent'}
-          title="Delete">
-            <Trash2 size={14} />
+          <button 
+            onClick={() => onDelete(config.id)} 
+            className="action-btn"
+            style={{
+              padding: '8px',
+              background: 'transparent',
+              border: 'none',
+              color: darkMode ? 'rgba(248, 113, 113, 0.8)' : '#ef4444',
+              cursor: 'pointer',
+              borderRadius: '8px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center'
+            }}
+            title="Delete"
+          >
+            <Trash2 size={15} strokeWidth={2} />
           </button>
         </div>
       </div>
 
-      <div style={{ flex: 1, minHeight: 0, padding: '16px' }}>
+      {/* Chart Area */}
+      <div style={{ flex: 1, minHeight: 0, padding: '20px' }}>
         {renderChart()}
       </div>
 
+      {/* Footer */}
       <div style={{
-        padding: '8px 12px',
+        padding: '12px 18px',
         borderTop: `1px solid ${theme.border}`,
-        background: theme.hover,
-        transition: 'all 0.3s ease'
+        background: theme.glassBg
       }}>
         <div style={{
           display: 'flex',
           justifyContent: 'space-between',
           fontSize: '11px',
           color: theme.textMuted,
-          marginBottom: '4px',
-          transition: 'color 0.3s ease'
+          marginBottom: '6px',
+          fontFamily: "'Outfit', sans-serif",
+          fontWeight: '500'
         }}>
           <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
-            <div style={{ display: 'flex', gap: '4px', alignItems: 'center' }}>
-              <Play size={10} />
+            <div style={{ display: 'flex', gap: '5px', alignItems: 'center' }}>
+              <Play size={11} strokeWidth={2.5} />
               <span>{config.refreshInterval > 0 ? `${config.refreshInterval / 1000}s` : 'Manual'}</span>
             </div>
-            <div>•</div>
-            <div style={{ textTransform: 'capitalize' }}>{config.vizType}</div>
+            <div style={{ opacity: 0.4 }}>•</div>
+            <div style={{ 
+              textTransform: 'capitalize',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '5px'
+            }}>
+              <TrendingUp size={11} strokeWidth={2.5} />
+              {config.vizType}
+            </div>
           </div>
-          <div>{data.length} pts • {config.width}×{config.height}</div>
+          <div style={{ 
+            fontFamily: "'JetBrains Mono', monospace",
+            fontSize: '10px'
+          }}>
+            {data.length} pts • {config.width}×{config.height}
+          </div>
         </div>
         
         <div style={{
@@ -581,32 +671,21 @@ const fetchData = async () => {
           gap: '12px',
           fontSize: '10px',
           color: theme.textMuted,
-          paddingTop: '6px',
+          paddingTop: '8px',
           borderTop: `1px solid ${theme.border}`,
-          transition: 'all 0.3s ease'
+          fontFamily: "'JetBrains Mono', monospace"
         }}>
-          <div style={{ display: 'flex', gap: '4px', alignItems: 'center' }} title="Query executed at">
-            <Clock size={10} />
-            <span>Query: {formatTimestamp(queryTime)}</span>
+          <div style={{ display: 'flex', gap: '5px', alignItems: 'center' }} title="Query executed at">
+            <Clock size={10} strokeWidth={2.5} />
+            <span>{formatTimestamp(queryTime)}</span>
           </div>
-          <div>•</div>
-          <div style={{ display: 'flex', gap: '4px', alignItems: 'center' }} title="Latest record timestamp">
-            <Database size={10} />
-            <span>Latest: {formatTimestamp(latestRecordTime)}</span>
+          <div style={{ opacity: 0.4 }}>•</div>
+          <div style={{ display: 'flex', gap: '5px', alignItems: 'center' }} title="Latest record timestamp">
+            <Database size={10} strokeWidth={2.5} />
+            <span>{formatTimestamp(latestRecordTime)}</span>
           </div>
         </div>
       </div>
-
-      <style>{`
-        @keyframes spin {
-          0% { transform: rotate(0deg); }
-          100% { transform: rotate(360deg); }
-        }
-        @keyframes pulse {
-          0%, 100% { opacity: 1; }
-          50% { opacity: 0.5; }
-        }
-      `}</style>
     </div>
   );
 }
