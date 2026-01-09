@@ -1,3 +1,6 @@
+// Updated Dashboard.jsx with MongoDB integration
+// Replace the dashboard state management section in your Dashboard component
+
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
@@ -5,6 +8,7 @@ import {
 } from 'lucide-react';
 import authService from '../../services/auth';
 import questdbService from '../../services/questdb';
+import dashboardService from '../../services/dashboardService'; // NEW IMPORT
 import DashboardModal from './DashboardModal';
 import PanelConfigModal from './PanelConfigModal';
 import QuestDBPanel from './QuestDBPanel';
@@ -24,11 +28,14 @@ export default function Dashboard({ onLogout }) {
   const [editingScadaDiagram, setEditingScadaDiagram] = useState(null);
   const [availableTables, setAvailableTables] = useState([]);
   const [draggingPanel, setDraggingPanel] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [syncError, setSyncError] = useState(null);
   const [darkMode, setDarkMode] = useState(() => {
     const saved = localStorage.getItem('miralys_dark_mode');
     return saved ? JSON.parse(saved) : false;
   });
 
+  // Fetch tables
   useEffect(() => {
     const fetchTables = async () => {
       try {
@@ -44,29 +51,85 @@ export default function Dashboard({ onLogout }) {
     fetchTables();
   }, []);
 
+  // Load dashboards from MongoDB on mount
   useEffect(() => {
-    const saved = localStorage.getItem('miralys_dashboards');
-    if (saved) {
-      try {
-        const parsed = JSON.parse(saved);
-        if (parsed && parsed.length > 0) {
-          setDashboards(parsed);
-          const activeDashboardId = localStorage.getItem('miralys_active_dashboard');
-          const activeDashboard = parsed.find(d => d.id === activeDashboardId) || parsed[0];
-          setCurrentDashboard(activeDashboard);
-        } else {
-          createDefaultDashboard();
-        }
-      } catch (e) {
-        console.error('Error loading dashboards:', e);
-        createDefaultDashboard();
-      }
-    } else {
-      createDefaultDashboard();
-    }
+    loadDashboards();
   }, []);
 
-  const createDefaultDashboard = () => {
+  const loadDashboards = async () => {
+    setLoading(true);
+    setSyncError(null);
+    
+    try {
+      // Sync dashboards between localStorage and MongoDB
+      const remoteDashboards = await dashboardService.syncDashboards();
+      
+      if (remoteDashboards && remoteDashboards.length > 0) {
+        setDashboards(remoteDashboards);
+        
+        // Set current dashboard (prefer default, or first one)
+        const defaultDashboard = remoteDashboards.find(d => d.isDefault);
+        const activeDashboardId = localStorage.getItem('miralys_active_dashboard');
+        const activeDashboard = remoteDashboards.find(d => d.id === activeDashboardId);
+        
+        setCurrentDashboard(activeDashboard || defaultDashboard || remoteDashboards[0]);
+      } else {
+        // Create default dashboard if none exist
+        await createDefaultDashboard();
+      }
+    } catch (error) {
+      console.error('Error loading dashboards:', error);
+      setSyncError('Failed to load dashboards. Using offline mode.');
+      
+      // Fallback to localStorage
+      const saved = localStorage.getItem('miralys_dashboards');
+      if (saved) {
+        try {
+          const parsed = JSON.parse(saved);
+          if (parsed && parsed.length > 0) {
+            setDashboards(parsed);
+            setCurrentDashboard(parsed[0]);
+          } else {
+            createDefaultDashboardOffline();
+          }
+        } catch (e) {
+          console.error('Error parsing localStorage dashboards:', e);
+          createDefaultDashboardOffline();
+        }
+      } else {
+        createDefaultDashboardOffline();
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const createDefaultDashboard = async () => {
+    try {
+      const plantId = user?.plantId || user?.plantAccess?.[0]?.plantId;
+      
+      if (!plantId) {
+        console.error('No plantId found for user');
+        createDefaultDashboardOffline();
+        return;
+      }
+
+      const newDashboard = await dashboardService.createDashboard(
+        'Default Dashboard',
+        plantId,
+        [],
+        true
+      );
+
+      setDashboards([newDashboard]);
+      setCurrentDashboard(newDashboard);
+    } catch (error) {
+      console.error('Error creating default dashboard:', error);
+      createDefaultDashboardOffline();
+    }
+  };
+
+  const createDefaultDashboardOffline = () => {
     const defaultDashboard = {
       id: `dashboard_${Date.now()}`,
       name: 'Default Dashboard',
@@ -74,8 +137,10 @@ export default function Dashboard({ onLogout }) {
     };
     setDashboards([defaultDashboard]);
     setCurrentDashboard(defaultDashboard);
+    localStorage.setItem('miralys_dashboards', JSON.stringify([defaultDashboard]));
   };
 
+  // Save to localStorage as backup (keep existing behavior)
   useEffect(() => {
     if (dashboards.length > 0) {
       localStorage.setItem('miralys_dashboards', JSON.stringify(dashboards));
@@ -117,7 +182,7 @@ export default function Dashboard({ onLogout }) {
 
   const handleLogout = () => {
     authService.logout();
-   onLogout();
+    onLogout();
   };
 
   const handleAddPanel = () => {
@@ -130,59 +195,66 @@ export default function Dashboard({ onLogout }) {
     setShowScadaModal(true);
   };
 
-  const handleSavePanel = (config) => {
-  try {
-    if (!config || !config.id) {
-      console.error('Invalid panel config:', config);
-      return;
-    }
+  const handleSavePanel = async (config) => {
+    try {
+      if (!config || !config.id) {
+        console.error('Invalid panel config:', config);
+        return;
+      }
 
-    const updatedDashboard = {
-      ...currentDashboard,
-      panels: [...(currentDashboard.panels || [])],
-    };
-
-    const panelExists = updatedDashboard.panels.some(
-      p => p.id === config.id
-    );
-
-    if (panelExists) {
-      updatedDashboard.panels = updatedDashboard.panels.map(p =>
-        p.id === config.id ? config : p
-      );
-    } else {
-      const newPanel = {
-        ...config,
-        x: 0,
-        y: getNextAvailableY(),
-        width: 12,  // Use config width or default to 4
-        height: 6
+      const updatedDashboard = {
+        ...currentDashboard,
+        panels: [...(currentDashboard.panels || [])],
       };
-      updatedDashboard.panels.push(newPanel);
+
+      const panelExists = updatedDashboard.panels.some(p => p.id === config.id);
+
+      if (panelExists) {
+        updatedDashboard.panels = updatedDashboard.panels.map(p =>
+          p.id === config.id ? config : p
+        );
+      } else {
+        const newPanel = {
+          ...config,
+          x: 0,
+          y: getNextAvailableY(),
+          width: config.width || 12,
+          height: config.height || 6
+        };
+        updatedDashboard.panels.push(newPanel);
+      }
+
+      // Update in MongoDB
+      try {
+        await dashboardService.updateDashboard(updatedDashboard.id, {
+          panels: updatedDashboard.panels
+        });
+      } catch (error) {
+        console.error('Failed to save to MongoDB:', error);
+        // Continue with local update even if remote fails
+      }
+
+      // Update local state
+      setDashboards(prevDashboards =>
+        prevDashboards.map(d =>
+          d.id === updatedDashboard.id ? updatedDashboard : d
+        )
+      );
+      
+      setCurrentDashboard(updatedDashboard);
+      
+      // Close modals
+      setTimeout(() => {
+        setShowConfigModal(false);
+        setShowScadaModal(false);
+        setEditingPanel(null);
+        setEditingScadaDiagram(null);
+      }, 0);
+    } catch (error) {
+      console.error('Error saving panel:', error);
+      alert('Failed to save panel. Please try again.');
     }
-
-    // Update states in the correct order
-    setDashboards(prevDashboards =>
-      prevDashboards.map(d =>
-        d.id === updatedDashboard.id ? updatedDashboard : d
-      )
-    );
-    
-    setCurrentDashboard(updatedDashboard);
-    
-    // Close modals after state updates
-    setTimeout(() => {
-      setShowConfigModal(false);
-      setShowScadaModal(false);
-      setEditingPanel(null);
-      setEditingScadaDiagram(null);
-    }, 0);
-  } catch (error) {
-    console.error('Error saving panel:', error);
-    alert('Failed to save panel. Please try again.');
-  }
-};
-
+  };
 
   const getNextAvailableY = () => {
     if (!currentDashboard?.panels || currentDashboard.panels.length === 0) return 0;
@@ -200,12 +272,22 @@ export default function Dashboard({ onLogout }) {
     }
   };
 
-  const handleDelete = (panelId) => {
+  const handleDelete = async (panelId) => {
     if (window.confirm('Are you sure you want to delete this panel?')) {
       const updatedDashboard = {
         ...currentDashboard,
         panels: currentDashboard.panels.filter(p => p.id !== panelId)
       };
+
+      // Update in MongoDB
+      try {
+        await dashboardService.updateDashboard(updatedDashboard.id, {
+          panels: updatedDashboard.panels
+        });
+      } catch (error) {
+        console.error('Failed to delete from MongoDB:', error);
+      }
+
       setCurrentDashboard(updatedDashboard);
       setDashboards(dashboards.map(d => 
         d.id === updatedDashboard.id ? updatedDashboard : d
@@ -213,7 +295,7 @@ export default function Dashboard({ onLogout }) {
     }
   };
 
-  const handleDuplicate = (panel) => {
+  const handleDuplicate = async (panel) => {
     const newPanel = {
       ...panel,
       id: `panel_${Date.now()}`,
@@ -224,33 +306,61 @@ export default function Dashboard({ onLogout }) {
       ...currentDashboard,
       panels: [...(currentDashboard.panels || []), newPanel]
     };
+
+    // Update in MongoDB
+    try {
+      await dashboardService.updateDashboard(updatedDashboard.id, {
+        panels: updatedDashboard.panels
+      });
+    } catch (error) {
+      console.error('Failed to duplicate in MongoDB:', error);
+    }
+
     setCurrentDashboard(updatedDashboard);
     setDashboards(dashboards.map(d => 
       d.id === updatedDashboard.id ? updatedDashboard : d
     ));
   };
 
-  const handleResize = (panelId, newWidth, newHeight) => {
+  const handleResize = async (panelId, newWidth, newHeight) => {
     const updatedDashboard = {
       ...currentDashboard,
       panels: currentDashboard.panels.map(p =>
         p.id === panelId ? { ...p, width: newWidth, height: newHeight } : p
       )
     };
+
+    // Update in MongoDB
+    try {
+      await dashboardService.updateDashboard(updatedDashboard.id, {
+        panels: updatedDashboard.panels
+      });
+    } catch (error) {
+      console.error('Failed to resize in MongoDB:', error);
+    }
+
     setCurrentDashboard(updatedDashboard);
     setDashboards(dashboards.map(d =>
       d.id === updatedDashboard.id ? updatedDashboard : d
     ));
   };
 
-  const handleCreateDashboard = (name) => {
-    const newDashboard = {
-      id: `dashboard_${Date.now()}`,
-      name,
-      panels: []
-    };
-    setDashboards([...dashboards, newDashboard]);
-    setCurrentDashboard(newDashboard);
+  const handleCreateDashboard = async (name) => {
+    try {
+      const plantId = user?.plantId || user?.plantAccess?.[0]?.plantId;
+      
+      if (!plantId) {
+        alert('No plant access found');
+        return;
+      }
+
+      const newDashboard = await dashboardService.createDashboard(name, plantId);
+      setDashboards([...dashboards, newDashboard]);
+      setCurrentDashboard(newDashboard);
+    } catch (error) {
+      console.error('Error creating dashboard:', error);
+      alert('Failed to create dashboard. Please try again.');
+    }
   };
 
   const handleSelectDashboard = (dashboardId) => {
@@ -261,21 +371,37 @@ export default function Dashboard({ onLogout }) {
     }
   };
 
-  const handleRenameDashboard = (dashboardId, newName) => {
-    const updatedDashboards = dashboards.map(d =>
-      d.id === dashboardId ? { ...d, name: newName } : d
-    );
-    setDashboards(updatedDashboards);
-    if (currentDashboard?.id === dashboardId) {
-      setCurrentDashboard({ ...currentDashboard, name: newName });
+  const handleRenameDashboard = async (dashboardId, newName) => {
+    try {
+      await dashboardService.updateDashboard(dashboardId, { name: newName });
+      
+      const updatedDashboards = dashboards.map(d =>
+        d.id === dashboardId ? { ...d, name: newName } : d
+      );
+      setDashboards(updatedDashboards);
+      
+      if (currentDashboard?.id === dashboardId) {
+        setCurrentDashboard({ ...currentDashboard, name: newName });
+      }
+    } catch (error) {
+      console.error('Error renaming dashboard:', error);
+      alert('Failed to rename dashboard. Please try again.');
     }
   };
 
-  const handleDeleteDashboard = (dashboardId) => {
-    const updatedDashboards = dashboards.filter(d => d.id !== dashboardId);
-    setDashboards(updatedDashboards);
-    if (currentDashboard?.id === dashboardId) {
-      setCurrentDashboard(updatedDashboards[0] || null);
+  const handleDeleteDashboard = async (dashboardId) => {
+    try {
+      await dashboardService.deleteDashboard(dashboardId);
+      
+      const updatedDashboards = dashboards.filter(d => d.id !== dashboardId);
+      setDashboards(updatedDashboards);
+      
+      if (currentDashboard?.id === dashboardId) {
+        setCurrentDashboard(updatedDashboards[0] || null);
+      }
+    } catch (error) {
+      console.error('Error deleting dashboard:', error);
+      alert('Failed to delete dashboard. Please try again.');
     }
   };
 
@@ -292,19 +418,27 @@ export default function Dashboard({ onLogout }) {
     URL.revokeObjectURL(url);
   };
 
-  const handleImportDashboard = (e) => {
+  const handleImportDashboard = async (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
     const reader = new FileReader();
-    reader.onload = (event) => {
+    reader.onload = async (event) => {
       try {
         const imported = JSON.parse(event.target.result);
-        const newDashboard = {
-          ...imported,
-          id: `dashboard_${Date.now()}`,
-          name: `${imported.name} (Imported)`
-        };
+        const plantId = user?.plantId || user?.plantAccess?.[0]?.plantId;
+        
+        if (!plantId) {
+          alert('No plant access found');
+          return;
+        }
+
+        const newDashboard = await dashboardService.createDashboard(
+          `${imported.name} (Imported)`,
+          plantId,
+          imported.panels || []
+        );
+        
         setDashboards([...dashboards, newDashboard]);
         setCurrentDashboard(newDashboard);
       } catch (error) {
@@ -327,7 +461,7 @@ export default function Dashboard({ onLogout }) {
     e.dataTransfer.dropEffect = 'move';
   };
 
-  const handleDrop = (e, targetPanel) => {
+  const handleDrop = async (e, targetPanel) => {
     e.preventDefault();
     if (!draggingPanel || draggingPanel.id === targetPanel.id) {
       setDraggingPanel(null);
@@ -339,7 +473,6 @@ export default function Dashboard({ onLogout }) {
     const targetIndex = updatedPanels.findIndex(p => p.id === targetPanel.id);
 
     if (dragIndex !== -1 && targetIndex !== -1) {
-      // Swap positions
       [updatedPanels[dragIndex], updatedPanels[targetIndex]] = 
       [updatedPanels[targetIndex], updatedPanels[dragIndex]];
 
@@ -347,6 +480,16 @@ export default function Dashboard({ onLogout }) {
         ...currentDashboard,
         panels: updatedPanels
       };
+
+      // Update in MongoDB
+      try {
+        await dashboardService.updateDashboard(updatedDashboard.id, {
+          panels: updatedPanels
+        });
+      } catch (error) {
+        console.error('Failed to update panel order in MongoDB:', error);
+      }
+
       setCurrentDashboard(updatedDashboard);
       setDashboards(dashboards.map(d => 
         d.id === updatedDashboard.id ? updatedDashboard : d
@@ -366,12 +509,41 @@ export default function Dashboard({ onLogout }) {
     };
   };
 
+  if (loading) {
+    return (
+      <div style={{ 
+        minHeight: '100vh', 
+        background: theme.bg,
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center'
+      }}>
+        <div style={{ textAlign: 'center' }}>
+          <Zap size={48} color="#667eea" style={{ animation: 'pulse 2s infinite' }} />
+          <p style={{ marginTop: '16px', color: theme.textMuted }}>Loading dashboards...</p>
+        </div>
+      </div>
+    );
+  }
   return (
     <div style={{ 
       minHeight: '100vh', 
       background: theme.bg,
       transition: 'background 0.3s ease'
     }}>
+      {/* Show sync error if exists */}
+      {syncError && (
+        <div style={{
+          background: '#fef3c7',
+          border: '1px solid #fbbf24',
+          padding: '12px 24px',
+          textAlign: 'center',
+          fontSize: '14px',
+          color: '#92400e'
+        }}>
+          ⚠️ {syncError}
+        </div>
+      )}
       <div style={{
         background: theme.card,
         borderBottom: `2px solid ${theme.border}`,
