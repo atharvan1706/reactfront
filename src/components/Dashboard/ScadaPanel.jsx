@@ -52,97 +52,96 @@ const SVG_COMPONENTS = {
     width: 60, 
     height: 80, 
     component: BlowdownValveComponent,
-    type: 'component', // Flag to identify React components
+    type: 'component',
     color: '#ef4444' 
   },
-  // Legacy SVG imports (to be converted to React components)
   pressureBalancedDiaphragm:  { 
-    name: 'Blowdown Valve', 
-    width: 60, 
-    height: 80, 
+    name: 'Pressure Balanced Diaphragm', 
+    width: 70, 
+    height: 90, 
     component: PressureBalancedDiaphragm,
-    type: 'component', // Flag to identify React components
-    color: '#ef4444' 
+    type: 'component',
+    color: '#06b6d4' 
   },
   regulatorExternalPressure:{ 
-    name: 'Blowdown Valve', 
-    width: 60, 
+    name: 'Regulator (External)', 
+    width: 80, 
     height: 80, 
     component: RegulatorExternalPressure,
-    type: 'component', // Flag to identify React components
-    color: '#ef4444' 
+    type: 'component',
+    color: '#8b5cf6' 
   },
   regulatorSelfContained: { 
-    name: 'Blowdown Valve', 
-    width: 60, 
+    name: 'Regulator (Self-Contained)', 
+    width: 80, 
     height: 80, 
     component: RegulatorSelfContained,
-    type: 'component', // Flag to identify React components
-    color: '#ef4444' 
+    type: 'component',
+    color: '#8b5cf6' 
   },
   rotaryPlugValve:  { 
-    name: 'Blowdown Valve', 
-    width: 60, 
-    height: 80, 
+    name: 'Rotary Plug Valve', 
+    width: 70, 
+    height: 70, 
     component: RotaryPlugValve,
-    type: 'component', // Flag to identify React components
-    color: '#ef4444' 
+    type: 'component',
+    color: '#f59e0b' 
   },
   valveLongShaft:  { 
-    name: 'Blowdown Valve', 
+    name: 'Valve (Long Shaft)', 
     width: 60, 
-    height: 80, 
+    height: 90, 
     component: ValveLongShaft,
-    type: 'component', // Flag to identify React components
-    color: '#ef4444' 
+    type: 'component',
+    color: '#f59e0b' 
   },
   valveFailLocked:  { 
-    name: 'Blowdown Valve', 
-    width: 60, 
+    name: 'Valve (Fail Locked)', 
+    width: 70, 
     height: 80, 
     component: ValveFailLocked,
-    type: 'component', // Flag to identify React components
+    type: 'component',
     color: '#ef4444' 
   },
   controlValveHandActuator: { 
-    name: 'Blowdown Valve', 
-    width: 60, 
+    name: 'Control Valve (Hand)', 
+    width: 70, 
     height: 80, 
     component: ControlValveHandActuator,
-    type: 'component', // Flag to identify React components
-    color: '#ef4444' 
+    type: 'component',
+    color: '#3b82f6' 
   },
   handControlValve: { 
-    name: 'Blowdown Valve', 
+    name: 'Hand Control Valve', 
     width: 60, 
-    height: 80, 
+    height: 70, 
     component: HandControlValveIcon,
-    type: 'component', // Flag to identify React components
-    color: '#ef4444' 
+    type: 'component',
+    color: '#f59e0b' 
   },
   valve3D:  { 
-    name: 'Blowdown Valve', 
+    name: '3D Valve', 
     width: 60, 
     height: 80, 
     component: Valve3DIcon,
-    type: 'component', // Flag to identify React components
-    color: '#ef4444' 
+    type: 'component',
+    color: '#f59e0b' 
   },
   valveWithActuator:  { 
-    name: 'Blowdown Valve', 
-    width: 60, 
-    height: 80, 
+    name: 'Valve with Actuator', 
+    width: 70, 
+    height: 90, 
     component: ValveWithActuatorIcon,
-    type: 'component', // Flag to identify React components
-    color: '#ef4444' 
+    type: 'component',
+    color: '#10b981' 
   },
   ballValve1:{ 
-    name: 'Blowdown Valve', 
-    width: 60, 
-    height: 80, 
+    name: 'Ball Valve', 
+    width: 70, 
+    height: 70, 
     component: BallValve1Icon,
-    type: 'component', // Flag to identify React components
-    color: '#ef4444' 
+    type: 'component',
+    color: '#64748b' 
   },
   pvcTwoWayBallValve: { name: 'PVC Ball Valve', width: 60, height: 70, svg: PVCTwoWayBallValve, type: 'svg', color: '#64748b' },
   blueControlValve: { name: 'Control Valve (Blue)', width: 70, height: 90, svg: BlueControlValve, type: 'svg', color: '#3b82f6' },
@@ -157,22 +156,22 @@ const SVG_COMPONENTS = {
   handValve3: { name: 'Hand Valve 3', width: 70, height: 80, svg: HandValve3, type: 'svg', color: '#f59e0b' },
   handValve4: { name: 'Hand Valve 4', width: 70, height: 80, svg: HandValve4, type: 'svg', color: '#f59e0b' },
   pump3D: { 
-    name: 'Blowdown Valve', 
-    width: 60, 
+    name: '3D Pump', 
+    width: 90, 
     height: 80, 
     component: Pump3DIcon,
-    type: 'component', // Flag to identify React components
-    color: '#ef4444' 
+    type: 'component',
+    color: '#3b82f6' 
   },
   centrifugalPump2: { name: 'Centrifugal Pump 2', width: 90, height: 80, svg: CentrifugalPump2, type: 'svg', color: '#3b82f6' },
   centrifugalPump4: { name: 'Centrifugal Pump 4', width: 80, height: 80, svg: CentrifugalPump4, type: 'svg', color: '#3b82f6' },
   classicPump1:  { 
-    name: 'Blowdown Valve', 
-    width: 60, 
-    height: 80, 
+    name: 'Classic Pump', 
+    width: 70, 
+    height: 70, 
     component: ClassicPump1,
-    type: 'component', // Flag to identify React components
-    color: '#ef4444' 
+    type: 'component',
+    color: '#3b82f6' 
   },
   coolPump: { name: 'Cool Pump', width: 80, height: 80, svg: CoolPump, type: 'svg', color: '#06b6d4' },
   horizontalPump3: { name: 'Horizontal Pump 3', width: 100, height: 70, svg: HorizontalPump3, type: 'svg', color: '#3b82f6' },
@@ -283,6 +282,65 @@ export default function ScadaPanel({ config, darkMode }) {
     };
   };
 
+  // Generate SVG path for line with control points
+  const getLinePath = (line) => {
+    const coords = getLineCoordinates(line);
+    if (!coords) return null;
+
+    const { x1, y1, x2, y2 } = coords;
+    const controlPoints = line.controlPoints || [];
+
+    if (controlPoints.length === 0) {
+      // Straight line
+      return `M ${x1} ${y1} L ${x2} ${y2}`;
+    } else if (controlPoints.length === 1) {
+      // Quadratic bezier curve
+      const cp = controlPoints[0];
+      return `M ${x1} ${y1} Q ${cp.x} ${cp.y} ${x2} ${y2}`;
+    } else {
+      // Multiple control points - create smooth curve through all points
+      let path = `M ${x1} ${y1}`;
+      
+      // Add first control point
+      path += ` L ${controlPoints[0].x} ${controlPoints[0].y}`;
+      
+      // Add middle control points
+      for (let i = 1; i < controlPoints.length; i++) {
+        path += ` L ${controlPoints[i].x} ${controlPoints[i].y}`;
+      }
+      
+      // Connect to end
+      path += ` L ${x2} ${y2}`;
+      return path;
+    }
+  };
+
+  // Get the end point and angle for arrow placement
+  const getLineEndPoint = (line) => {
+    const coords = getLineCoordinates(line);
+    if (!coords) return null;
+
+    const { x1, y1, x2, y2 } = coords;
+    const controlPoints = line.controlPoints || [];
+
+    let endX = x2;
+    let endY = y2;
+    let prevX, prevY;
+
+    if (controlPoints.length === 0) {
+      prevX = x1;
+      prevY = y1;
+    } else {
+      const lastCP = controlPoints[controlPoints.length - 1];
+      prevX = lastCP.x;
+      prevY = lastCP.y;
+    }
+
+    const angle = Math.atan2(endY - prevY, endX - prevX);
+    
+    return { x: endX, y: endY, angle };
+  };
+
   const getViewBox = () => {
     if (!config.components || config.components.length === 0) {
       return "0 0 1000 600";
@@ -344,7 +402,7 @@ export default function ScadaPanel({ config, darkMode }) {
             width={svgData.width}
             height={svgData.height}
             fill={componentColor}
-            opacity="0.6"
+            opacity="0.5"
             style={{ mixBlendMode: 'multiply' }}
           />
         </g>
@@ -395,31 +453,38 @@ export default function ScadaPanel({ config, darkMode }) {
         </defs>
         <rect width="100%" height="100%" fill={`url(#grid-${config.id})`} />
 
-        {/* Lines */}
+        {/* Lines with control point support */}
         {config.lines?.map(line => {
           const coords = getLineCoordinates(line);
-          if (!coords) return null;
+          const path = getLinePath(line);
+          const endPoint = getLineEndPoint(line);
+          if (!coords || !path || !endPoint) return null;
           
           return (
             <g key={line.id}>
-              <line
-                x1={coords.x1}
-                y1={coords.y1}
-                x2={coords.x2}
-                y2={coords.y2}
+              {/* Actual line path */}
+              <path
+                d={path}
                 stroke={line.color || '#3b82f6'}
                 strokeWidth={line.width || 2}
-                strokeDasharray={line.style === 'dashed' ? '5,5' : '0'}
+                fill="none"
                 strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeDasharray={
+                  line.style === 'dashed' ? '8,4' : 
+                  line.style === 'dotted' ? '2,3' : 
+                  '0'
+                }
               />
+              
+              {/* Arrow */}
               {(() => {
-                const angle = Math.atan2(coords.y2 - coords.y1, coords.x2 - coords.x1);
-                const arrowSize = 10;
+                const arrowSize = 10 + (line.width || 2);
                 return (
                   <polygon
                     points={`0,-${arrowSize/2} ${arrowSize},0 0,${arrowSize/2}`}
                     fill={line.color || '#3b82f6'}
-                    transform={`translate(${coords.x2}, ${coords.y2}) rotate(${angle * 180 / Math.PI})`}
+                    transform={`translate(${endPoint.x}, ${endPoint.y}) rotate(${endPoint.angle * 180 / Math.PI})`}
                   />
                 );
               })()}
@@ -508,7 +573,7 @@ export default function ScadaPanel({ config, darkMode }) {
           background: darkMode ? 'rgba(26, 29, 41, 0.95)' : 'rgba(255, 255, 255, 0.95)',
           border: `1px solid ${theme.border}`,
           borderRadius: '8px',
-          padding: '2px',
+          padding: '12px',
           fontSize: '11px',
           color: theme.text,
           maxWidth: '200px',
