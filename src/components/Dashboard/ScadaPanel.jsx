@@ -434,8 +434,9 @@ export default function ScadaPanel({ config, darkMode }) {
     <div style={{
       width: '100%',
       height: '100%',
+      minHeight: '400px',  // Ensure minimum height
       background: theme.bg,
-      overflow: 'hidden',
+      overflow: 'auto',  // Changed from hidden to auto for scrolling if needed
       position: 'relative'
     }}>
       <svg 
@@ -443,7 +444,7 @@ export default function ScadaPanel({ config, darkMode }) {
         height="100%" 
         viewBox={getViewBox()}
         preserveAspectRatio="xMidYMid meet"
-        style={{ display: 'block' }}
+        style={{ display: 'block', minHeight: '400px' }}
       >
         {/* Grid background */}
         <defs>
