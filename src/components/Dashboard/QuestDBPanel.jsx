@@ -6,10 +6,11 @@ import {
 } from 'recharts';
 import {
   Trash2, Copy, RefreshCw, Settings, Play, Clock, Database, AlertCircle, 
-  Move
+  Move, Wifi, WifiOff
 } from 'lucide-react';
 import { COLORS } from './constants';
 import questdbService from '../../services/questdb';
+import realtimeService from '../../services/realtimeService';
 import SimpleTransformations from './simpleTransformations';
 
 function QuestDBPanel({ config, onEdit, onDelete, onDuplicate, onResize, style, darkMode }) {
@@ -18,6 +19,8 @@ function QuestDBPanel({ config, onEdit, onDelete, onDuplicate, onResize, style, 
   const [error, setError] = useState(null);
   const [queryTime, setQueryTime] = useState(null);
   const [latestRecordTime, setLatestRecordTime] = useState(null);
+  const [isRealtimeMode, setIsRealtimeMode] = useState(true); // Real-time by default
+  const [subscriptionId, setSubscriptionId] = useState(null);
   const timerRef = useRef(null);
 
   const theme = darkMode ? {
@@ -42,69 +45,153 @@ function QuestDBPanel({ config, onEdit, onDelete, onDuplicate, onResize, style, 
     chartText: '#6b7280'
   };
 
-  // Debug version of fetchData - Add console.logs to see what's happening
-
-const fetchData = async () => {
-  try {
-    setError(null);
-    const startTime = Date.now();
+  // Build SQL query
+  const buildQuery = () => {
     let query = config.query;
     
     if (config.dataSource === 'table' && config.table) {
       query = `SELECT * FROM ${config.table} ORDER BY ${config.timestampField} DESC LIMIT ${config.limit}`;
     }
 
-    if (!query) {
-      throw new Error('No query specified');
-    }
+    return query;
+  };
 
-    const result = await questdbService.query(query);
-    const formatted = questdbService.formatForChart(result, config.timestampField);
-    
-    // DEBUG: Let's see what we have
-    console.log('🔍 DEBUG - Config transformations:', config.transformations);
-    console.log('🔍 DEBUG - Formatted data (first 3 items):', formatted.slice(0, 3));
+  // Process and format data
+  const processData = (rawData) => {
+    const formatted = questdbService.formatForChart(rawData, config.timestampField);
     
     // Apply transformations if configured
     let finalData = formatted;
     if (config.transformations && config.transformations.length > 0) {
-      console.log('✅ Applying transformations!');
       finalData = SimpleTransformations.applyTransformations(formatted, config.transformations);
-      console.log('🔍 DEBUG - Transformed data (first 3 items):', finalData.slice(0, 3));
+    }
+    
+    return finalData;
+  };
+
+  // Fetch data once (polling mode)
+  const fetchData = async () => {
+    try {
+      setError(null);
+      const startTime = Date.now();
+      const query = buildQuery();
+
+      if (!query) {
+        throw new Error('No query specified');
+      }
+
+      const result = await questdbService.query(query);
+      const finalData = processData(result);
+      
+      const endTime = Date.now();
+      setQueryTime(new Date(endTime));
+      
+      if (result.length > 0 && result[0][config.timestampField]) {
+        setLatestRecordTime(new Date(result[0][config.timestampField]));
+      }
+      
+      setData(finalData);
+      setLoading(false);
+    } catch (err) {
+      console.error('Error fetching data:', err);
+      setError(err.message);
+      setLoading(false);
+    }
+  };
+
+  // Setup real-time subscription
+  const setupRealtimeSubscription = () => {
+    const query = buildQuery();
+    
+    if (!query) {
+      console.error('No query to subscribe to');
+      return;
+    }
+
+    // Unsubscribe from previous subscription
+    if (subscriptionId) {
+      realtimeService.unsubscribe(subscriptionId);
+    }
+
+    // Subscribe to real-time updates
+    const subId = realtimeService.subscribeToQuery(query, (newData, timestamp) => {
+      console.log(`📊 Received real-time update for ${config.title}:`, newData.length, 'rows');
+      
+      const finalData = processData(newData);
+      setData(finalData);
+      setQueryTime(new Date(timestamp));
+      
+      if (newData.length > 0 && newData[0][config.timestampField]) {
+        setLatestRecordTime(new Date(newData[0][config.timestampField]));
+      }
+      
+      setError(null);
+      setLoading(false);
+    });
+
+    setSubscriptionId(subId);
+    console.log(`✅ Subscribed to real-time updates: ${subId}`);
+
+    // Fetch initial data
+    fetchData();
+  };
+
+  // Toggle between real-time and polling mode
+  const toggleMode = () => {
+    if (isRealtimeMode) {
+      // Switch to polling mode
+      if (subscriptionId) {
+        realtimeService.unsubscribe(subscriptionId);
+        setSubscriptionId(null);
+      }
+      setIsRealtimeMode(false);
+      
+      // Start polling
+      if (config.refreshInterval > 0) {
+        timerRef.current = setInterval(fetchData, config.refreshInterval);
+      }
     } else {
-      console.log('⚠️ No transformations to apply');
+      // Switch to real-time mode
+      if (timerRef.current) {
+        clearInterval(timerRef.current);
+        timerRef.current = null;
+      }
+      setIsRealtimeMode(true);
+      setupRealtimeSubscription();
     }
-    
-    const endTime = Date.now();
-    setQueryTime(new Date(endTime));
-    
-    if (result.length > 0 && result[0][config.timestampField]) {
-      setLatestRecordTime(new Date(result[0][config.timestampField]));
-    }
-    
-    setData(finalData);
-    setLoading(false);
-  } catch (err) {
-    console.error('Error fetching data:', err);
-    setError(err.message);
-    setLoading(false);
-  }
-};
+  };
 
   useEffect(() => {
     setLoading(true);
-    fetchData();
 
-    if (config.refreshInterval > 0) {
-      timerRef.current = setInterval(fetchData, config.refreshInterval);
+    // Connect to real-time service if not connected
+    const token = localStorage.getItem('token');
+    if (token && !realtimeService.isReady()) {
+      realtimeService.connect(token);
+    }
+
+    if (isRealtimeMode) {
+      // Use real-time subscriptions
+      setupRealtimeSubscription();
+    } else {
+      // Use polling
+      fetchData();
+
+      if (config.refreshInterval > 0) {
+        timerRef.current = setInterval(fetchData, config.refreshInterval);
+      }
     }
 
     return () => {
+      // Cleanup
       if (timerRef.current) {
         clearInterval(timerRef.current);
       }
+      if (subscriptionId) {
+        realtimeService.unsubscribe(subscriptionId);
+      }
     };
-  }, [config]);
+  }, [config, isRealtimeMode]);
 
   const formatTimestamp = (date) => {
     if (!date) return 'N/A';
@@ -160,7 +247,7 @@ const fetchData = async () => {
       return (
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%' }}>
           <div style={{ textAlign: 'center', color: '#6b7280' }}>
-            <Database size={32} style={{ marginBottom: '8px', opacity: 0.5 }} />
+            <Database size={32} style={{ marginBottom: '8px', opacity: 0.5' }} />
             <p style={{ fontSize: '13px' }}>No data available</p>
           </div>
         </div>
@@ -234,12 +321,10 @@ const fetchData = async () => {
                   type="monotone" 
                   dataKey={yField} 
                   stroke={getColor(idx)} 
-                  fill={getColor(idx)} 
-                  fillOpacity={config.fillOpacity}
-                  strokeWidth={config.lineWidth}
+                  fill={getColor(idx)}
+                  fillOpacity={0.3}
                   name={yField}
                   animationDuration={300}
-                  animationEasing="ease-in-out"
                 />
               ))}
             </AreaChart>
@@ -269,7 +354,6 @@ const fetchData = async () => {
                   fill={getColor(idx)}
                   name={yField}
                   animationDuration={300}
-                  animationEasing="ease-in-out"
                 />
               ))}
             </BarChart>
@@ -277,25 +361,25 @@ const fetchData = async () => {
         );
 
       case 'pie':
-        const pieDataKey = filteredYFields[0] || config.yAxis;
+        const pieField = filteredYFields[0] || 'value';
         return (
           <ResponsiveContainer width="100%" height="100%">
             <PieChart>
-              <Pie 
-                data={data.slice(0, 10)} 
-                dataKey={pieDataKey} 
-                nameKey="_time" 
-                cx="50%" 
-                cy="50%" 
-                outerRadius={80} 
+              <Pie
+                data={data}
+                dataKey={pieField}
+                nameKey="_time"
+                cx="50%"
+                cy="50%"
+                outerRadius={80}
                 label
-                isAnimationActive={true}
+                animationDuration={300}
               >
-                {data.slice(0, 10).map((entry, index) => (
+                {data.map((entry, index) => (
                   <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                 ))}
               </Pie>
-              <Tooltip contentStyle={{ background: theme.card, border: `1px solid ${theme.border}`, borderRadius: '6px', color: theme.text }} />
+              <Tooltip contentStyle={{ background: theme.card, border: `1px solid ${theme.border}`, color: theme.text }} />
               {config.showLegend && <Legend wrapperStyle={{ color: theme.text }} />}
             </PieChart>
           </ResponsiveContainer>
@@ -307,18 +391,21 @@ const fetchData = async () => {
             <ScatterChart {...chartProps}>
               {config.showGrid && <CartesianGrid strokeDasharray="3 3" stroke={theme.chartGrid} />}
               <XAxis dataKey="_time" tick={{ fill: theme.chartText, fontSize: 11 }} stroke={theme.chartAxis} />
-              <YAxis tick={{ fill: theme.chartText, fontSize: 11 }} stroke={theme.chartAxis} />
-              <Tooltip contentStyle={{ background: theme.card, border: `1px solid ${theme.border}`, borderRadius: '6px', color: theme.text }} />
+              <YAxis dataKey={filteredYFields[0] || 'value'} tick={{ fill: theme.chartText, fontSize: 11 }} stroke={theme.chartAxis} />
+              <Tooltip 
+                contentStyle={{ 
+                  background: theme.card, 
+                  border: `1px solid ${theme.border}`, 
+                  borderRadius: '6px',
+                  color: theme.text
+                }} 
+              />
               {config.showLegend && <Legend wrapperStyle={{ color: theme.text }} />}
-              {filteredYFields.map((yField, idx) => (
-                <Scatter 
-                  key={yField}
-                  dataKey={yField} 
-                  fill={getColor(idx)} 
-                  name={yField}
-                  isAnimationActive={true} 
-                />
-              ))}
+              <Scatter 
+                data={data} 
+                fill={getColor(0)}
+                animationDuration={300}
+              />
             </ScatterChart>
           </ResponsiveContainer>
         );
@@ -326,63 +413,29 @@ const fetchData = async () => {
       case 'radar':
         return (
           <ResponsiveContainer width="100%" height="100%">
-            <RadarChart data={data.slice(0, 8)}>
+            <RadarChart data={data}>
               <PolarGrid stroke={theme.chartGrid} />
-              <PolarAngleAxis dataKey="_time" tick={{ fill: theme.chartText, fontSize: 11 }} />
-              <PolarRadiusAxis tick={{ fill: theme.chartText, fontSize: 11 }} />
+              <PolarAngleAxis dataKey="_time" tick={{ fill: theme.chartText, fontSize: 10 }} />
+              <PolarRadiusAxis tick={{ fill: theme.chartText, fontSize: 10 }} />
               {filteredYFields.map((yField, idx) => (
                 <Radar 
                   key={yField}
-                  dataKey={yField} 
-                  stroke={getColor(idx)} 
-                  fill={getColor(idx)} 
-                  fillOpacity={config.fillOpacity || 0.5}
                   name={yField}
-                  isAnimationActive={true}
+                  dataKey={yField}
+                  stroke={getColor(idx)}
+                  fill={getColor(idx)}
+                  fillOpacity={0.3}
+                  animationDuration={300}
                 />
               ))}
+              <Tooltip contentStyle={{ background: theme.card, border: `1px solid ${theme.border}`, color: theme.text }} />
               {config.showLegend && <Legend wrapperStyle={{ color: theme.text }} />}
             </RadarChart>
           </ResponsiveContainer>
         );
 
-      case 'stat':
-        const statField = filteredYFields[0] || config.yAxis;
-        const values = data.map(d => d[statField] || 0);
-        const latest = values[values.length - 1] || 0;
-        const previous = values[values.length - 2] || 0;
-        const change = latest - previous;
-        const avg = values.reduce((a, b) => a + b, 0) / values.length;
-
-        return (
-          <div style={{
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-            justifyContent: 'center',
-            height: '100%'
-          }}>
-            <div style={{ fontSize: '48px', fontWeight: 'bold', color: getColor(0), marginBottom: '8px' }}>
-              {latest.toFixed(2)}
-            </div>
-            <div style={{
-              fontSize: '16px',
-              color: change >= 0 ? '#10b981' : '#ef4444',
-              marginBottom: '16px',
-              fontWeight: '600'
-            }}>
-              {change >= 0 ? '↑' : '↓'} {Math.abs(change).toFixed(2)} ({((change / previous) * 100).toFixed(1)}%)
-            </div>
-            <div style={{ display: 'flex', gap: '24px', fontSize: '14px', color: theme.textMuted }}>
-              <div>Min: <span style={{ color: theme.text, fontWeight: '600' }}>{Math.min(...values).toFixed(2)}</span></div>
-              <div>Max: <span style={{ color: theme.text, fontWeight: '600' }}>{Math.max(...values).toFixed(2)}</span></div>
-              <div>Avg: <span style={{ color: theme.text, fontWeight: '600' }}>{avg.toFixed(2)}</span></div>
-            </div>
-          </div>
-        );
-
       case 'table':
-        const columns = Object.keys(data[0] || {}).filter(key => !key.startsWith('_'));
+        const columns = data.length > 0 ? Object.keys(data[0]).filter(k => !k.startsWith('_')) : [];
         return (
           <div style={{ height: '100%', overflow: 'auto' }}>
             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px' }}>
@@ -465,11 +518,23 @@ const fetchData = async () => {
             borderRadius: '50%',
             background: getColor(0),
             boxShadow: `0 0 8px ${getColor(0)}`,
-            animation: 'pulse 2s infinite'
+            animation: isRealtimeMode ? 'pulse 2s infinite' : 'none'
           }} />
           {config.title}
         </div>
         <div style={{ display: 'flex', gap: '4px' }}>
+          <button onClick={toggleMode} style={{
+            padding: '6px',
+            background: 'transparent',
+            border: 'none',
+            color: isRealtimeMode ? '#10b981' : theme.textMuted,
+            cursor: 'pointer',
+            borderRadius: '4px',
+            transition: 'all 0.3s ease'
+          }} 
+          title={isRealtimeMode ? 'Real-time mode (click to switch to polling)' : 'Polling mode (click to switch to real-time)'}>
+            {isRealtimeMode ? <Wifi size={14} /> : <WifiOff size={14} />}
+          </button>
           <button onClick={() => fetchData()} style={{
             padding: '6px',
             background: 'transparent',
@@ -567,8 +632,8 @@ const fetchData = async () => {
         }}>
           <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
             <div style={{ display: 'flex', gap: '4px', alignItems: 'center' }}>
-              <Play size={10} />
-              <span>{config.refreshInterval > 0 ? `${config.refreshInterval / 1000}s` : 'Manual'}</span>
+              {isRealtimeMode ? <Wifi size={10} /> : <Play size={10} />}
+              <span>{isRealtimeMode ? 'Real-time' : (config.refreshInterval > 0 ? `${config.refreshInterval / 1000}s` : 'Manual')}</span>
             </div>
             <div>•</div>
             <div style={{ textTransform: 'capitalize' }}>{config.vizType}</div>
