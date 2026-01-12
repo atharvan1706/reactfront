@@ -688,8 +688,8 @@ export default function ScadaDesignerPro({ config, onSave, onClose, darkMode }) 
       type: 'scada',
       components,
       lines,
-      width: config?.width || 2,
-      height: config?.height || 2,
+      width: config?.width || 12,  // Full width by default
+      height: config?.height || 8,  // Larger height by default
       createdAt: new Date().toISOString()
     };
     if (onSave) onSave(diagram);
