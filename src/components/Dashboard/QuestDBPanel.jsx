@@ -247,7 +247,7 @@ function QuestDBPanel({ config, onEdit, onDelete, onDuplicate, onResize, style, 
       return (
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%' }}>
           <div style={{ textAlign: 'center', color: '#6b7280' }}>
-            <Database size={32} style={{ marginBottom: '8px', opacity: 0.5' }} />
+            <Database size={32} style={{ marginBottom: '8px', opacity: 0.5 }} />
             <p style={{ fontSize: '13px' }}>No data available</p>
           </div>
         </div>
