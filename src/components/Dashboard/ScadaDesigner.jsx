@@ -1,8 +1,8 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { X as LucideX, Save, Trash2, Plus, Move, Pencil, Grid, ZoomIn, ZoomOut, Download, Upload, RotateCw, Check, Database, Tag } from 'lucide-react';
+import { X as LucideX, Save, Trash2, Plus, Move, Pencil, ZoomIn, ZoomOut, Download, Upload, RotateCw, Check, Database, Tag, Maximize2, Grid3x3, Copy, Layers, Settings, Hand, MousePointer2, Minus } from 'lucide-react';
 import questdbService from '../../services/questdb';
 
-// Import all SVG files (keeping your existing imports)
+// Import all SVG files
 import BlowdownValve from '../../renderer/assets/3-D Blowdown valve.svg';
 import PressureBalancedDiaphragm from '../../renderer/assets/3-D Pressure-balanced diaphragm actuated.svg';
 import RegulatorExternalPressure from '../../renderer/assets/3-D Regulator with external pressure tap.svg';
@@ -43,7 +43,9 @@ import SelfPrimingCentrifugalPump from '../../renderer/assets/Self-priming centr
 import SRHPump from '../../renderer/assets/SRH_pump.svg';
 import VerticalPump9 from '../../renderer/assets/Vertical pump 9.svg';
 import YellowPump from '../../renderer/assets/Yellow pump.svg';
+
 const X = LucideX;
+
 const SVG_COMPONENTS = {
   blowdownValve: { name: 'Blowdown Valve', width: 60, height: 80, svg: BlowdownValve, color: '#ef4444' },
   pressureBalancedDiaphragm: { name: 'Pressure Balanced Diaphragm', width: 70, height: 90, svg: PressureBalancedDiaphragm, color: '#06b6d4' },
@@ -190,166 +192,264 @@ function ComponentTagModal({ component, availableTags, onSave, onClose, darkMode
   );
 }
 
-export default function ScadaDesigner({ config, onSave, onClose, darkMode }) {
+export default function ScadaDesignerPro({ config, onSave, onClose, darkMode }) {
   const [components, setComponents] = useState(config?.components || []);
   const [lines, setLines] = useState(config?.lines || []);
   const [selectedTool, setSelectedTool] = useState('select');
   const [selectedComponent, setSelectedComponent] = useState(null);
   const [selectedLine, setSelectedLine] = useState(null);
+  const [selectedItems, setSelectedItems] = useState([]); // Multiple selection
   const [draggingComponent, setDraggingComponent] = useState(null);
   const [drawingLine, setDrawingLine] = useState(null);
+  const [lineControlPoint, setLineControlPoint] = useState(null); // For editing line paths
   const [zoom, setZoom] = useState(1);
   const [pan, setPan] = useState({ x: 0, y: 0 });
+  const [isPanning, setIsPanning] = useState(false);
+  const [panStart, setPanStart] = useState({ x: 0, y: 0 });
   const [showGrid, setShowGrid] = useState(true);
+  const [snapToGrid, setSnapToGrid] = useState(true);
+  const [gridSize] = useState(10);
   const [componentToAdd, setComponentToAdd] = useState(null);
   const [lineColor, setLineColor] = useState('#3b82f6');
   const [lineWidth, setLineWidth] = useState(3);
+  const [lineStyle, setLineStyle] = useState('solid');
   const [saved, setSaved] = useState(false);
   const [diagramTitle, setDiagramTitle] = useState(config?.title || 'SCADA Diagram');
   const [showTagModal, setShowTagModal] = useState(false);
   const [editingComponentTag, setEditingComponentTag] = useState(null);
   const [availableTags, setAvailableTags] = useState([]);
-  const [tagValues, setTagValues] = useState({}); 
+  const [tagValues, setTagValues] = useState({});
+  const [selectionBox, setSelectionBox] = useState(null);
+  const [history, setHistory] = useState([]);
+  const [historyIndex, setHistoryIndex] = useState(-1);
   const canvasRef = useRef(null);
 
   const theme = darkMode ? {
-    bg: '#0f1117', card: '#1a1d29', hover: '#232837', text: '#e5e7eb',
-    textSecondary: '#9ca3af', border: '#2d3348', accent: '#667eea', success: '#10b981'
+    bg: '#0a0b0f',
+    card: '#13141a',
+    hover: '#1a1c24',
+    text: '#e5e7eb',
+    textSecondary: '#9ca3af',
+    border: '#242731',
+    accent: '#5b68ea',
+    success: '#10b981',
+    danger: '#ef4444'
   } : {
-    bg: '#ffffff', card: '#f9fafb', hover: '#f3f4f6', text: '#111827',
-    textSecondary: '#6b7280', border: '#e5e7eb', accent: '#667eea', success: '#10b981'
+    bg: '#fafafa',
+    card: '#ffffff',
+    hover: '#f5f5f5',
+    text: '#111827',
+    textSecondary: '#6b7280',
+    border: '#e5e7eb',
+    accent: '#5b68ea',
+    success: '#10b981',
+    danger: '#ef4444'
   };
+
+  // Snap to grid function
+  const snapToGridFn = (value) => {
+    if (!snapToGrid) return value;
+    return Math.round(value / gridSize) * gridSize;
+  };
+
+  // Save state to history for undo/redo
+  const saveToHistory = () => {
+    const newState = { components: [...components], lines: [...lines] };
+    const newHistory = history.slice(0, historyIndex + 1);
+    newHistory.push(newState);
+    setHistory(newHistory);
+    setHistoryIndex(newHistory.length - 1);
+  };
+
+  // Undo/Redo
+  const handleUndo = () => {
+    if (historyIndex > 0) {
+      const prevState = history[historyIndex - 1];
+      setComponents(prevState.components);
+      setLines(prevState.lines);
+      setHistoryIndex(historyIndex - 1);
+    }
+  };
+
+  const handleRedo = () => {
+    if (historyIndex < history.length - 1) {
+      const nextState = history[historyIndex + 1];
+      setComponents(nextState.components);
+      setLines(nextState.lines);
+      setHistoryIndex(historyIndex + 1);
+    }
+  };
+
+  // Keyboard shortcuts
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      // Delete
+      if (e.key === 'Delete' || e.key === 'Backspace') {
+        if (selectedComponent) {
+          handleDeleteComponent();
+        } else if (selectedLine) {
+          handleDeleteLine();
+        }
+      }
+      // Undo/Redo
+      if (e.ctrlKey || e.metaKey) {
+        if (e.key === 'z' && !e.shiftKey) {
+          e.preventDefault();
+          handleUndo();
+        } else if (e.key === 'z' && e.shiftKey || e.key === 'y') {
+          e.preventDefault();
+          handleRedo();
+        }
+        // Copy
+        if (e.key === 'c' && selectedComponent) {
+          e.preventDefault();
+          handleCopyComponent();
+        }
+        // Select All
+        if (e.key === 'a') {
+          e.preventDefault();
+          setSelectedItems(components.map(c => c.id));
+        }
+      }
+      // Escape - deselect
+      if (e.key === 'Escape') {
+        setSelectedComponent(null);
+        setSelectedLine(null);
+        setSelectedItems([]);
+        setDrawingLine(null);
+        setSelectedTool('select');
+      }
+      // Tool shortcuts
+      if (e.key === 'v' || e.key === 'V') {
+        setSelectedTool('select');
+        setComponentToAdd(null);
+      }
+      if (e.key === 'l' || e.key === 'L') {
+        setSelectedTool('line');
+        setComponentToAdd(null);
+      }
+      if (e.key === 'h' || e.key === 'H') {
+        setSelectedTool('pan');
+        setComponentToAdd(null);
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [selectedComponent, selectedLine, components, historyIndex, history]);
 
   useEffect(() => {
-  const fetchTags = async () => {
-    try {
-      const sql = `SELECT * FROM scada_wide LIMIT 1`;
-      const result = await questdbService.query(sql);
-      
-      if (result.length > 0) {
-        const columns = Object.keys(result[0]).filter(col => col !== 'timestamp' && col !== 'bridge_id');
-        setAvailableTags(columns);
-      }
-    } catch (error) {
-      console.error('Error fetching tags from scada_wide:', error);
-    }
-  };
-  fetchTags();
-}, []);
-
-// NEW useEffect - ADD THIS RIGHT AFTER THE ABOVE
-useEffect(() => {
-  const fetchTagValues = async () => {
-    try {
-      const tagNames = [...new Set(
-        components.filter(comp => comp.tagName).map(comp => comp.tagName)
-      )];
-      
-      if (tagNames.length === 0) return;
-
-      const columnsToSelect = ['timestamp', ...tagNames].join(', ');
-      const sql = `SELECT ${columnsToSelect} FROM scada_wide ORDER BY timestamp DESC LIMIT 1`;
-      
-      const result = await questdbService.query(sql);
-      
-      if (result.length > 0) {
-        const valueMap = {};
-        const latestRow = result[0];
+    const fetchTags = async () => {
+      try {
+        const sql = `SELECT * FROM scada_wide LIMIT 1`;
+        const result = await questdbService.query(sql);
         
-        tagNames.forEach(tagName => {
-          if (latestRow[tagName] !== undefined && latestRow[tagName] !== null) {
-            valueMap[tagName] = String(latestRow[tagName]);
-          }
-        });
-        
-        setTagValues(valueMap);
+        if (result.length > 0) {
+          const columns = Object.keys(result[0]).filter(col => col !== 'timestamp' && col !== 'bridge_id');
+          setAvailableTags(columns);
+        }
+      } catch (error) {
+        console.error('Error fetching tags from scada_wide:', error);
       }
-    } catch (error) {
-      console.error('Error fetching tag values:', error);
+    };
+    fetchTags();
+  }, []);
+
+  useEffect(() => {
+    const fetchTagValues = async () => {
+      try {
+        const tagNames = [...new Set(
+          components.filter(comp => comp.tagName).map(comp => comp.tagName)
+        )];
+        
+        if (tagNames.length === 0) return;
+
+        const columnsToSelect = ['timestamp', ...tagNames].join(', ');
+        const sql = `SELECT ${columnsToSelect} FROM scada_wide ORDER BY timestamp DESC LIMIT 1`;
+        
+        const result = await questdbService.query(sql);
+        
+        if (result.length > 0) {
+          const valueMap = {};
+          const latestRow = result[0];
+          
+          tagNames.forEach(tagName => {
+            if (latestRow[tagName] !== undefined && latestRow[tagName] !== null) {
+              valueMap[tagName] = String(latestRow[tagName]);
+            }
+          });
+          
+          setTagValues(valueMap);
+        }
+      } catch (error) {
+        console.error('Error fetching tag values:', error);
+      }
+    };
+
+    fetchTagValues();
+    const interval = setInterval(fetchTagValues, 2000);
+    return () => clearInterval(interval);
+  }, [components]);
+
+  const getComponentColor = (comp) => {
+    if (!comp.tagName || !tagValues[comp.tagName]) {
+      return comp.defaultColor || '#64748b';
     }
-  };
 
-  fetchTagValues();
-  const interval = setInterval(fetchTagValues, 2000);
-  return () => clearInterval(interval);
-}, [components]);
-
-// ADD THESE THREE FUNCTIONS
-const getComponentColor = (comp) => {
-  if (!comp.tagName || !tagValues[comp.tagName]) {
-    return comp.defaultColor || '#64748b';
-  }
-
-  const tagValue = tagValues[comp.tagName];
-  const mapping = comp.colorMappings?.find(m => String(m.value) === String(tagValue));
-  
-  return mapping ? mapping.color : (comp.defaultColor || '#64748b');
-};
-
-const getComponentStatus = (comp) => {
-  if (!comp.tagName || !tagValues[comp.tagName]) {
-    return null;
-  }
-
-  const tagValue = tagValues[comp.tagName];
-  const mapping = comp.colorMappings?.find(m => String(m.value) === String(tagValue));
-  
-  return mapping?.label || tagValue;
-};
-const getSVGColorFilter = (hexColor) => {
-  const hex = hexColor.replace('#', '');
-  const r = parseInt(hex.substr(0, 2), 16) / 255;
-  const g = parseInt(hex.substr(2, 2), 16) / 255;
-  const b = parseInt(hex.substr(4, 2), 16) / 255;
-  const brightness = (r + g + b) / 3;
-  const saturation = Math.max(r, g, b) - Math.min(r, g, b);
-  return `brightness(${brightness * 2}) saturate(${saturation * 5 + 1}) hue-rotate(${getHueRotation(r, g, b)}deg)`;
-};
-
-const getHueRotation = (r, g, b) => {
-  const max = Math.max(r, g, b);
-  const min = Math.min(r, g, b);
-  let h = 0;
-  if (max !== min) {
-    const d = max - min;
-    if (max === r) {
-      h = ((g - b) / d + (g < b ? 6 : 0)) / 6;
-    } else if (max === g) {
-      h = ((b - r) / d + 2) / 6;
-    } else {
-      h = ((r - g) / d + 4) / 6;
-    }
-  }
-  return Math.round(h * 360);
-};
-const fetchSingleTagValue = async (tagName) => {
-  if (!tagName) return;
-  try {
-    const sql = `SELECT timestamp, ${tagName} FROM scada_wide ORDER BY timestamp DESC LIMIT 1`;
-    const result = await questdbService.query(sql);
+    const tagValue = tagValues[comp.tagName];
+    const mapping = comp.colorMappings?.find(m => String(m.value) === String(tagValue));
     
-    if (result.length > 0 && result[0][tagName] !== undefined) {
-      setTagValues(prev => ({
-        ...prev,
-        [tagName]: String(result[0][tagName])
-      }));
-    }
-  } catch (error) {
-    console.error('Error fetching single tag value:', error);
-  }
-};
+    return mapping ? mapping.color : (comp.defaultColor || '#64748b');
+  };
 
-  const handleCanvasClick = (e) => {
+  const getComponentStatus = (comp) => {
+    if (!comp.tagName || !tagValues[comp.tagName]) {
+      return null;
+    }
+
+    const tagValue = tagValues[comp.tagName];
+    const mapping = comp.colorMappings?.find(m => String(m.value) === String(tagValue));
+    
+    return mapping?.label || tagValue;
+  };
+
+  const fetchSingleTagValue = async (tagName) => {
+    if (!tagName) return;
+    try {
+      const sql = `SELECT timestamp, ${tagName} FROM scada_wide ORDER BY timestamp DESC LIMIT 1`;
+      const result = await questdbService.query(sql);
+      
+      if (result.length > 0 && result[0][tagName] !== undefined) {
+        setTagValues(prev => ({
+          ...prev,
+          [tagName]: String(result[0][tagName])
+        }));
+      }
+    } catch (error) {
+      console.error('Error fetching single tag value:', error);
+    }
+  };
+
+  const handleCanvasMouseDown = (e) => {
+    if (e.button === 2) return; // Ignore right click
+    
     const rect = canvasRef.current.getBoundingClientRect();
     const x = (e.clientX - rect.left - pan.x) / zoom;
     const y = (e.clientY - rect.top - pan.y) / zoom;
+
+    // Pan tool or space key
+    if (selectedTool === 'pan' || e.spaceKey || e.button === 1) {
+      setIsPanning(true);
+      setPanStart({ x: e.clientX - pan.x, y: e.clientY - pan.y });
+      return;
+    }
 
     if (selectedTool === 'component' && componentToAdd) {
       const newComponent = {
         id: `comp_${Date.now()}`,
         type: componentToAdd,
-        x: x - SVG_COMPONENTS[componentToAdd].width / 2,
-        y: y - SVG_COMPONENTS[componentToAdd].height / 2,
+        x: snapToGridFn(x - SVG_COMPONENTS[componentToAdd].width / 2),
+        y: snapToGridFn(y - SVG_COMPONENTS[componentToAdd].height / 2),
         rotation: 0,
         label: SVG_COMPONENTS[componentToAdd].name,
         tagName: '',
@@ -357,65 +457,139 @@ const fetchSingleTagValue = async (tagName) => {
           { value: '0', color: '#ef4444', label: 'Off' },
           { value: '1', color: '#10b981', label: 'On' }
         ],
-        defaultColor: '#64748b',
-        config: {}
+        defaultColor: '#64748b'
       };
       setComponents([...components, newComponent]);
+      saveToHistory();
       setSelectedComponent(newComponent.id);
-      setSelectedTool('select');
       setComponentToAdd(null);
-    } else if (selectedTool === 'select') {
+      setSelectedTool('select');
+    } else if (selectedTool === 'select' && !e.target.closest('[data-component]') && !e.target.closest('[data-line]')) {
+      // Start selection box
+      setSelectionBox({ startX: x, startY: y, endX: x, endY: y });
       setSelectedComponent(null);
       setSelectedLine(null);
+      setSelectedItems([]);
     } else if (selectedTool === 'line' && drawingLine) {
+      // Cancel line drawing
       setDrawingLine(null);
+    }
+  };
+
+  const handleCanvasMouseMove = (e) => {
+    const rect = canvasRef.current.getBoundingClientRect();
+    const x = (e.clientX - rect.left - pan.x) / zoom;
+    const y = (e.clientY - rect.top - pan.y) / zoom;
+
+    if (isPanning) {
+      setPan({
+        x: e.clientX - panStart.x,
+        y: e.clientY - panStart.y
+      });
+      return;
+    }
+
+    if (draggingComponent && selectedTool === 'select') {
+      const deltaX = (e.clientX - draggingComponent.startX) / zoom;
+      const deltaY = (e.clientY - draggingComponent.startY) / zoom;
+      
+      setComponents(components.map(c => 
+        c.id === draggingComponent.id 
+          ? { 
+              ...c, 
+              x: snapToGridFn(Math.max(0, draggingComponent.initialX + deltaX)), 
+              y: snapToGridFn(Math.max(0, draggingComponent.initialY + deltaY)) 
+            }
+          : c
+      ));
+    } else if (drawingLine && selectedTool === 'line') {
+      setDrawingLine({ ...drawingLine, endX: x, endY: y });
+    } else if (selectionBox) {
+      setSelectionBox({ ...selectionBox, endX: x, endY: y });
+    }
+  };
+
+  const handleCanvasMouseUp = () => {
+    if (isPanning) {
+      setIsPanning(false);
+    }
+    
+    if (draggingComponent) {
+      saveToHistory();
+      setDraggingComponent(null);
+    }
+    
+    if (selectionBox) {
+      // Select components within box
+      const minX = Math.min(selectionBox.startX, selectionBox.endX);
+      const maxX = Math.max(selectionBox.startX, selectionBox.endX);
+      const minY = Math.min(selectionBox.startY, selectionBox.endY);
+      const maxY = Math.max(selectionBox.startY, selectionBox.endY);
+      
+      const selected = components.filter(comp => {
+        const svgData = SVG_COMPONENTS[comp.type];
+        return comp.x >= minX && 
+               comp.x + svgData.width <= maxX &&
+               comp.y >= minY && 
+               comp.y + svgData.height <= maxY;
+      }).map(c => c.id);
+      
+      setSelectedItems(selected);
+      setSelectionBox(null);
     }
   };
 
   const handleComponentMouseDown = (e, comp) => {
     e.stopPropagation();
+    
     if (selectedTool === 'select') {
       setSelectedComponent(comp.id);
       setSelectedLine(null);
       setDraggingComponent({ 
-        id: comp.id, startX: e.clientX, startY: e.clientY,
-        initialX: comp.x, initialY: comp.y
+        id: comp.id, 
+        startX: e.clientX, 
+        startY: e.clientY,
+        initialX: comp.x, 
+        initialY: comp.y
       });
     } else if (selectedTool === 'line') {
       const svgData = SVG_COMPONENTS[comp.type];
       const centerX = comp.x + svgData.width / 2;
       const centerY = comp.y + svgData.height / 2;
+      
       if (!drawingLine) {
-        setDrawingLine({ from: comp.id, startX: centerX, startY: centerY, endX: centerX, endY: centerY });
+        setDrawingLine({ 
+          from: comp.id, 
+          startX: centerX, 
+          startY: centerY, 
+          endX: centerX, 
+          endY: centerY 
+        });
       } else if (drawingLine.from !== comp.id) {
-        setLines([...lines, {
-          id: `line_${Date.now()}`, from: drawingLine.from, to: comp.id,
-          color: lineColor, width: lineWidth, style: 'solid'
-        }]);
+        const newLine = {
+          id: `line_${Date.now()}`, 
+          from: drawingLine.from, 
+          to: comp.id,
+          color: lineColor, 
+          width: lineWidth, 
+          style: lineStyle,
+          points: [] // For future bezier curve support
+        };
+        setLines([...lines, newLine]);
+        saveToHistory();
         setDrawingLine(null);
         setSelectedTool('select');
       }
     }
   };
 
-  const handleMouseMove = (e) => {
-    if (draggingComponent && selectedTool === 'select') {
-      const deltaX = (e.clientX - draggingComponent.startX) / zoom;
-      const deltaY = (e.clientY - draggingComponent.startY) / zoom;
-      setComponents(components.map(c => 
-        c.id === draggingComponent.id 
-          ? { ...c, x: Math.max(0, draggingComponent.initialX + deltaX), y: Math.max(0, draggingComponent.initialY + deltaY) }
-          : c
-      ));
-    } else if (drawingLine && selectedTool === 'line') {
-      const rect = canvasRef.current.getBoundingClientRect();
-      const x = (e.clientX - rect.left - pan.x) / zoom;
-      const y = (e.clientY - rect.top - pan.y) / zoom;
-      setDrawingLine({ ...drawingLine, endX: x, endY: y });
+  const handleLineClick = (e, line) => {
+    e.stopPropagation();
+    if (selectedTool === 'select') {
+      setSelectedLine(line.id);
+      setSelectedComponent(null);
     }
   };
-
-  const handleMouseUp = () => setDraggingComponent(null);
 
   const handleConfigureTag = () => {
     if (selectedComponent) {
@@ -425,18 +599,19 @@ const fetchSingleTagValue = async (tagName) => {
     }
   };
 
-const handleSaveTagConfig = (updatedComponent) => {
-  setComponents(components.map(c => c.id === updatedComponent.id ? updatedComponent : c));
-  setShowTagModal(false);
-  setEditingComponentTag(null);
-  // Immediately fetch the tag value
-  fetchSingleTagValue(updatedComponent.tagName);
-};
+  const handleSaveTagConfig = (updatedComponent) => {
+    setComponents(components.map(c => c.id === updatedComponent.id ? updatedComponent : c));
+    saveToHistory();
+    setShowTagModal(false);
+    setEditingComponentTag(null);
+    fetchSingleTagValue(updatedComponent.tagName);
+  };
 
   const handleDeleteComponent = () => {
     if (selectedComponent) {
       setComponents(components.filter(c => c.id !== selectedComponent));
       setLines(lines.filter(l => l.from !== selectedComponent && l.to !== selectedComponent));
+      saveToHistory();
       setSelectedComponent(null);
     }
   };
@@ -444,7 +619,23 @@ const handleSaveTagConfig = (updatedComponent) => {
   const handleDeleteLine = () => {
     if (selectedLine) {
       setLines(lines.filter(l => l.id !== selectedLine));
+      saveToHistory();
       setSelectedLine(null);
+    }
+  };
+
+  const handleCopyComponent = () => {
+    if (selectedComponent) {
+      const comp = components.find(c => c.id === selectedComponent);
+      const newComponent = {
+        ...comp,
+        id: `comp_${Date.now()}`,
+        x: comp.x + 20,
+        y: comp.y + 20
+      };
+      setComponents([...components, newComponent]);
+      saveToHistory();
+      setSelectedComponent(newComponent.id);
     }
   };
 
@@ -453,6 +644,7 @@ const handleSaveTagConfig = (updatedComponent) => {
       setComponents(components.map(c => 
         c.id === selectedComponent ? { ...c, rotation: (c.rotation + 90) % 360 } : c
       ));
+      saveToHistory();
     }
   };
 
@@ -473,7 +665,12 @@ const handleSaveTagConfig = (updatedComponent) => {
   };
 
   const handleExport = () => {
-    const diagram = { title: diagramTitle, components, lines, exportedAt: new Date().toISOString() };
+    const diagram = { 
+      title: diagramTitle, 
+      components, 
+      lines, 
+      exportedAt: new Date().toISOString() 
+    };
     const dataBlob = new Blob([JSON.stringify(diagram, null, 2)], { type: 'application/json' });
     const url = URL.createObjectURL(dataBlob);
     const link = document.createElement('a');
@@ -493,6 +690,7 @@ const handleSaveTagConfig = (updatedComponent) => {
         setComponents(imported.components || []);
         setLines(imported.lines || []);
         if (imported.title) setDiagramTitle(imported.title);
+        saveToHistory();
       } catch (error) {
         alert('Failed to import diagram.');
       }
@@ -505,265 +703,997 @@ const handleSaveTagConfig = (updatedComponent) => {
     const fromComp = components.find(c => c.id === line.from);
     const toComp = components.find(c => c.id === line.to);
     if (!fromComp || !toComp) return null;
+    
+    const fromSvg = SVG_COMPONENTS[fromComp.type];
+    const toSvg = SVG_COMPONENTS[toComp.type];
+    
     return {
-      x1: fromComp.x + SVG_COMPONENTS[fromComp.type].width / 2,
-      y1: fromComp.y + SVG_COMPONENTS[fromComp.type].height / 2,
-      x2: toComp.x + SVG_COMPONENTS[toComp.type].width / 2,
-      y2: toComp.y + SVG_COMPONENTS[toComp.type].height / 2
+      x1: fromComp.x + fromSvg.width / 2,
+      y1: fromComp.y + fromSvg.height / 2,
+      x2: toComp.x + toSvg.width / 2,
+      y2: toComp.y + toSvg.height / 2
     };
   };
 
+  // Tool button component
+  const ToolButton = ({ tool, icon: Icon, label, shortcut }) => (
+    <button
+      onClick={() => {
+        setSelectedTool(tool);
+        setComponentToAdd(null);
+        setDrawingLine(null);
+      }}
+      style={{
+        padding: '10px 14px',
+        background: selectedTool === tool ? theme.accent : theme.card,
+        border: `2px solid ${selectedTool === tool ? theme.accent : theme.border}`,
+        borderRadius: '8px',
+        color: selectedTool === tool ? 'white' : theme.text,
+        cursor: 'pointer',
+        display: 'flex',
+        alignItems: 'center',
+        gap: '8px',
+        fontSize: '13px',
+        fontWeight: '600',
+        transition: 'all 0.2s ease'
+      }}
+      title={`${label} ${shortcut ? `(${shortcut})` : ''}`}
+    >
+      <Icon size={18} />
+      <span>{label}</span>
+      {shortcut && <span style={{ fontSize: '11px', opacity: 0.6, marginLeft: 'auto' }}>{shortcut}</span>}
+    </button>
+  );
+
   return (
-    <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: '20px' }}>
-      <div style={{ background: theme.bg, borderRadius: '16px', width: '95vw', height: '90vh', display: 'flex', flexDirection: 'column', boxShadow: '0 20px 60px rgba(0,0,0,0.5)' }}>
-        <div style={{ padding: '16px 24px', borderBottom: `2px solid ${theme.border}`, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+    <div style={{ 
+      position: 'fixed', 
+      inset: 0, 
+      background: 'rgba(0,0,0,0.85)', 
+      display: 'flex', 
+      alignItems: 'center', 
+      justifyContent: 'center', 
+      zIndex: 1000, 
+      backdropFilter: 'blur(4px)' 
+    }}>
+      <div style={{ 
+        background: theme.bg, 
+        borderRadius: '12px', 
+        width: '98vw', 
+        height: '95vh', 
+        display: 'flex', 
+        flexDirection: 'column', 
+        boxShadow: '0 25px 80px rgba(0,0,0,0.6)',
+        border: `1px solid ${theme.border}`
+      }}>
+        {/* Top Toolbar */}
+        <div style={{ 
+          padding: '12px 20px', 
+          borderBottom: `1px solid ${theme.border}`, 
+          display: 'flex', 
+          justifyContent: 'space-between', 
+          alignItems: 'center',
+          background: theme.card
+        }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-            <h2 style={{ margin: 0, color: theme.text, fontSize: '20px', fontWeight: '700' }}>SCADA Designer Pro</h2>
-            <input type="text" value={diagramTitle} onChange={(e) => setDiagramTitle(e.target.value)} placeholder="Diagram Title" style={{ padding: '8px 12px', background: theme.card, border: `1px solid ${theme.border}`, borderRadius: '8px', color: theme.text, fontSize: '14px', minWidth: '200px' }} />
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <Layers size={20} color={theme.accent} />
+              <h2 style={{ margin: 0, color: theme.text, fontSize: '16px', fontWeight: '700' }}>
+                SCADA Designer
+              </h2>
+            </div>
+            <div style={{ height: '24px', width: '1px', background: theme.border }} />
+            <input 
+              type="text" 
+              value={diagramTitle} 
+              onChange={(e) => setDiagramTitle(e.target.value)} 
+              placeholder="Diagram Title" 
+              style={{ 
+                padding: '6px 12px', 
+                background: theme.bg, 
+                border: `1px solid ${theme.border}`, 
+                borderRadius: '6px', 
+                color: theme.text, 
+                fontSize: '13px', 
+                minWidth: '200px',
+                fontWeight: '500'
+              }} 
+            />
           </div>
-          <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
-            <button onClick={handleExport} style={{ padding: '10px 18px', background: theme.card, border: `1px solid ${theme.border}`, borderRadius: '8px', color: theme.text, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px', fontSize: '14px', fontWeight: '600' }}>
-              <Download size={16} />Export
+          
+          <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+            <div style={{ display: 'flex', gap: '4px', marginRight: '8px' }}>
+              <button 
+                onClick={handleUndo} 
+                disabled={historyIndex <= 0}
+                style={{ 
+                  padding: '6px 10px', 
+                  background: theme.card, 
+                  border: `1px solid ${theme.border}`, 
+                  borderRadius: '6px', 
+                  color: historyIndex <= 0 ? theme.textSecondary : theme.text, 
+                  cursor: historyIndex <= 0 ? 'not-allowed' : 'pointer',
+                  fontSize: '12px',
+                  fontWeight: '600'
+                }}
+                title="Undo (Ctrl+Z)"
+              >
+                ↶ Undo
+              </button>
+              <button 
+                onClick={handleRedo} 
+                disabled={historyIndex >= history.length - 1}
+                style={{ 
+                  padding: '6px 10px', 
+                  background: theme.card, 
+                  border: `1px solid ${theme.border}`, 
+                  borderRadius: '6px', 
+                  color: historyIndex >= history.length - 1 ? theme.textSecondary : theme.text, 
+                  cursor: historyIndex >= history.length - 1 ? 'not-allowed' : 'pointer',
+                  fontSize: '12px',
+                  fontWeight: '600'
+                }}
+                title="Redo (Ctrl+Y)"
+              >
+                ↷ Redo
+              </button>
+            </div>
+            
+            <button 
+              onClick={handleExport} 
+              style={{ 
+                padding: '8px 14px', 
+                background: theme.card, 
+                border: `1px solid ${theme.border}`, 
+                borderRadius: '6px', 
+                color: theme.text, 
+                cursor: 'pointer', 
+                display: 'flex', 
+                alignItems: 'center', 
+                gap: '6px', 
+                fontSize: '13px', 
+                fontWeight: '600' 
+              }}
+            >
+              <Download size={16} />
+              Export
             </button>
-            <label style={{ padding: '10px 18px', background: theme.card, border: `1px solid ${theme.border}`, borderRadius: '8px', color: theme.text, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px', fontSize: '14px', fontWeight: '600' }}>
-              <Upload size={16} />Import
+            
+            <label style={{ 
+              padding: '8px 14px', 
+              background: theme.card, 
+              border: `1px solid ${theme.border}`, 
+              borderRadius: '6px', 
+              color: theme.text, 
+              cursor: 'pointer', 
+              display: 'flex', 
+              alignItems: 'center', 
+              gap: '6px', 
+              fontSize: '13px', 
+              fontWeight: '600' 
+            }}>
+              <Upload size={16} />
+              Import
               <input type="file" accept=".json" onChange={handleImport} style={{ display: 'none' }} />
             </label>
-            <button onClick={handleSave} style={{ padding: '10px 20px', background: saved ? theme.success : 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)', border: 'none', borderRadius: '8px', color: 'white', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px', fontSize: '14px', fontWeight: '600' }}>
+            
+            <button 
+              onClick={handleSave} 
+              style={{ 
+                padding: '8px 16px', 
+                background: saved ? theme.success : theme.accent, 
+                border: 'none', 
+                borderRadius: '6px', 
+                color: 'white', 
+                cursor: 'pointer', 
+                display: 'flex', 
+                alignItems: 'center', 
+                gap: '6px', 
+                fontSize: '13px', 
+                fontWeight: '600',
+                transition: 'all 0.2s ease'
+              }}
+            >
               {saved ? <Check size={16} /> : <Save size={16} />}
               {saved ? 'Saved!' : 'Save'}
             </button>
-            <button onClick={onClose} style={{ padding: '8px', background: 'transparent', border: 'none', color: theme.textSecondary, cursor: 'pointer' }}>
-              <X size={20} />
+            
+            <button 
+              onClick={onClose} 
+              style={{ 
+                padding: '8px', 
+                background: 'transparent', 
+                border: 'none', 
+                color: theme.textSecondary, 
+                cursor: 'pointer' 
+              }}
+            >
+              <X size={18} />
             </button>
           </div>
         </div>
 
         <div style={{ display: 'flex', flex: 1, overflow: 'hidden' }}>
-          <div style={{ width: '300px', borderRight: `2px solid ${theme.border}`, padding: '20px', overflowY: 'auto', background: theme.card }}>
-            <h3 style={{ margin: '0 0 16px', color: theme.text, fontSize: '15px', fontWeight: '700' }}>TOOLS</h3>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginBottom: '24px' }}>
-              <button onClick={() => { setSelectedTool('select'); setComponentToAdd(null); setDrawingLine(null); }} style={{ padding: '12px 16px', background: selectedTool === 'select' ? theme.accent : theme.bg, border: `2px solid ${selectedTool === 'select' ? theme.accent : theme.border}`, borderRadius: '10px', color: selectedTool === 'select' ? 'white' : theme.text, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '10px', fontSize: '14px', fontWeight: '600' }}>
-                <Move size={18} />Select & Move
-              </button>
-              <button onClick={() => { setSelectedTool('line'); setComponentToAdd(null); setDrawingLine(null); }} style={{ padding: '12px 16px', background: selectedTool === 'line' ? theme.accent : theme.bg, border: `2px solid ${selectedTool === 'line' ? theme.accent : theme.border}`, borderRadius: '10px', color: selectedTool === 'line' ? 'white' : theme.text, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '10px', fontSize: '14px', fontWeight: '600' }}>
-                <Pencil size={18} />Draw Connection
-              </button>
+          {/* Left Sidebar */}
+          <div style={{ 
+            width: '280px', 
+            borderRight: `1px solid ${theme.border}`, 
+            background: theme.card,
+            display: 'flex',
+            flexDirection: 'column'
+          }}>
+            {/* Tools Section */}
+            <div style={{ padding: '16px', borderBottom: `1px solid ${theme.border}` }}>
+              <h3 style={{ margin: '0 0 12px', color: theme.text, fontSize: '13px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                Tools
+              </h3>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                <ToolButton tool="select" icon={MousePointer2} label="Select" shortcut="V" />
+                <ToolButton tool="pan" icon={Hand} label="Pan" shortcut="H" />
+                <ToolButton tool="line" icon={Minus} label="Connect" shortcut="L" />
+              </div>
             </div>
 
+            {/* Line Settings (when line tool is active) */}
             {selectedTool === 'line' && (
-              <div style={{ marginBottom: '24px', padding: '16px', background: theme.bg, borderRadius: '10px' }}>
-                <h3 style={{ margin: '0 0 12px', color: theme.text, fontSize: '13px', fontWeight: '600' }}>Connection Style</h3>
-                <div style={{ marginBottom: '16px' }}>
-                  <label style={{ display: 'block', marginBottom: '6px', color: theme.textSecondary, fontSize: '12px' }}>Color</label>
-                  <input type="color" value={lineColor} onChange={(e) => setLineColor(e.target.value)} style={{ width: '100%', height: '44px', border: `2px solid ${theme.border}`, borderRadius: '8px', cursor: 'pointer' }} />
-                </div>
-                <div>
-                  <label style={{ display: 'block', marginBottom: '6px', color: theme.textSecondary, fontSize: '12px' }}>Width: {lineWidth}px</label>
-                  <input type="range" min="1" max="8" value={lineWidth} onChange={(e) => setLineWidth(parseInt(e.target.value))} style={{ width: '100%' }} />
+              <div style={{ padding: '16px', borderBottom: `1px solid ${theme.border}`, background: theme.hover }}>
+                <h3 style={{ margin: '0 0 12px', color: theme.text, fontSize: '13px', fontWeight: '700' }}>
+                  Line Settings
+                </h3>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                  <div>
+                    <label style={{ display: 'block', marginBottom: '6px', color: theme.textSecondary, fontSize: '11px', fontWeight: '600' }}>
+                      Color
+                    </label>
+                    <div style={{ display: 'flex', gap: '8px' }}>
+                      <input 
+                        type="color" 
+                        value={lineColor} 
+                        onChange={(e) => setLineColor(e.target.value)} 
+                        style={{ width: '50px', height: '36px', border: `1px solid ${theme.border}`, borderRadius: '6px', cursor: 'pointer' }} 
+                      />
+                      <input 
+                        type="text" 
+                        value={lineColor} 
+                        onChange={(e) => setLineColor(e.target.value)} 
+                        style={{ 
+                          flex: 1, 
+                          padding: '8px', 
+                          background: theme.bg, 
+                          border: `1px solid ${theme.border}`, 
+                          borderRadius: '6px', 
+                          color: theme.text, 
+                          fontSize: '12px', 
+                          fontFamily: 'monospace' 
+                        }} 
+                      />
+                    </div>
+                  </div>
+                  
+                  <div>
+                    <label style={{ display: 'block', marginBottom: '6px', color: theme.textSecondary, fontSize: '11px', fontWeight: '600' }}>
+                      Width: {lineWidth}px
+                    </label>
+                    <input 
+                      type="range" 
+                      min="1" 
+                      max="12" 
+                      value={lineWidth} 
+                      onChange={(e) => setLineWidth(parseInt(e.target.value))} 
+                      style={{ width: '100%' }} 
+                    />
+                  </div>
+                  
+                  <div>
+                    <label style={{ display: 'block', marginBottom: '6px', color: theme.textSecondary, fontSize: '11px', fontWeight: '600' }}>
+                      Style
+                    </label>
+                    <select 
+                      value={lineStyle} 
+                      onChange={(e) => setLineStyle(e.target.value)}
+                      style={{ 
+                        width: '100%', 
+                        padding: '8px', 
+                        background: theme.bg, 
+                        border: `1px solid ${theme.border}`, 
+                        borderRadius: '6px', 
+                        color: theme.text, 
+                        fontSize: '12px',
+                        cursor: 'pointer'
+                      }}
+                    >
+                      <option value="solid">Solid</option>
+                      <option value="dashed">Dashed</option>
+                      <option value="dotted">Dotted</option>
+                    </select>
+                  </div>
                 </div>
               </div>
             )}
 
-            <h3 style={{ margin: '0 0 16px', color: theme.text, fontSize: '15px', fontWeight: '700' }}>COMPONENTS</h3>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-              {Object.entries(SVG_COMPONENTS).map(([key, comp]) => (
-                <button key={key} onClick={() => { setSelectedTool('component'); setComponentToAdd(key); setDrawingLine(null); }} style={{ padding: '14px', background: componentToAdd === key ? theme.accent : theme.bg, border: `2px solid ${componentToAdd === key ? theme.accent : theme.border}`, borderRadius: '10px', color: componentToAdd === key ? 'white' : theme.text, cursor: 'pointer', textAlign: 'left', fontSize: '13px', fontWeight: '500' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                    <div style={{ width: '40px', height: '40px', borderRadius: '8px', background: comp.color, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '4px', flexShrink: 0 }}>
-                      <img src={comp.svg} alt={comp.name} style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
+            {/* Component Library */}
+            <div style={{ flex: 1, overflow: 'auto', padding: '16px' }}>
+              <h3 style={{ margin: '0 0 12px', color: theme.text, fontSize: '13px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                Components
+              </h3>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+                {Object.entries(SVG_COMPONENTS).map(([key, comp]) => (
+                  <button 
+                    key={key} 
+                    onClick={() => { 
+                      setSelectedTool('component'); 
+                      setComponentToAdd(key); 
+                      setDrawingLine(null); 
+                    }} 
+                    style={{ 
+                      padding: '12px 8px', 
+                      background: componentToAdd === key ? theme.accent : theme.bg, 
+                      border: `1px solid ${componentToAdd === key ? theme.accent : theme.border}`, 
+                      borderRadius: '8px', 
+                      color: componentToAdd === key ? 'white' : theme.text, 
+                      cursor: 'pointer', 
+                      textAlign: 'center', 
+                      fontSize: '11px', 
+                      fontWeight: '500',
+                      transition: 'all 0.15s ease',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      alignItems: 'center',
+                      gap: '6px'
+                    }}
+                  >
+                    <div style={{ 
+                      width: '100%', 
+                      height: '50px', 
+                      borderRadius: '6px', 
+                      background: componentToAdd === key ? 'rgba(255,255,255,0.1)' : theme.hover, 
+                      display: 'flex', 
+                      alignItems: 'center', 
+                      justifyContent: 'center', 
+                      padding: '6px' 
+                    }}>
+                      <img 
+                        src={comp.svg} 
+                        alt={comp.name} 
+                        style={{ 
+                          maxWidth: '100%', 
+                          maxHeight: '100%', 
+                          objectFit: 'contain',
+                          filter: componentToAdd === key ? 'brightness(0) invert(1)' : 'none'
+                        }} 
+                      />
                     </div>
-                    <span style={{ fontWeight: '600' }}>{comp.name}</span>
-                  </div>
-                </button>
-              ))}
+                    <span style={{ lineHeight: '1.2' }}>{comp.name}</span>
+                  </button>
+                ))}
+              </div>
             </div>
 
+            {/* Properties Panel */}
             {selectedComponent && (
-              <>
-                <h3 style={{ margin: '24px 0 16px', color: theme.text, fontSize: '15px', fontWeight: '700' }}>ACTIONS</h3>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                  <button onClick={handleConfigureTag} style={{ padding: '12px 16px', background: theme.bg, border: `2px solid ${theme.border}`, borderRadius: '10px', color: theme.text, cursor: 'pointer', fontSize: '14px', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '10px' }}>
-                    <Tag size={18} />Configure Tag
+              <div style={{ borderTop: `1px solid ${theme.border}`, padding: '16px', background: theme.hover }}>
+                <h3 style={{ margin: '0 0 12px', color: theme.text, fontSize: '13px', fontWeight: '700' }}>
+                  Properties
+                </h3>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                  <button 
+                    onClick={handleConfigureTag} 
+                    style={{ 
+                      padding: '10px 12px', 
+                      background: theme.bg, 
+                      border: `1px solid ${theme.border}`, 
+                      borderRadius: '6px', 
+                      color: theme.text, 
+                      cursor: 'pointer', 
+                      fontSize: '12px', 
+                      fontWeight: '600', 
+                      display: 'flex', 
+                      alignItems: 'center', 
+                      gap: '8px' 
+                    }}
+                  >
+                    <Tag size={16} />
+                    Configure Tag
                   </button>
-                  <button onClick={handleRotateComponent} style={{ padding: '12px 16px', background: theme.bg, border: `2px solid ${theme.border}`, borderRadius: '10px', color: theme.text, cursor: 'pointer', fontSize: '14px', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '10px' }}>
-                    <RotateCw size={18} />Rotate 90°
+                  <button 
+                    onClick={handleRotateComponent} 
+                    style={{ 
+                      padding: '10px 12px', 
+                      background: theme.bg, 
+                      border: `1px solid ${theme.border}`, 
+                      borderRadius: '6px', 
+                      color: theme.text, 
+                      cursor: 'pointer', 
+                      fontSize: '12px', 
+                      fontWeight: '600', 
+                      display: 'flex', 
+                      alignItems: 'center', 
+                      gap: '8px' 
+                    }}
+                  >
+                    <RotateCw size={16} />
+                    Rotate 90°
                   </button>
-                  <button onClick={handleDeleteComponent} style={{ padding: '12px 16px', background: '#ef4444', border: 'none', borderRadius: '10px', color: 'white', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '10px', fontSize: '14px', fontWeight: '600' }}>
-                    <Trash2 size={18} />Delete
+                  <button 
+                    onClick={handleCopyComponent} 
+                    style={{ 
+                      padding: '10px 12px', 
+                      background: theme.bg, 
+                      border: `1px solid ${theme.border}`, 
+                      borderRadius: '6px', 
+                      color: theme.text, 
+                      cursor: 'pointer', 
+                      fontSize: '12px', 
+                      fontWeight: '600', 
+                      display: 'flex', 
+                      alignItems: 'center', 
+                      gap: '8px' 
+                    }}
+                  >
+                    <Copy size={16} />
+                    Duplicate
+                  </button>
+                  <button 
+                    onClick={handleDeleteComponent} 
+                    style={{ 
+                      padding: '10px 12px', 
+                      background: theme.danger, 
+                      border: 'none', 
+                      borderRadius: '6px', 
+                      color: 'white', 
+                      cursor: 'pointer', 
+                      display: 'flex', 
+                      alignItems: 'center', 
+                      gap: '8px', 
+                      fontSize: '12px', 
+                      fontWeight: '600' 
+                    }}
+                  >
+                    <Trash2 size={16} />
+                    Delete
                   </button>
                 </div>
-              </>
+              </div>
             )}
 
             {selectedLine && (
-              <>
-                <h3 style={{ margin: '24px 0 16px', color: theme.text, fontSize: '15px', fontWeight: '700' }}>LINE ACTIONS</h3>
-                <button onClick={handleDeleteLine} style={{ padding: '12px 16px', background: '#ef4444', border: 'none', borderRadius: '10px', color: 'white', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '10px', fontSize: '14px', fontWeight: '600', width: '100%' }}>
-                  <Trash2 size={18} />Delete Connection
+              <div style={{ borderTop: `1px solid ${theme.border}`, padding: '16px', background: theme.hover }}>
+                <h3 style={{ margin: '0 0 12px', color: theme.text, fontSize: '13px', fontWeight: '700' }}>
+                  Line Properties
+                </h3>
+                <button 
+                  onClick={handleDeleteLine} 
+                  style={{ 
+                    padding: '10px 12px', 
+                    background: theme.danger, 
+                    border: 'none', 
+                    borderRadius: '6px', 
+                    color: 'white', 
+                    cursor: 'pointer', 
+                    display: 'flex', 
+                    alignItems: 'center', 
+                    gap: '8px', 
+                    fontSize: '12px', 
+                    fontWeight: '600',
+                    width: '100%'
+                  }}
+                >
+                  <Trash2 size={16} />
+                  Delete Connection
                 </button>
-              </>
+              </div>
             )}
           </div>
 
+          {/* Canvas Area */}
           <div style={{ flex: 1, position: 'relative', overflow: 'hidden', background: theme.bg }}>
-            <div style={{ position: 'absolute', top: '20px', right: '20px', display: 'flex', gap: '10px', zIndex: 10 }}>
-              <button onClick={() => setShowGrid(!showGrid)} style={{ padding: '10px', background: theme.card, border: `2px solid ${showGrid ? theme.accent : theme.border}`, borderRadius: '10px', color: showGrid ? theme.accent : theme.text, cursor: 'pointer' }}>
-                <Grid size={20} />
+            {/* Top Canvas Toolbar */}
+            <div style={{ 
+              position: 'absolute', 
+              top: '16px', 
+              right: '16px', 
+              display: 'flex', 
+              gap: '8px', 
+              zIndex: 10 
+            }}>
+              <button 
+                onClick={() => setShowGrid(!showGrid)} 
+                style={{ 
+                  padding: '8px 12px', 
+                  background: theme.card, 
+                  border: `1px solid ${showGrid ? theme.accent : theme.border}`, 
+                  borderRadius: '6px', 
+                  color: showGrid ? theme.accent : theme.text, 
+                  cursor: 'pointer',
+                  fontSize: '12px',
+                  fontWeight: '600',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px'
+                }}
+              >
+                <Grid3x3 size={16} />
+                Grid
               </button>
-              <button onClick={() => setZoom(Math.min(zoom + 0.1, 2))} style={{ padding: '10px', background: theme.card, border: `2px solid ${theme.border}`, borderRadius: '10px', color: theme.text, cursor: 'pointer' }}>
-                <ZoomIn size={20} />
+              
+              <button 
+                onClick={() => setSnapToGrid(!snapToGrid)} 
+                style={{ 
+                  padding: '8px 12px', 
+                  background: theme.card, 
+                  border: `1px solid ${snapToGrid ? theme.accent : theme.border}`, 
+                  borderRadius: '6px', 
+                  color: snapToGrid ? theme.accent : theme.text, 
+                  cursor: 'pointer',
+                  fontSize: '12px',
+                  fontWeight: '600',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px'
+                }}
+                title="Snap to Grid"
+              >
+                <Maximize2 size={16} />
+                Snap
               </button>
-              <button onClick={() => setZoom(Math.max(zoom - 0.1, 0.5))} style={{ padding: '10px', background: theme.card, border: `2px solid ${theme.border}`, borderRadius: '10px', color: theme.text, cursor: 'pointer' }}>
-                <ZoomOut size={20} />
+              
+              <div style={{ width: '1px', background: theme.border, margin: '0 4px' }} />
+              
+              <button 
+                onClick={() => setZoom(Math.min(zoom + 0.1, 3))} 
+                style={{ 
+                  padding: '8px 10px', 
+                  background: theme.card, 
+                  border: `1px solid ${theme.border}`, 
+                  borderRadius: '6px', 
+                  color: theme.text, 
+                  cursor: 'pointer' 
+                }}
+                title="Zoom In"
+              >
+                <ZoomIn size={16} />
               </button>
-              <div style={{ padding: '10px 16px', background: theme.card, border: `2px solid ${theme.border}`, borderRadius: '10px', color: theme.text, fontSize: '14px', fontWeight: '600' }}>
+              
+              <button 
+                onClick={() => setZoom(Math.max(zoom - 0.1, 0.3))} 
+                style={{ 
+                  padding: '8px 10px', 
+                  background: theme.card, 
+                  border: `1px solid ${theme.border}`, 
+                  borderRadius: '6px', 
+                  color: theme.text, 
+                  cursor: 'pointer' 
+                }}
+                title="Zoom Out"
+              >
+                <ZoomOut size={16} />
+              </button>
+              
+              <button 
+                onClick={() => { setZoom(1); setPan({ x: 0, y: 0 }); }} 
+                style={{ 
+                  padding: '8px 12px', 
+                  background: theme.card, 
+                  border: `1px solid ${theme.border}`, 
+                  borderRadius: '6px', 
+                  color: theme.text, 
+                  cursor: 'pointer',
+                  fontSize: '12px',
+                  fontWeight: '600'
+                }}
+                title="Reset View"
+              >
                 {Math.round(zoom * 100)}%
-              </div>
+              </button>
             </div>
 
+            {/* Status Banner */}
             {selectedTool === 'component' && componentToAdd && (
-              <div style={{ position: 'absolute', top: '20px', left: '50%', transform: 'translateX(-50%)', padding: '12px 24px', background: theme.accent, color: 'white', borderRadius: '10px', fontSize: '14px', fontWeight: '600', zIndex: 10 }}>
+              <div style={{ 
+                position: 'absolute', 
+                top: '16px', 
+                left: '50%', 
+                transform: 'translateX(-50%)', 
+                padding: '10px 20px', 
+                background: theme.accent, 
+                color: 'white', 
+                borderRadius: '8px', 
+                fontSize: '13px', 
+                fontWeight: '600', 
+                zIndex: 10,
+                boxShadow: '0 4px 12px rgba(0,0,0,0.2)'
+              }}>
                 Click to place {SVG_COMPONENTS[componentToAdd].name}
               </div>
             )}
 
-            <svg ref={canvasRef} width="100%" height="100%" onClick={handleCanvasClick} onMouseMove={handleMouseMove} onMouseUp={handleMouseUp} onMouseLeave={handleMouseUp} style={{ cursor: selectedTool === 'component' || selectedTool === 'line' ? 'crosshair' : 'default' }}>
+            {selectedTool === 'line' && !drawingLine && (
+              <div style={{ 
+                position: 'absolute', 
+                top: '16px', 
+                left: '50%', 
+                transform: 'translateX(-50%)', 
+                padding: '10px 20px', 
+                background: theme.accent, 
+                color: 'white', 
+                borderRadius: '8px', 
+                fontSize: '13px', 
+                fontWeight: '600', 
+                zIndex: 10,
+                boxShadow: '0 4px 12px rgba(0,0,0,0.2)'
+              }}>
+                Click on a component to start connection
+              </div>
+            )}
+
+            {selectedTool === 'line' && drawingLine && (
+              <div style={{ 
+                position: 'absolute', 
+                top: '16px', 
+                left: '50%', 
+                transform: 'translateX(-50%)', 
+                padding: '10px 20px', 
+                background: theme.success, 
+                color: 'white', 
+                borderRadius: '8px', 
+                fontSize: '13px', 
+                fontWeight: '600', 
+                zIndex: 10,
+                boxShadow: '0 4px 12px rgba(0,0,0,0.2)'
+              }}>
+                Click on another component to complete connection
+              </div>
+            )}
+
+            {/* Canvas SVG */}
+            <svg 
+              ref={canvasRef} 
+              width="100%" 
+              height="100%" 
+              onMouseDown={handleCanvasMouseDown}
+              onMouseMove={handleCanvasMouseMove}
+              onMouseUp={handleCanvasMouseUp}
+              onMouseLeave={handleCanvasMouseUp}
+              style={{ 
+                cursor: selectedTool === 'component' ? 'crosshair' : 
+                       selectedTool === 'line' ? 'crosshair' : 
+                       selectedTool === 'pan' || isPanning ? 'grab' : 
+                       'default',
+                display: 'block'
+              }}
+            >
+              {/* Grid Pattern */}
               {showGrid && (
                 <defs>
-                  <pattern id="grid" width="30" height="30" patternUnits="userSpaceOnUse">
-                    <circle cx="1" cy="1" r="1.5" fill={darkMode ? '#374151' : '#e5e7eb'} opacity="0.4" />
+                  <pattern id="grid" width={gridSize * zoom} height={gridSize * zoom} patternUnits="userSpaceOnUse">
+                    <circle 
+                      cx={gridSize * zoom / 2} 
+                      cy={gridSize * zoom / 2} 
+                      r="1" 
+                      fill={darkMode ? '#2d3348' : '#d1d5db'} 
+                      opacity="0.5" 
+                    />
                   </pattern>
                 </defs>
               )}
               {showGrid && <rect width="100%" height="100%" fill="url(#grid)" />}
 
               <g transform={`translate(${pan.x}, ${pan.y}) scale(${zoom})`}>
+                {/* Lines */}
                 {lines.map(line => {
                   const coords = getLineCoordinates(line);
                   if (!coords) return null;
                   const isSelected = selectedLine === line.id;
+                  
                   return (
                     <g key={line.id}>
-                      <line x1={coords.x1} y1={coords.y1} x2={coords.x2} y2={coords.y2} stroke="transparent" strokeWidth={line.width + 10} style={{ cursor: 'pointer' }} onClick={(e) => { e.stopPropagation(); if (selectedTool === 'select') { setSelectedLine(line.id); setSelectedComponent(null); }}} />
-                      <line x1={coords.x1} y1={coords.y1} x2={coords.x2} y2={coords.y2} stroke={isSelected ? '#ef4444' : line.color} strokeWidth={isSelected ? line.width + 2 : line.width} strokeLinecap="round" style={{ pointerEvents: 'none' }} />
+                      {/* Invisible wider line for easier clicking */}
+                      <line 
+                        x1={coords.x1} 
+                        y1={coords.y1} 
+                        x2={coords.x2} 
+                        y2={coords.y2} 
+                        stroke="transparent" 
+                        strokeWidth={Math.max(line.width + 10, 15)} 
+                        style={{ cursor: 'pointer' }} 
+                        onClick={(e) => handleLineClick(e, line)}
+                        data-line="true"
+                      />
+                      {/* Actual line */}
+                      <line 
+                        x1={coords.x1} 
+                        y1={coords.y1} 
+                        x2={coords.x2} 
+                        y2={coords.y2} 
+                        stroke={isSelected ? theme.accent : line.color} 
+                        strokeWidth={isSelected ? line.width + 2 : line.width} 
+                        strokeLinecap="round" 
+                        strokeDasharray={
+                          line.style === 'dashed' ? '8,4' : 
+                          line.style === 'dotted' ? '2,3' : 
+                          '0'
+                        }
+                        style={{ pointerEvents: 'none' }} 
+                      />
+                      {/* Arrow */}
+                      {(() => {
+                        const angle = Math.atan2(coords.y2 - coords.y1, coords.x2 - coords.x1);
+                        const arrowSize = 10 + line.width;
+                        return (
+                          <polygon
+                            points={`0,-${arrowSize/2} ${arrowSize},0 0,${arrowSize/2}`}
+                            fill={isSelected ? theme.accent : line.color}
+                            transform={`translate(${coords.x2}, ${coords.y2}) rotate(${angle * 180 / Math.PI})`}
+                            style={{ pointerEvents: 'none' }}
+                          />
+                        );
+                      })()}
+                      {/* Selection indicator */}
+                      {isSelected && (
+                        <>
+                          <circle cx={coords.x1} cy={coords.y1} r="6" fill={theme.accent} />
+                          <circle cx={coords.x2} cy={coords.y2} r="6" fill={theme.accent} />
+                        </>
+                      )}
                     </g>
                   );
                 })}
 
+                {/* Drawing Line Preview */}
                 {drawingLine && (
                   <g>
-                    <line x1={drawingLine.startX} y1={drawingLine.startY} x2={drawingLine.endX} y2={drawingLine.endY} stroke={lineColor} strokeWidth={lineWidth} strokeDasharray="8,4" strokeLinecap="round" opacity="0.7" />
+                    <line 
+                      x1={drawingLine.startX} 
+                      y1={drawingLine.startY} 
+                      x2={drawingLine.endX} 
+                      y2={drawingLine.endY} 
+                      stroke={lineColor} 
+                      strokeWidth={lineWidth} 
+                      strokeDasharray="6,3" 
+                      strokeLinecap="round" 
+                      opacity="0.7" 
+                    />
+                    <circle cx={drawingLine.startX} cy={drawingLine.startY} r="5" fill={lineColor} />
                   </g>
                 )}
 
-               {components.map(comp => {
-  const svgData = SVG_COMPONENTS[comp.type];
-  const isSelected = selectedComponent === comp.id;
-  const componentColor = getComponentColor(comp);
-  const status = getComponentStatus(comp);
-  
-  return (
-    <g key={comp.id} transform={`translate(${comp.x}, ${comp.y})`}>
+                {/* Components */}
+                {components.map(comp => {
+                  const svgData = SVG_COMPONENTS[comp.type];
+                  const isSelected = selectedComponent === comp.id;
+                  const componentColor = getComponentColor(comp);
+                  const status = getComponentStatus(comp);
+                  
+                  return (
+                    <g 
+                      key={comp.id} 
+                      transform={`translate(${comp.x}, ${comp.y})`}
+                      data-component="true"
+                    >
                       <g transform={`rotate(${comp.rotation || 0}, ${svgData.width/2}, ${svgData.height/2})`}>
+                        {/* Selection highlight */}
                         {isSelected && (
-                          <rect x={-6} y={-6} width={svgData.width + 12} height={svgData.height + 12} fill="none" stroke="#667eea" strokeWidth={3} rx={10} opacity="0.6" style={{ pointerEvents: 'none' }} />
+                          <rect 
+                            x={-4} 
+                            y={-4} 
+                            width={svgData.width + 8} 
+                            height={svgData.height + 8} 
+                            fill="none" 
+                            stroke={theme.accent} 
+                            strokeWidth={2} 
+                            rx={8} 
+                            opacity="0.8"
+                            strokeDasharray="4,2"
+                            style={{ pointerEvents: 'none' }} 
+                          />
                         )}
-                        <rect x={0} y={0} width={svgData.width} height={svgData.height} fill="transparent" style={{ cursor: selectedTool === 'select' ? 'move' : selectedTool === 'line' ? 'pointer' : 'default' }} onMouseDown={(e) => handleComponentMouseDown(e, comp)} />
+                        
+                        {/* Interactive area */}
+                        <rect 
+                          x={0} 
+                          y={0} 
+                          width={svgData.width} 
+                          height={svgData.height} 
+                          fill="transparent" 
+                          style={{ 
+                            cursor: selectedTool === 'select' ? 'move' : 
+                                   selectedTool === 'line' ? 'pointer' : 
+                                   'default' 
+                          }} 
+                          onMouseDown={(e) => handleComponentMouseDown(e, comp)} 
+                        />
+                        
+                        {/* Component SVG */}
+                        <g>
+                          <image 
+                            href={svgData.svg} 
+                            width={svgData.width} 
+                            height={svgData.height} 
+                            style={{ pointerEvents: 'none' }}
+                          />
+                          <rect
+                            x={0}
+                            y={0}
+                            width={svgData.width}
+                            height={svgData.height}
+                            fill={componentColor}
+                            opacity="0.5"
+                            style={{ mixBlendMode: 'multiply', pointerEvents: 'none' }}
+                          />
+                        </g>
+                      </g>
                       
-<g>
-  <image 
-    href={svgData.svg} 
-    width={svgData.width} 
-    height={svgData.height} 
-    style={{ pointerEvents: 'none' }}
-  />
-  <rect
-    x={0}
-    y={0}
-    width={svgData.width}
-    height={svgData.height}
-    fill={componentColor}
-    opacity="0.6"
-    style={{ mixBlendMode: 'multiply', pointerEvents: 'none' }}
-  />
-</g>
- </g>
-                     <text x={svgData.width / 2} y={svgData.height + 20} textAnchor="middle" fill={theme.text} fontSize="12" fontWeight="600" style={{ pointerEvents: 'none' }}>
-  {comp.label}
-</text>
-
-{status && (
-  <g>
-    <rect
-      x={svgData.width / 2 - 30}
-      y={svgData.height + 30}
-      width="60"
-      height="18"
-      fill={componentColor}
-      rx="4"
-      opacity="0.9"
-    />
-    <text
-      x={svgData.width / 2}
-      y={svgData.height + 42}
-      textAnchor="middle"
-      fill="white"
-      fontSize="10"
-      fontWeight="700"
-      style={{ pointerEvents: 'none' }}
-    >
-      {status}
-    </text>
-  </g>
-)}
-
-{comp.tagName && (
-  <text 
-    x={svgData.width / 2} 
-    y={svgData.height + (status ? 56 : 35)} 
-    textAnchor="middle" 
-    fill={theme.accent} 
-    fontSize="9" 
-    fontWeight="500" 
-    style={{ pointerEvents: 'none' }}
-  >
-    🏷️ {comp.tagName}
-    {tagValues[comp.tagName] && `: ${tagValues[comp.tagName]}`}
-  </text>
-)}
+                      {/* Label */}
+                      <text 
+                        x={svgData.width / 2} 
+                        y={svgData.height + 18} 
+                        textAnchor="middle" 
+                        fill={theme.text} 
+                        fontSize="11" 
+                        fontWeight="600" 
+                        style={{ pointerEvents: 'none', userSelect: 'none' }}
+                      >
+                        {comp.label}
+                      </text>
+                      
+                      {/* Status badge */}
+                      {status && (
+                        <g>
+                          <rect
+                            x={svgData.width / 2 - 28}
+                            y={svgData.height + 26}
+                            width="56"
+                            height="16"
+                            fill={componentColor}
+                            rx="3"
+                            opacity="0.95"
+                          />
+                          <text
+                            x={svgData.width / 2}
+                            y={svgData.height + 37}
+                            textAnchor="middle"
+                            fill="white"
+                            fontSize="9"
+                            fontWeight="700"
+                            style={{ pointerEvents: 'none', userSelect: 'none' }}
+                          >
+                            {status}
+                          </text>
+                        </g>
+                      )}
+                      
+                      {/* Tag value */}
+                      {comp.tagName && (
+                        <text 
+                          x={svgData.width / 2} 
+                          y={svgData.height + (status ? 50 : 34)} 
+                          textAnchor="middle" 
+                          fill={theme.accent} 
+                          fontSize="8" 
+                          fontWeight="500" 
+                          style={{ pointerEvents: 'none', userSelect: 'none' }}
+                        >
+                          {comp.tagName}
+                          {tagValues[comp.tagName] && `: ${tagValues[comp.tagName]}`}
+                        </text>
+                      )}
                     </g>
                   );
                 })}
 
-                {drawingLine && (
-                  <g>
-                    <line x1={drawingLine.startX} y1={drawingLine.startY} x2={drawingLine.endX} y2={drawingLine.endY} stroke={lineColor} strokeWidth={lineWidth} strokeDasharray="8,4" strokeLinecap="round" opacity="0.7" />
-                  </g>
+                {/* Selection Box */}
+                {selectionBox && (
+                  <rect
+                    x={Math.min(selectionBox.startX, selectionBox.endX)}
+                    y={Math.min(selectionBox.startY, selectionBox.endY)}
+                    width={Math.abs(selectionBox.endX - selectionBox.startX)}
+                    height={Math.abs(selectionBox.endY - selectionBox.startY)}
+                    fill={theme.accent}
+                    fillOpacity="0.1"
+                    stroke={theme.accent}
+                    strokeWidth="1"
+                    strokeDasharray="4,2"
+                  />
                 )}
               </g>
             </svg>
 
+            {/* Empty State */}
             {components.length === 0 && (
-              <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', textAlign: 'center', color: theme.textSecondary, pointerEvents: 'none' }}>
-                <div style={{ fontSize: '48px', marginBottom: '16px', opacity: 0.3 }}>⚙️</div>
-                <h3 style={{ margin: '0 0 8px', fontSize: '18px', fontWeight: '600', color: theme.text }}>Start Building</h3>
-                <p style={{ margin: 0, fontSize: '14px' }}>Select a component and click to place</p>
+              <div style={{ 
+                position: 'absolute', 
+                top: '50%', 
+                left: '50%', 
+                transform: 'translate(-50%, -50%)', 
+                textAlign: 'center', 
+                color: theme.textSecondary, 
+                pointerEvents: 'none' 
+              }}>
+                <div style={{ fontSize: '64px', marginBottom: '16px', opacity: 0.2 }}>⚙️</div>
+                <h3 style={{ margin: '0 0 8px', fontSize: '18px', fontWeight: '600', color: theme.text }}>
+                  Start Building Your SCADA Diagram
+                </h3>
+                <p style={{ margin: 0, fontSize: '14px' }}>
+                  Select a component from the left panel and click to place it
+                </p>
               </div>
             )}
 
-            <div style={{ position: 'absolute', bottom: '20px', left: '20px', display: 'flex', gap: '12px' }}>
-              <div style={{ padding: '8px 16px', background: theme.card, border: `1px solid ${theme.border}`, borderRadius: '8px', color: theme.text, fontSize: '13px', fontWeight: '600' }}>
+            {/* Bottom Status Bar */}
+            <div style={{ 
+              position: 'absolute', 
+              bottom: '16px', 
+              left: '16px', 
+              display: 'flex', 
+              gap: '8px',
+              zIndex: 10
+            }}>
+              <div style={{ 
+                padding: '6px 12px', 
+                background: theme.card, 
+                border: `1px solid ${theme.border}`, 
+                borderRadius: '6px', 
+                color: theme.text, 
+                fontSize: '12px', 
+                fontWeight: '600' 
+              }}>
                 Components: {components.length}
               </div>
-              <div style={{ padding: '8px 16px', background: theme.card, border: `1px solid ${theme.border}`, borderRadius: '8px', color: theme.text, fontSize: '13px', fontWeight: '600' }}>
+              <div style={{ 
+                padding: '6px 12px', 
+                background: theme.card, 
+                border: `1px solid ${theme.border}`, 
+                borderRadius: '6px', 
+                color: theme.text, 
+                fontSize: '12px', 
+                fontWeight: '600' 
+              }}>
                 Connections: {lines.length}
+              </div>
+              {selectedComponent && (
+                <div style={{ 
+                  padding: '6px 12px', 
+                  background: theme.accent, 
+                  borderRadius: '6px', 
+                  color: 'white', 
+                  fontSize: '12px', 
+                  fontWeight: '600' 
+                }}>
+                  Selected: {components.find(c => c.id === selectedComponent)?.label}
+                </div>
+              )}
+            </div>
+
+            {/* Help overlay */}
+            <div style={{
+              position: 'absolute',
+              bottom: '16px',
+              right: '16px',
+              padding: '10px 14px',
+              background: theme.card,
+              border: `1px solid ${theme.border}`,
+              borderRadius: '6px',
+              fontSize: '11px',
+              color: theme.textSecondary,
+              maxWidth: '300px',
+              zIndex: 10
+            }}>
+              <div style={{ fontWeight: '700', marginBottom: '6px', color: theme.text }}>Shortcuts</div>
+              <div style={{ display: 'grid', gridTemplateColumns: 'auto 1fr', gap: '4px 12px' }}>
+                <span>V</span><span>Select tool</span>
+                <span>L</span><span>Line tool</span>
+                <span>H</span><span>Pan tool</span>
+                <span>Del</span><span>Delete selected</span>
+                <span>Ctrl+Z</span><span>Undo</span>
+                <span>Ctrl+Y</span><span>Redo</span>
+                <span>Esc</span><span>Deselect</span>
               </div>
             </div>
           </div>
         </div>
       </div>
 
+      {/* Tag Configuration Modal */}
       {showTagModal && editingComponentTag && (
         <ComponentTagModal
           component={editingComponentTag}
