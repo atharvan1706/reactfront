@@ -10,7 +10,7 @@ import {
 } from 'lucide-react';
 import { COLORS } from './constants';
 import questdbService from '../../services/questdb';
-import realtimeService from '../../services/realtimeService';
+import realtimeService from '../../services/RealtimeService';
 import SimpleTransformations from './simpleTransformations';
 
 function QuestDBPanel({ config, onEdit, onDelete, onDuplicate, onResize, style, darkMode }) {
