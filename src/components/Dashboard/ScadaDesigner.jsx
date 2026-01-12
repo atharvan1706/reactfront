@@ -201,7 +201,8 @@ export default function ScadaDesignerPro({ config, onSave, onClose, darkMode }) 
   const [selectedItems, setSelectedItems] = useState([]); // Multiple selection
   const [draggingComponent, setDraggingComponent] = useState(null);
   const [drawingLine, setDrawingLine] = useState(null);
-  const [lineControlPoint, setLineControlPoint] = useState(null); // For editing line paths
+  const [editingLine, setEditingLine] = useState(null); // Which line is being edited
+  const [draggingLinePoint, setDraggingLinePoint] = useState(null); // Which point is being dragged
   const [zoom, setZoom] = useState(1);
   const [pan, setPan] = useState({ x: 0, y: 0 });
   const [isPanning, setIsPanning] = useState(false);
@@ -502,6 +503,16 @@ export default function ScadaDesignerPro({ config, onSave, onClose, darkMode }) 
             }
           : c
       ));
+    } else if (draggingLinePoint) {
+      // Dragging a line control point
+      const line = lines.find(l => l.id === draggingLinePoint.lineId);
+      if (line) {
+        const newControlPoints = [...(line.controlPoints || [])];
+        if (draggingLinePoint.pointIndex >= 0 && draggingLinePoint.pointIndex < newControlPoints.length) {
+          newControlPoints[draggingLinePoint.pointIndex] = { x, y };
+          setLines(lines.map(l => l.id === draggingLinePoint.lineId ? { ...l, controlPoints: newControlPoints } : l));
+        }
+      }
     } else if (drawingLine && selectedTool === 'line') {
       setDrawingLine({ ...drawingLine, endX: x, endY: y });
     } else if (selectionBox) {
@@ -517,6 +528,11 @@ export default function ScadaDesignerPro({ config, onSave, onClose, darkMode }) 
     if (draggingComponent) {
       saveToHistory();
       setDraggingComponent(null);
+    }
+    
+    if (draggingLinePoint) {
+      saveToHistory();
+      setDraggingLinePoint(null);
     }
     
     if (selectionBox) {
@@ -573,7 +589,7 @@ export default function ScadaDesignerPro({ config, onSave, onClose, darkMode }) 
           color: lineColor, 
           width: lineWidth, 
           style: lineStyle,
-          points: [] // For future bezier curve support
+          controlPoints: [] // Array of {x, y} for bezier curves and bending
         };
         setLines([...lines, newLine]);
         saveToHistory();
@@ -588,7 +604,24 @@ export default function ScadaDesignerPro({ config, onSave, onClose, darkMode }) 
     if (selectedTool === 'select') {
       setSelectedLine(line.id);
       setSelectedComponent(null);
+      setEditingLine(line.id);
     }
+  };
+
+  const handleLinePointMouseDown = (e, lineId, pointIndex) => {
+    e.stopPropagation();
+    if (selectedTool === 'select') {
+      setDraggingLinePoint({ lineId, pointIndex, startX: e.clientX, startY: e.clientY });
+    }
+  };
+
+  const handleAddControlPoint = (lineId, x, y) => {
+    const line = lines.find(l => l.id === lineId);
+    if (!line) return;
+    
+    const newControlPoints = [...(line.controlPoints || []), { x, y }];
+    setLines(lines.map(l => l.id === lineId ? { ...l, controlPoints: newControlPoints } : l));
+    saveToHistory();
   };
 
   const handleConfigureTag = () => {
@@ -713,6 +746,65 @@ export default function ScadaDesignerPro({ config, onSave, onClose, darkMode }) 
       x2: toComp.x + toSvg.width / 2,
       y2: toComp.y + toSvg.height / 2
     };
+  };
+
+  // Generate SVG path for line with control points
+  const getLinePath = (line) => {
+    const coords = getLineCoordinates(line);
+    if (!coords) return null;
+
+    const { x1, y1, x2, y2 } = coords;
+    const controlPoints = line.controlPoints || [];
+
+    if (controlPoints.length === 0) {
+      // Straight line
+      return `M ${x1} ${y1} L ${x2} ${y2}`;
+    } else if (controlPoints.length === 1) {
+      // Quadratic bezier curve
+      const cp = controlPoints[0];
+      return `M ${x1} ${y1} Q ${cp.x} ${cp.y} ${x2} ${y2}`;
+    } else {
+      // Multiple control points - create smooth curve through all points
+      let path = `M ${x1} ${y1}`;
+      
+      // Add first control point
+      path += ` L ${controlPoints[0].x} ${controlPoints[0].y}`;
+      
+      // Add middle control points
+      for (let i = 1; i < controlPoints.length; i++) {
+        path += ` L ${controlPoints[i].x} ${controlPoints[i].y}`;
+      }
+      
+      // Connect to end
+      path += ` L ${x2} ${y2}`;
+      return path;
+    }
+  };
+
+  // Get the end point and angle for arrow placement
+  const getLineEndPoint = (line) => {
+    const coords = getLineCoordinates(line);
+    if (!coords) return null;
+
+    const { x1, y1, x2, y2 } = coords;
+    const controlPoints = line.controlPoints || [];
+
+    let endX = x2;
+    let endY = y2;
+    let prevX, prevY;
+
+    if (controlPoints.length === 0) {
+      prevX = x1;
+      prevY = y1;
+    } else {
+      const lastCP = controlPoints[controlPoints.length - 1];
+      prevX = lastCP.x;
+      prevY = lastCP.y;
+    }
+
+    const angle = Math.atan2(endY - prevY, endX - prevX);
+    
+    return { x: endX, y: endY, angle };
   };
 
   // Tool button component
@@ -1161,6 +1253,50 @@ export default function ScadaDesignerPro({ config, onSave, onClose, darkMode }) 
                 <h3 style={{ margin: '0 0 12px', color: theme.text, fontSize: '13px', fontWeight: '700' }}>
                   Line Properties
                 </h3>
+                <div style={{ marginBottom: '12px', padding: '8px', background: theme.bg, borderRadius: '6px' }}>
+                  <div style={{ fontSize: '11px', color: theme.textSecondary, marginBottom: '4px' }}>
+                    Control Points: {(lines.find(l => l.id === selectedLine)?.controlPoints || []).length}
+                  </div>
+                  <div style={{ fontSize: '10px', color: theme.textSecondary, lineHeight: '1.4' }}>
+                    • Double-click line to add bend point
+                    <br />
+                    • Drag points to reshape
+                    <br />
+                    • Click × to remove point
+                  </div>
+                </div>
+                <button 
+                  onClick={() => {
+                    const line = lines.find(l => l.id === selectedLine);
+                    if (line) {
+                      const coords = getLineCoordinates(line);
+                      if (coords) {
+                        // Add control point at midpoint
+                        const midX = (coords.x1 + coords.x2) / 2;
+                        const midY = (coords.y1 + coords.y2) / 2;
+                        handleAddControlPoint(selectedLine, midX, midY);
+                      }
+                    }
+                  }}
+                  style={{ 
+                    padding: '10px 12px', 
+                    background: theme.bg, 
+                    border: `1px solid ${theme.border}`, 
+                    borderRadius: '6px', 
+                    color: theme.text, 
+                    cursor: 'pointer', 
+                    display: 'flex', 
+                    alignItems: 'center', 
+                    gap: '8px', 
+                    fontSize: '12px', 
+                    fontWeight: '600',
+                    width: '100%',
+                    marginBottom: '8px'
+                  }}
+                >
+                  <Plus size={16} />
+                  Add Bend Point
+                </button>
                 <button 
                   onClick={handleDeleteLine} 
                   style={{ 
@@ -1382,32 +1518,42 @@ export default function ScadaDesignerPro({ config, onSave, onClose, darkMode }) 
                 {/* Lines */}
                 {lines.map(line => {
                   const coords = getLineCoordinates(line);
-                  if (!coords) return null;
+                  const path = getLinePath(line);
+                  const endPoint = getLineEndPoint(line);
+                  if (!coords || !path || !endPoint) return null;
+                  
                   const isSelected = selectedLine === line.id;
+                  const isEditing = editingLine === line.id;
                   
                   return (
                     <g key={line.id}>
-                      {/* Invisible wider line for easier clicking */}
-                      <line 
-                        x1={coords.x1} 
-                        y1={coords.y1} 
-                        x2={coords.x2} 
-                        y2={coords.y2} 
+                      {/* Invisible wider path for easier clicking */}
+                      <path
+                        d={path}
                         stroke="transparent" 
-                        strokeWidth={Math.max(line.width + 10, 15)} 
+                        strokeWidth={Math.max(line.width + 12, 20)} 
+                        fill="none"
                         style={{ cursor: 'pointer' }} 
                         onClick={(e) => handleLineClick(e, line)}
+                        onDoubleClick={(e) => {
+                          e.stopPropagation();
+                          // Add control point at click location
+                          const rect = canvasRef.current.getBoundingClientRect();
+                          const x = (e.clientX - rect.left - pan.x) / zoom;
+                          const y = (e.clientY - rect.top - pan.y) / zoom;
+                          handleAddControlPoint(line.id, x, y);
+                        }}
                         data-line="true"
                       />
+                      
                       {/* Actual line */}
-                      <line 
-                        x1={coords.x1} 
-                        y1={coords.y1} 
-                        x2={coords.x2} 
-                        y2={coords.y2} 
+                      <path
+                        d={path}
                         stroke={isSelected ? theme.accent : line.color} 
                         strokeWidth={isSelected ? line.width + 2 : line.width} 
+                        fill="none"
                         strokeLinecap="round" 
+                        strokeLinejoin="round"
                         strokeDasharray={
                           line.style === 'dashed' ? '8,4' : 
                           line.style === 'dotted' ? '2,3' : 
@@ -1415,24 +1561,73 @@ export default function ScadaDesignerPro({ config, onSave, onClose, darkMode }) 
                         }
                         style={{ pointerEvents: 'none' }} 
                       />
+                      
                       {/* Arrow */}
                       {(() => {
-                        const angle = Math.atan2(coords.y2 - coords.y1, coords.x2 - coords.x1);
                         const arrowSize = 10 + line.width;
                         return (
                           <polygon
                             points={`0,-${arrowSize/2} ${arrowSize},0 0,${arrowSize/2}`}
                             fill={isSelected ? theme.accent : line.color}
-                            transform={`translate(${coords.x2}, ${coords.y2}) rotate(${angle * 180 / Math.PI})`}
+                            transform={`translate(${endPoint.x}, ${endPoint.y}) rotate(${endPoint.angle * 180 / Math.PI})`}
                             style={{ pointerEvents: 'none' }}
                           />
                         );
                       })()}
-                      {/* Selection indicator */}
-                      {isSelected && (
+                      
+                      {/* Control points (when selected) */}
+                      {isEditing && (line.controlPoints || []).map((cp, index) => (
+                        <g key={`cp-${index}`}>
+                          {/* Control point handle */}
+                          <circle 
+                            cx={cp.x} 
+                            cy={cp.y} 
+                            r="8" 
+                            fill="white"
+                            stroke={theme.accent}
+                            strokeWidth="2"
+                            style={{ cursor: 'move' }}
+                            onMouseDown={(e) => {
+                              e.stopPropagation();
+                              handleLinePointMouseDown(e, line.id, index);
+                            }}
+                          />
+                          {/* Delete button for control point */}
+                          <g
+                            style={{ cursor: 'pointer' }}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              const newControlPoints = line.controlPoints.filter((_, i) => i !== index);
+                              setLines(lines.map(l => l.id === line.id ? { ...l, controlPoints: newControlPoints } : l));
+                              saveToHistory();
+                            }}
+                          >
+                            <circle 
+                              cx={cp.x + 12} 
+                              cy={cp.y - 12} 
+                              r="8" 
+                              fill={theme.danger}
+                            />
+                            <text
+                              x={cp.x + 12}
+                              y={cp.y - 8}
+                              textAnchor="middle"
+                              fill="white"
+                              fontSize="12"
+                              fontWeight="bold"
+                              style={{ pointerEvents: 'none' }}
+                            >
+                              ×
+                            </text>
+                          </g>
+                        </g>
+                      ))}
+                      
+                      {/* Start and end point indicators (when selected) */}
+                      {isEditing && (
                         <>
-                          <circle cx={coords.x1} cy={coords.y1} r="6" fill={theme.accent} />
-                          <circle cx={coords.x2} cy={coords.y2} r="6" fill={theme.accent} />
+                          <circle cx={coords.x1} cy={coords.y1} r="6" fill={theme.success} />
+                          <circle cx={coords.x2} cy={coords.y2} r="6" fill={theme.danger} />
                         </>
                       )}
                     </g>
@@ -1675,10 +1870,10 @@ export default function ScadaDesignerPro({ config, onSave, onClose, darkMode }) 
               borderRadius: '6px',
               fontSize: '11px',
               color: theme.textSecondary,
-              maxWidth: '300px',
+              maxWidth: '320px',
               zIndex: 10
             }}>
-              <div style={{ fontWeight: '700', marginBottom: '6px', color: theme.text }}>Shortcuts</div>
+              <div style={{ fontWeight: '700', marginBottom: '6px', color: theme.text }}>Shortcuts & Tips</div>
               <div style={{ display: 'grid', gridTemplateColumns: 'auto 1fr', gap: '4px 12px' }}>
                 <span>V</span><span>Select tool</span>
                 <span>L</span><span>Line tool</span>
@@ -1687,6 +1882,11 @@ export default function ScadaDesignerPro({ config, onSave, onClose, darkMode }) 
                 <span>Ctrl+Z</span><span>Undo</span>
                 <span>Ctrl+Y</span><span>Redo</span>
                 <span>Esc</span><span>Deselect</span>
+                <span style={{ gridColumn: '1 / -1', marginTop: '6px', paddingTop: '6px', borderTop: `1px solid ${theme.border}`, color: theme.text, fontWeight: '600' }}>
+                  Line Editing:
+                </span>
+                <span>Double-click</span><span>Add bend point</span>
+                <span>Drag point</span><span>Reshape line</span>
               </div>
             </div>
           </div>
