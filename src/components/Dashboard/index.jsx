@@ -1,6 +1,3 @@
-// Updated Dashboard.jsx with MongoDB integration
-// Replace the dashboard state management section in your Dashboard component
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
@@ -8,13 +5,37 @@ import {
 } from 'lucide-react';
 import authService from '../../services/auth';
 import questdbService from '../../services/questdb';
-import dashboardService from '../../services/dashboardService'; // NEW IMPORT
+import dashboardService from '../../services/dashboardService';
 import DashboardModal from './DashboardModal';
 import PanelConfigModal from './PanelConfigModal';
 import QuestDBPanel from './QuestDBPanel';
 import ScadaDesigner from './ScadaDesigner';
 import ScadaPanel from './ScadaPanel';
 import { GRID_COLS, ROW_HEIGHT, DARK_COLORS } from './constants';
+
+// ✅ HELPER FUNCTION: Safely extract plantId from user object
+const getPlantId = (user) => {
+  if (!user) {
+    console.error('❌ No user object provided');
+    return null;
+  }
+  
+  // Try plantId first (for backward compatibility)
+  if (user.plantId) {
+    console.log('✅ Found plantId:', user.plantId);
+    return user.plantId;
+  }
+  
+  // Try plantAccess array (current structure)
+  if (user.plantAccess && Array.isArray(user.plantAccess) && user.plantAccess.length > 0) {
+    const plantId = user.plantAccess[0].plantId;
+    console.log('✅ Found plantId from plantAccess:', plantId);
+    return plantId;
+  }
+  
+  console.error('❌ No plantId found in user object:', user);
+  return null;
+};
 
 export default function Dashboard({ onLogout }) {
   const navigate = useNavigate();
@@ -34,6 +55,12 @@ export default function Dashboard({ onLogout }) {
     const saved = localStorage.getItem('miralys_dark_mode');
     return saved ? JSON.parse(saved) : false;
   });
+
+  // Debug: Log user object on mount
+  useEffect(() => {
+    console.log('👤 Current user object:', user);
+    console.log('🏭 Extracted plantId:', getPlantId(user));
+  }, []);
 
   // Fetch tables
   useEffect(() => {
@@ -106,14 +133,15 @@ export default function Dashboard({ onLogout }) {
 
   const createDefaultDashboard = async () => {
     try {
-      const plantId = user?.plantId || user?.plantAccess?.[0]?.plantId;
+      const plantId = getPlantId(user);
       
       if (!plantId) {
-        console.error('No plantId found for user');
+        console.error('❌ No plantId found for user - creating offline dashboard');
         createDefaultDashboardOffline();
         return;
       }
 
+      console.log('📝 Creating default dashboard for plant:', plantId);
       const newDashboard = await dashboardService.createDashboard(
         'Default Dashboard',
         plantId,
@@ -123,13 +151,15 @@ export default function Dashboard({ onLogout }) {
 
       setDashboards([newDashboard]);
       setCurrentDashboard(newDashboard);
+      console.log('✅ Default dashboard created successfully');
     } catch (error) {
-      console.error('Error creating default dashboard:', error);
+      console.error('❌ Error creating default dashboard:', error);
       createDefaultDashboardOffline();
     }
   };
 
   const createDefaultDashboardOffline = () => {
+    console.log('📝 Creating offline default dashboard');
     const defaultDashboard = {
       id: `dashboard_${Date.now()}`,
       name: 'Default Dashboard',
@@ -229,12 +259,11 @@ export default function Dashboard({ onLogout }) {
         await dashboardService.updateDashboard(updatedDashboard.id, {
           panels: updatedDashboard.panels
         });
+        console.log('✅ Panel saved to MongoDB');
       } catch (error) {
-        console.error('Failed to save to MongoDB:', error);
-        // Continue with local update even if remote fails
+        console.error('❌ Failed to save to MongoDB:', error);
       }
 
-      // Update local state
       setDashboards(prevDashboards =>
         prevDashboards.map(d =>
           d.id === updatedDashboard.id ? updatedDashboard : d
@@ -243,7 +272,6 @@ export default function Dashboard({ onLogout }) {
       
       setCurrentDashboard(updatedDashboard);
       
-      // Close modals
       setTimeout(() => {
         setShowConfigModal(false);
         setShowScadaModal(false);
@@ -279,13 +307,13 @@ export default function Dashboard({ onLogout }) {
         panels: currentDashboard.panels.filter(p => p.id !== panelId)
       };
 
-      // Update in MongoDB
       try {
         await dashboardService.updateDashboard(updatedDashboard.id, {
           panels: updatedDashboard.panels
         });
+        console.log('✅ Panel deleted from MongoDB');
       } catch (error) {
-        console.error('Failed to delete from MongoDB:', error);
+        console.error('❌ Failed to delete from MongoDB:', error);
       }
 
       setCurrentDashboard(updatedDashboard);
@@ -307,13 +335,13 @@ export default function Dashboard({ onLogout }) {
       panels: [...(currentDashboard.panels || []), newPanel]
     };
 
-    // Update in MongoDB
     try {
       await dashboardService.updateDashboard(updatedDashboard.id, {
         panels: updatedDashboard.panels
       });
+      console.log('✅ Panel duplicated in MongoDB');
     } catch (error) {
-      console.error('Failed to duplicate in MongoDB:', error);
+      console.error('❌ Failed to duplicate in MongoDB:', error);
     }
 
     setCurrentDashboard(updatedDashboard);
@@ -330,13 +358,13 @@ export default function Dashboard({ onLogout }) {
       )
     };
 
-    // Update in MongoDB
     try {
       await dashboardService.updateDashboard(updatedDashboard.id, {
         panels: updatedDashboard.panels
       });
+      console.log('✅ Panel resized in MongoDB');
     } catch (error) {
-      console.error('Failed to resize in MongoDB:', error);
+      console.error('❌ Failed to resize in MongoDB:', error);
     }
 
     setCurrentDashboard(updatedDashboard);
@@ -347,18 +375,20 @@ export default function Dashboard({ onLogout }) {
 
   const handleCreateDashboard = async (name) => {
     try {
-      const plantId = user?.plantId || user?.plantAccess?.[0]?.plantId;
+      const plantId = getPlantId(user);
       
       if (!plantId) {
-        alert('No plant access found');
+        alert('No plant access found. Please contact your administrator.');
         return;
       }
 
+      console.log('📝 Creating new dashboard:', name, 'for plant:', plantId);
       const newDashboard = await dashboardService.createDashboard(name, plantId);
       setDashboards([...dashboards, newDashboard]);
       setCurrentDashboard(newDashboard);
+      console.log('✅ Dashboard created successfully');
     } catch (error) {
-      console.error('Error creating dashboard:', error);
+      console.error('❌ Error creating dashboard:', error);
       alert('Failed to create dashboard. Please try again.');
     }
   };
@@ -374,6 +404,7 @@ export default function Dashboard({ onLogout }) {
   const handleRenameDashboard = async (dashboardId, newName) => {
     try {
       await dashboardService.updateDashboard(dashboardId, { name: newName });
+      console.log('✅ Dashboard renamed in MongoDB');
       
       const updatedDashboards = dashboards.map(d =>
         d.id === dashboardId ? { ...d, name: newName } : d
@@ -384,7 +415,7 @@ export default function Dashboard({ onLogout }) {
         setCurrentDashboard({ ...currentDashboard, name: newName });
       }
     } catch (error) {
-      console.error('Error renaming dashboard:', error);
+      console.error('❌ Error renaming dashboard:', error);
       alert('Failed to rename dashboard. Please try again.');
     }
   };
@@ -392,6 +423,7 @@ export default function Dashboard({ onLogout }) {
   const handleDeleteDashboard = async (dashboardId) => {
     try {
       await dashboardService.deleteDashboard(dashboardId);
+      console.log('✅ Dashboard deleted from MongoDB');
       
       const updatedDashboards = dashboards.filter(d => d.id !== dashboardId);
       setDashboards(updatedDashboards);
@@ -400,7 +432,7 @@ export default function Dashboard({ onLogout }) {
         setCurrentDashboard(updatedDashboards[0] || null);
       }
     } catch (error) {
-      console.error('Error deleting dashboard:', error);
+      console.error('❌ Error deleting dashboard:', error);
       alert('Failed to delete dashboard. Please try again.');
     }
   };
@@ -426,13 +458,14 @@ export default function Dashboard({ onLogout }) {
     reader.onload = async (event) => {
       try {
         const imported = JSON.parse(event.target.result);
-        const plantId = user?.plantId || user?.plantAccess?.[0]?.plantId;
+        const plantId = getPlantId(user);
         
         if (!plantId) {
-          alert('No plant access found');
+          alert('No plant access found. Please contact your administrator.');
           return;
         }
 
+        console.log('📥 Importing dashboard for plant:', plantId);
         const newDashboard = await dashboardService.createDashboard(
           `${imported.name} (Imported)`,
           plantId,
@@ -441,6 +474,7 @@ export default function Dashboard({ onLogout }) {
         
         setDashboards([...dashboards, newDashboard]);
         setCurrentDashboard(newDashboard);
+        console.log('✅ Dashboard imported successfully');
       } catch (error) {
         alert('Failed to import dashboard. Please check the file format.');
         console.error('Import error:', error);
@@ -481,13 +515,13 @@ export default function Dashboard({ onLogout }) {
         panels: updatedPanels
       };
 
-      // Update in MongoDB
       try {
         await dashboardService.updateDashboard(updatedDashboard.id, {
           panels: updatedPanels
         });
+        console.log('✅ Panel order updated in MongoDB');
       } catch (error) {
-        console.error('Failed to update panel order in MongoDB:', error);
+        console.error('❌ Failed to update panel order in MongoDB:', error);
       }
 
       setCurrentDashboard(updatedDashboard);
@@ -509,6 +543,7 @@ export default function Dashboard({ onLogout }) {
     };
   };
 
+  // Loading state
   if (loading) {
     return (
       <div style={{ 
@@ -516,22 +551,26 @@ export default function Dashboard({ onLogout }) {
         background: theme.bg,
         display: 'flex',
         alignItems: 'center',
-        justifyContent: 'center'
+        justifyContent: 'center',
+        transition: 'background 0.3s ease'
       }}>
         <div style={{ textAlign: 'center' }}>
           <Zap size={48} color="#667eea" style={{ animation: 'pulse 2s infinite' }} />
-          <p style={{ marginTop: '16px', color: theme.textMuted }}>Loading dashboards...</p>
+          <p style={{ marginTop: '16px', color: theme.textMuted, fontSize: '16px' }}>
+            Loading dashboards...
+          </p>
         </div>
       </div>
     );
   }
+
   return (
     <div style={{ 
       minHeight: '100vh', 
       background: theme.bg,
       transition: 'background 0.3s ease'
     }}>
-      {/* Show sync error if exists */}
+      {/* Sync Error Banner */}
       {syncError && (
         <div style={{
           background: '#fef3c7',
@@ -539,11 +578,14 @@ export default function Dashboard({ onLogout }) {
           padding: '12px 24px',
           textAlign: 'center',
           fontSize: '14px',
-          color: '#92400e'
+          color: '#92400e',
+          fontWeight: '600'
         }}>
           ⚠️ {syncError}
         </div>
       )}
+
+      {/* Header */}
       <div style={{
         background: theme.card,
         borderBottom: `2px solid ${theme.border}`,
@@ -819,6 +861,7 @@ export default function Dashboard({ onLogout }) {
         </div>
       </div>
 
+      {/* Main Content */}
       <div style={{ padding: '24px' }}>
         {!currentDashboard || currentDashboard.panels?.length === 0 ? (
           <div style={{
@@ -1034,6 +1077,7 @@ export default function Dashboard({ onLogout }) {
         )}
       </div>
 
+      {/* Modals */}
       {showConfigModal && (
         <PanelConfigModal
           panel={editingPanel}
