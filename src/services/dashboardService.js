@@ -1,5 +1,24 @@
-// frontend/src/services/dashboardService.js
+// frontend/src/services/dashboardService.js - FIXED VERSION
 const API_URL = import.meta.env.VITE_API_URL || 'https://reactback-production-6cd8.up.railway.app/api';
+
+// Helper function to safely extract plantId from user object
+const getPlantId = (user) => {
+  if (!user) {
+    console.error('❌ No user object provided');
+    return null;
+  }
+  
+  if (user.plantId) {
+    return user.plantId;
+  }
+  
+  if (user.plantAccess && Array.isArray(user.plantAccess) && user.plantAccess.length > 0) {
+    return user.plantAccess[0].plantId;
+  }
+  
+  console.error('❌ No plantId found in user object:', user);
+  return null;
+};
 
 class DashboardService {
   getAuthHeaders() {
@@ -133,7 +152,7 @@ class DashboardService {
     }
   }
 
-  // Sync dashboards between localStorage and MongoDB
+  // Sync dashboards between localStorage and MongoDB - FIXED VERSION
   async syncDashboards() {
     try {
       // Get dashboards from MongoDB
@@ -145,9 +164,10 @@ class DashboardService {
       // If remote is empty but local has data, push local to remote
       if (remoteDashboards.length === 0 && localDashboards.length > 0) {
         const user = JSON.parse(localStorage.getItem('user'));
-        const plantId = user?.plantId || user?.plantAccess?.[0]?.plantId;
+        const plantId = getPlantId(user); // ✅ FIXED: Use helper function
         
         if (plantId) {
+          console.log('📤 Migrating local dashboards to MongoDB for plant:', plantId);
           for (const dashboard of localDashboards) {
             await this.createDashboard(
               dashboard.name,
@@ -158,16 +178,23 @@ class DashboardService {
           }
           
           // Fetch updated remote dashboards
-          return await this.getAllDashboards();
+          const updatedRemote = await this.getAllDashboards();
+          console.log('✅ Migration complete:', updatedRemote.length, 'dashboards');
+          return updatedRemote;
+        } else {
+          console.error('❌ Cannot migrate: no plantId found');
         }
       }
       
       // Otherwise, use remote as source of truth
+      console.log('📥 Using remote dashboards:', remoteDashboards.length);
       return remoteDashboards;
     } catch (error) {
       console.error('Error syncing dashboards:', error);
       // Fallback to localStorage if sync fails
-      return JSON.parse(localStorage.getItem('miralys_dashboards') || '[]');
+      const fallback = JSON.parse(localStorage.getItem('miralys_dashboards') || '[]');
+      console.log('⚠️  Falling back to localStorage:', fallback.length, 'dashboards');
+      return fallback;
     }
   }
 }
