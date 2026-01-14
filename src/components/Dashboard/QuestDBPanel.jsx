@@ -507,64 +507,117 @@ function QuestDBPanel({ config, onEdit, onDelete, onDuplicate, onResize, style, 
       onMouseEnter={(e) => e.currentTarget.style.boxShadow = darkMode ? '0 12px 32px rgba(0,0,0,0.4)' : '0 8px 12px rgba(0,0,0,0.1)'}
       onMouseLeave={(e) => e.currentTarget.style.boxShadow = darkMode ? '0 8px 24px rgba(0,0,0,0.3)' : '0 4px 6px rgba(0,0,0,0.05)'}
     >
-      {/* ✅ NEW: Filter/Time Range Indicator Badge */}
-      {(config.filters?.length > 0 || config.timeRange !== 'all') && (
-        <div style={{
-          position: 'absolute',
-          top: '8px',
-          right: '8px',
-          background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-          color: 'white',
-          padding: '4px 10px',
-          borderRadius: '12px',
-          fontSize: '10px',
-          fontWeight: '600',
-          display: 'flex',
-          alignItems: 'center',
-          gap: '6px',
-          zIndex: 10,
-          boxShadow: '0 2px 8px rgba(102, 126, 234, 0.4)'
-        }}>
-          <Filter size={10} />
-          {config.filters?.length > 0 && (
-            <span>{config.filters.length} filter{config.filters.length > 1 ? 's' : ''}</span>
-          )}
-          {config.filters?.length > 0 && config.timeRange !== 'all' && <span>•</span>}
-          {config.timeRange === 'last' && <span>{config.timeRangeLast}</span>}
-          {config.timeRange === 'custom' && <span>Custom range</span>}
-        </div>
-      )}
-
+      {/* ✅ FIXED: Header with inline badges - NO MORE OVERLAP! */}
       <div style={{
-        padding: '2px 2px',
+        padding: '12px 12px',
         background: theme.hover,
         borderBottom: `2px solid ${theme.border}`,
         display: 'flex',
         justifyContent: 'space-between',
-        alignItems: 'center',
+        alignItems: 'flex-start',
+        gap: '8px',
         transition: 'all 0.3s ease'
       }}>
-        <div style={{
-          fontWeight: '600',
-          color: theme.text,
-          fontSize: '14px',
-          flex: 1,
-          display: 'flex',
-          alignItems: 'center',
-          gap: '8px',
-          transition: 'color 0.3s ease'
-        }}>
+        <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{
-            width: '8px',
-            height: '8px',
-            borderRadius: '50%',
-            background: getColor(0),
-            boxShadow: `0 0 8px ${getColor(0)}`,
-            animation: 'pulse 2s infinite'
-          }} />
-          {config.title}
+            fontWeight: '600',
+            color: theme.text,
+            fontSize: '14px',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px',
+            marginBottom: '6px',
+            transition: 'color 0.3s ease'
+          }}>
+            <div style={{
+              width: '8px',
+              height: '8px',
+              borderRadius: '50%',
+              background: getColor(0),
+              boxShadow: `0 0 8px ${getColor(0)}`,
+              animation: 'pulse 2s infinite',
+              flexShrink: 0
+            }} />
+            <span style={{
+              whiteSpace: 'nowrap',
+              overflow: 'hidden',
+              textOverflow: 'ellipsis'
+            }}>
+              {config.title}
+            </span>
+          </div>
+          
+          {/* ✅ NEW: Inline badges for filters and time range */}
+          <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', alignItems: 'center' }}>
+            {config.timeRange === 'last' && config.timeRangeLast && (
+              <div style={{
+                padding: '2px 8px',
+                background: 'rgba(102, 126, 234, 0.15)',
+                border: '1px solid rgba(102, 126, 234, 0.3)',
+                borderRadius: '10px',
+                fontSize: '10px',
+                color: '#667eea',
+                fontWeight: '600',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '4px'
+              }}>
+                <Clock size={10} />
+                {config.timeRangeLast}
+              </div>
+            )}
+            {config.timeRange === 'custom' && config.timeRangeStart && (
+              <div style={{
+                padding: '2px 8px',
+                background: 'rgba(102, 126, 234, 0.15)',
+                border: '1px solid rgba(102, 126, 234, 0.3)',
+                borderRadius: '10px',
+                fontSize: '10px',
+                color: '#667eea',
+                fontWeight: '600',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '4px'
+              }}>
+                <Clock size={10} />
+                Custom
+              </div>
+            )}
+            {config.filters && config.filters.length > 0 && (
+              <div style={{
+                padding: '2px 8px',
+                background: 'rgba(16, 185, 129, 0.15)',
+                border: '1px solid rgba(16, 185, 129, 0.3)',
+                borderRadius: '10px',
+                fontSize: '10px',
+                color: '#10b981',
+                fontWeight: '600',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '4px'
+              }}>
+                <Filter size={10} />
+                {config.filters.length}
+              </div>
+            )}
+            {config.yAxisScale && config.yAxisScale !== 'auto' && (
+              <div style={{
+                padding: '2px 8px',
+                background: 'rgba(245, 158, 11, 0.15)',
+                border: '1px solid rgba(245, 158, 11, 0.3)',
+                borderRadius: '10px',
+                fontSize: '10px',
+                color: '#f59e0b',
+                fontWeight: '600',
+                textTransform: 'capitalize'
+              }}>
+                {config.yAxisScale}
+              </div>
+            )}
+          </div>
         </div>
-        <div style={{ display: 'flex', gap: '4px' }}>
+        
+        <div style={{ display: 'flex', gap: '4px', flexShrink: 0 }}>
           <button onClick={() => fetchData()} style={{
             padding: '6px',
             background: 'transparent',
@@ -667,13 +720,6 @@ function QuestDBPanel({ config, onEdit, onDelete, onDuplicate, onResize, style, 
             </div>
             <div>•</div>
             <div style={{ textTransform: 'capitalize' }}>{config.vizType}</div>
-            {/* ✅ NEW: Show axis scale if not auto */}
-            {config.yAxisScale && config.yAxisScale !== 'auto' && (
-              <>
-                <div>•</div>
-                <div style={{ textTransform: 'capitalize' }}>{config.yAxisScale} scale</div>
-              </>
-            )}
           </div>
           <div>{data.length} pts • {config.width}×{config.height}</div>
         </div>
