@@ -6,7 +6,7 @@ import {
 } from 'recharts';
 import {
   Trash2, Copy, RefreshCw, Settings, Play, Clock, Database, AlertCircle, 
-  Move
+  Move, Filter
 } from 'lucide-react';
 import { COLORS } from './constants';
 import questdbService from '../../services/questdb';
@@ -42,54 +42,84 @@ function QuestDBPanel({ config, onEdit, onDelete, onDuplicate, onResize, style, 
     chartText: '#6b7280'
   };
 
-  // Debug version of fetchData - Add console.logs to see what's happening
+  // ✅ UPDATED: Build query with filters and time range
+  const fetchData = async () => {
+    try {
+      setError(null);
+      const startTime = Date.now();
+      let query = config.query;
+      
+      if (config.dataSource === 'table' && config.table) {
+        query = `SELECT * FROM ${config.table}`;
+        
+        // Build WHERE clause for filters and time range
+        const whereClauses = [];
+        
+        // Time range filter
+        if (config.timeRange === 'last' && config.timeRangeLast) {
+          const intervals = {
+            '5m': '5 minutes',
+            '15m': '15 minutes',
+            '1h': '1 hour',
+            '6h': '6 hours',
+            '24h': '24 hours',
+            '7d': '7 days',
+            '30d': '30 days'
+          };
+          whereClauses.push(
+            `${config.timestampField} >= dateadd('${intervals[config.timeRangeLast]}', -1, now())`
+          );
+        } else if (config.timeRange === 'custom' && config.timeRangeStart && config.timeRangeEnd) {
+          whereClauses.push(
+            `${config.timestampField} BETWEEN '${config.timeRangeStart}' AND '${config.timeRangeEnd}'`
+          );
+        }
+        
+        // Data filters
+        if (config.filters && config.filters.length > 0) {
+          config.filters.forEach(filter => {
+            if (filter.field && filter.operator && filter.value !== '') {
+              const value = isNaN(filter.value) ? `'${filter.value}'` : filter.value;
+              whereClauses.push(`${filter.field} ${filter.operator} ${value}`);
+            }
+          });
+        }
+        
+        if (whereClauses.length > 0) {
+          query += ` WHERE ${whereClauses.join(' AND ')}`;
+        }
+        
+        query += ` ORDER BY ${config.timestampField} DESC LIMIT ${config.limit}`;
+      }
 
-const fetchData = async () => {
-  try {
-    setError(null);
-    const startTime = Date.now();
-    let query = config.query;
-    
-    if (config.dataSource === 'table' && config.table) {
-      query = `SELECT * FROM ${config.table} ORDER BY ${config.timestampField} DESC LIMIT ${config.limit}`;
-    }
+      if (!query) {
+        throw new Error('No query specified');
+      }
 
-    if (!query) {
-      throw new Error('No query specified');
+      const result = await questdbService.query(query);
+      const formatted = questdbService.formatForChart(result, config.timestampField);
+      
+      // Apply transformations if configured
+      let finalData = formatted;
+      if (config.transformations && config.transformations.length > 0) {
+        finalData = SimpleTransformations.applyTransformations(formatted, config.transformations);
+      }
+      
+      const endTime = Date.now();
+      setQueryTime(new Date(endTime));
+      
+      if (result.length > 0 && result[0][config.timestampField]) {
+        setLatestRecordTime(new Date(result[0][config.timestampField]));
+      }
+      
+      setData(finalData);
+      setLoading(false);
+    } catch (err) {
+      console.error('Error fetching data:', err);
+      setError(err.message);
+      setLoading(false);
     }
-
-    const result = await questdbService.query(query);
-    const formatted = questdbService.formatForChart(result, config.timestampField);
-    
-    // DEBUG: Let's see what we have
-    console.log('🔍 DEBUG - Config transformations:', config.transformations);
-    console.log('🔍 DEBUG - Formatted data (first 3 items):', formatted.slice(0, 3));
-    
-    // Apply transformations if configured
-    let finalData = formatted;
-    if (config.transformations && config.transformations.length > 0) {
-      console.log('✅ Applying transformations!');
-      finalData = SimpleTransformations.applyTransformations(formatted, config.transformations);
-      console.log('🔍 DEBUG - Transformed data (first 3 items):', finalData.slice(0, 3));
-    } else {
-      console.log('⚠️ No transformations to apply');
-    }
-    
-    const endTime = Date.now();
-    setQueryTime(new Date(endTime));
-    
-    if (result.length > 0 && result[0][config.timestampField]) {
-      setLatestRecordTime(new Date(result[0][config.timestampField]));
-    }
-    
-    setData(finalData);
-    setLoading(false);
-  } catch (err) {
-    console.error('Error fetching data:', err);
-    setError(err.message);
-    setLoading(false);
-  }
-};
+  };
 
   useEffect(() => {
     setLoading(true);
@@ -123,6 +153,17 @@ const fetchData = async () => {
       return config.colors[idx];
     }
     return COLORS[idx % COLORS.length];
+  };
+
+  // ✅ NEW: Get Y-axis domain based on scaling configuration
+  const getYAxisDomain = () => {
+    if (config.yAxisScale === 'custom') {
+      return [
+        config.yAxisMin !== '' ? parseFloat(config.yAxisMin) : 'auto',
+        config.yAxisMax !== '' ? parseFloat(config.yAxisMax) : 'auto'
+      ];
+    }
+    return ['auto', 'auto'];
   };
 
   const renderChart = () => {
@@ -177,6 +218,9 @@ const fetchData = async () => {
     
     // Filter out 'value' if it's not explicitly selected
     const filteredYFields = yFields.filter(field => field && field !== 'value');
+    
+    // ✅ NEW: Get domain for axis scaling
+    const yDomain = getYAxisDomain();
 
     switch (config.vizType) {
       case 'line':
@@ -185,7 +229,13 @@ const fetchData = async () => {
             <LineChart {...chartProps}>
               {config.showGrid && <CartesianGrid strokeDasharray="3 3" stroke={theme.chartGrid} />}
               <XAxis dataKey="_time" tick={{ fill: theme.chartText, fontSize: 11 }} stroke={theme.chartAxis} />
-              <YAxis tick={{ fill: theme.chartText, fontSize: 11 }} stroke={theme.chartAxis} />
+              {/* ✅ UPDATED: Added domain and scale props */}
+              <YAxis 
+                tick={{ fill: theme.chartText, fontSize: 11 }} 
+                stroke={theme.chartAxis}
+                domain={yDomain}
+                scale={config.yAxisScale === 'log' ? 'log' : 'auto'}
+              />
               <Tooltip 
                 contentStyle={{ 
                   background: theme.card, 
@@ -218,7 +268,13 @@ const fetchData = async () => {
             <AreaChart {...chartProps}>
               {config.showGrid && <CartesianGrid strokeDasharray="3 3" stroke={theme.chartGrid} />}
               <XAxis dataKey="_time" tick={{ fill: theme.chartText, fontSize: 11 }} stroke={theme.chartAxis} />
-              <YAxis tick={{ fill: theme.chartText, fontSize: 11 }} stroke={theme.chartAxis} />
+              {/* ✅ UPDATED: Added domain and scale props */}
+              <YAxis 
+                tick={{ fill: theme.chartText, fontSize: 11 }} 
+                stroke={theme.chartAxis}
+                domain={yDomain}
+                scale={config.yAxisScale === 'log' ? 'log' : 'auto'}
+              />
               <Tooltip 
                 contentStyle={{ 
                   background: theme.card, 
@@ -252,7 +308,12 @@ const fetchData = async () => {
             <BarChart {...chartProps}>
               {config.showGrid && <CartesianGrid strokeDasharray="3 3" stroke={theme.chartGrid} />}
               <XAxis dataKey="_time" tick={{ fill: theme.chartText, fontSize: 11 }} stroke={theme.chartAxis} />
-              <YAxis tick={{ fill: theme.chartText, fontSize: 11 }} stroke={theme.chartAxis} />
+              {/* ✅ UPDATED: Added domain prop */}
+              <YAxis 
+                tick={{ fill: theme.chartText, fontSize: 11 }} 
+                stroke={theme.chartAxis}
+                domain={yDomain}
+              />
               <Tooltip 
                 contentStyle={{ 
                   background: theme.card, 
@@ -307,7 +368,13 @@ const fetchData = async () => {
             <ScatterChart {...chartProps}>
               {config.showGrid && <CartesianGrid strokeDasharray="3 3" stroke={theme.chartGrid} />}
               <XAxis dataKey="_time" tick={{ fill: theme.chartText, fontSize: 11 }} stroke={theme.chartAxis} />
-              <YAxis tick={{ fill: theme.chartText, fontSize: 11 }} stroke={theme.chartAxis} />
+              {/* ✅ UPDATED: Added domain and scale props */}
+              <YAxis 
+                tick={{ fill: theme.chartText, fontSize: 11 }} 
+                stroke={theme.chartAxis}
+                domain={yDomain}
+                scale={config.yAxisScale === 'log' ? 'log' : 'auto'}
+              />
               <Tooltip contentStyle={{ background: theme.card, border: `1px solid ${theme.border}`, borderRadius: '6px', color: theme.text }} />
               {config.showLegend && <Legend wrapperStyle={{ color: theme.text }} />}
               {filteredYFields.map((yField, idx) => (
@@ -440,6 +507,34 @@ const fetchData = async () => {
       onMouseEnter={(e) => e.currentTarget.style.boxShadow = darkMode ? '0 12px 32px rgba(0,0,0,0.4)' : '0 8px 12px rgba(0,0,0,0.1)'}
       onMouseLeave={(e) => e.currentTarget.style.boxShadow = darkMode ? '0 8px 24px rgba(0,0,0,0.3)' : '0 4px 6px rgba(0,0,0,0.05)'}
     >
+      {/* ✅ NEW: Filter/Time Range Indicator Badge */}
+      {(config.filters?.length > 0 || config.timeRange !== 'all') && (
+        <div style={{
+          position: 'absolute',
+          top: '8px',
+          right: '8px',
+          background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+          color: 'white',
+          padding: '4px 10px',
+          borderRadius: '12px',
+          fontSize: '10px',
+          fontWeight: '600',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '6px',
+          zIndex: 10,
+          boxShadow: '0 2px 8px rgba(102, 126, 234, 0.4)'
+        }}>
+          <Filter size={10} />
+          {config.filters?.length > 0 && (
+            <span>{config.filters.length} filter{config.filters.length > 1 ? 's' : ''}</span>
+          )}
+          {config.filters?.length > 0 && config.timeRange !== 'all' && <span>•</span>}
+          {config.timeRange === 'last' && <span>{config.timeRangeLast}</span>}
+          {config.timeRange === 'custom' && <span>Custom range</span>}
+        </div>
+      )}
+
       <div style={{
         padding: '2px 2px',
         background: theme.hover,
@@ -572,6 +667,13 @@ const fetchData = async () => {
             </div>
             <div>•</div>
             <div style={{ textTransform: 'capitalize' }}>{config.vizType}</div>
+            {/* ✅ NEW: Show axis scale if not auto */}
+            {config.yAxisScale && config.yAxisScale !== 'auto' && (
+              <>
+                <div>•</div>
+                <div style={{ textTransform: 'capitalize' }}>{config.yAxisScale} scale</div>
+              </>
+            )}
           </div>
           <div>{data.length} pts • {config.width}×{config.height}</div>
         </div>
