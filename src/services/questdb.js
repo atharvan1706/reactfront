@@ -23,16 +23,14 @@ class QuestDBService {
 
   // Get OPC tag data (using actual table name: opc_tag_data)
   async getOpcTags(limit = 100, timeRange = '1') {
-  const sql = `
-    SELECT timestamp, tag_name, value, quality
-FROM opc_tag_data
-ORDER BY timestamp DESC
-LIMIT 200;
-
-  `;
-  return await this.query(sql);
-}
-
+    const sql = `
+      SELECT timestamp, tag_name, value, quality
+      FROM opc_tag_data
+      ORDER BY timestamp DESC
+      LIMIT 200;
+    `;
+    return await this.query(sql);
+  }
 
   // Get OPCUA tag data
   async getOpcuaTags(limit = 100, timeRange = '1') {
@@ -133,6 +131,7 @@ LIMIT 200;
   }
 
   // Format QuestDB response to array of objects
+  // ✅ UPDATED: Now handles both array and object formats
   formatData(questdbResponse) {
     if (!questdbResponse || !questdbResponse.dataset || !questdbResponse.columns) {
       return [];
@@ -141,10 +140,21 @@ LIMIT 200;
     const columns = questdbResponse.columns;
     const dataset = questdbResponse.dataset;
 
+    // Handle empty dataset
+    if (dataset.length === 0) {
+      return [];
+    }
+
+    // Detect format from first row
+    const firstRow = dataset[0];
+    const isArrayFormat = Array.isArray(firstRow);
+
     return dataset.map(row => {
       const obj = {};
+      
       columns.forEach((col, index) => {
-        let value = row[index];
+        // Smart access: works with both arrays and objects
+        let value = isArrayFormat ? row[index] : row[col.name];
         
         // Handle timestamps
         if (col.type === 'TIMESTAMP') {
@@ -153,6 +163,7 @@ LIMIT 200;
         
         obj[col.name] = value;
       });
+      
       return obj;
     });
   }
