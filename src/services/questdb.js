@@ -133,40 +133,50 @@ class QuestDBService {
   // Format QuestDB response to array of objects
   // ✅ UPDATED: Now handles both array and object formats
   formatData(questdbResponse) {
-    if (!questdbResponse || !questdbResponse.dataset || !questdbResponse.columns) {
-      return [];
-    }
-
-    const columns = questdbResponse.columns;
-    const dataset = questdbResponse.dataset;
-
-    // Handle empty dataset
-    if (dataset.length === 0) {
-      return [];
-    }
-
-    // Detect format from first row
-    const firstRow = dataset[0];
-    const isArrayFormat = Array.isArray(firstRow);
-
-    return dataset.map(row => {
-      const obj = {};
-      
-      columns.forEach((col, index) => {
-        // Smart access: works with both arrays and objects
-        let value = isArrayFormat ? row[index] : row[col.name];
-        
-        // Handle timestamps
-        if (col.type === 'TIMESTAMP') {
-          value = this.formatTimestamp(value);
-        }
-        
-        obj[col.name] = value;
-      });
-      
-      return obj;
-    });
+  if (!questdbResponse || !questdbResponse.dataset || !questdbResponse.columns) {
+    return [];
   }
+
+  const columns = questdbResponse.columns;
+  const dataset = questdbResponse.dataset;
+
+  if (dataset.length === 0) {
+    return [];
+  }
+
+  const firstRow = dataset[0];
+  const isArrayFormat = Array.isArray(firstRow);
+  
+  // Numeric types that need coercion
+  const numericTypes = ['DOUBLE', 'REAL', 'INTEGER', 'BIGINT', 'SMALLINT', 'FLOAT', 'NUMERIC', 'DECIMAL'];
+
+  return dataset.map(row => {
+    const obj = {};
+    
+    columns.forEach((col, index) => {
+      let value = isArrayFormat ? row[index] : row[col.name];
+      
+      // Handle timestamps
+      if (col.type === 'TIMESTAMP') {
+        value = this.formatTimestamp(value);
+      }
+      
+      // ✅ Coerce numeric types to actual numbers
+      if (numericTypes.includes(col.type?.toUpperCase())) {
+        if (typeof value === 'string' && value.trim() !== '') {
+          const num = Number(value);
+          value = isNaN(num) ? 0 : num;
+        } else if (value === null || value === undefined || value === '') {
+          value = 0;
+        }
+      }
+      
+      obj[col.name] = value;
+    });
+    
+    return obj;
+  });
+}
 
   // Format timestamp for display
   formatTimestamp(timestamp) {
