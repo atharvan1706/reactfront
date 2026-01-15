@@ -209,10 +209,10 @@ function QuestDBPanel({ config, onEdit, onDelete, onDuplicate, onResize, style, 
     const chartProps = {
       data,
       margin: isSmall 
-        ? { top: 55, right: 15, left: 5, bottom: 30 }
+        ? { top: 50, right: 15, left: 5, bottom: 28 }
         : isMedium
-        ? { top: 60, right: 18, left: 8, bottom: 33 }
-        : { top: 65, right: 22, left: 12, bottom: 38 }
+        ? { top: 55, right: 18, left: 8, bottom: 30 }
+        : { top: 58, right: 22, left: 12, bottom: 32 }
     };
     
     // Responsive font sizes
@@ -541,246 +541,303 @@ function QuestDBPanel({ config, onEdit, onDelete, onDuplicate, onResize, style, 
       {/* Header overlay - top left */}
       <div style={{
         position: 'absolute',
-        top: '8px',
-        left: '8px',
-        right: '60px',
+        top: '6px',
+        left: '6px',
+        right: '140px',
         display: 'flex',
-        alignItems: 'flex-start',
-        gap: '6px',
+        flexDirection: 'column',
+        gap: '4px',
         pointerEvents: 'none',
         zIndex: 10
       }}>
+        {/* Title row */}
         <div style={{
-          pointerEvents: 'auto',
+          fontWeight: '700',
+          color: theme.text,
+          fontSize: isSmall ? '11px' : '13px',
           display: 'flex',
-          flexDirection: 'column',
-          gap: '6px'
+          alignItems: 'center',
+          gap: '6px',
+          textShadow: darkMode 
+            ? '1px 1px 3px rgba(0,0,0,0.9), -1px -1px 3px rgba(0,0,0,0.9)' 
+            : '1px 1px 2px rgba(255,255,255,1), -1px -1px 2px rgba(255,255,255,1)',
+          pointerEvents: 'auto',
+          background: darkMode ? 'rgba(10, 14, 26, 0.4)' : 'rgba(249, 250, 251, 0.4)',
+          backdropFilter: 'blur(4px)',
+          padding: '4px 8px',
+          borderRadius: '6px',
+          alignSelf: 'flex-start'
         }}>
           <div style={{
-            fontWeight: '600',
-            color: theme.text,
-            fontSize: '12px',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '6px',
-            textShadow: darkMode ? '0 1px 3px rgba(0,0,0,0.8)' : '0 1px 2px rgba(255,255,255,0.9)'
+            width: '5px',
+            height: '5px',
+            borderRadius: '50%',
+            background: getColor(0),
+            boxShadow: `0 0 8px ${getColor(0)}`,
+            animation: 'pulse 2s infinite',
+            flexShrink: 0
+          }} />
+          <span style={{ 
+            overflow: 'hidden', 
+            textOverflow: 'ellipsis',
+            whiteSpace: 'nowrap',
+            maxWidth: '200px'
           }}>
-            <div style={{
-              width: '6px',
-              height: '6px',
-              borderRadius: '50%',
-              background: getColor(0),
-              boxShadow: `0 0 8px ${getColor(0)}`,
-              animation: 'pulse 2s infinite',
-              flexShrink: 0
-            }} />
-            <span>{config.title}</span>
-          </div>
-          
-          <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap', alignItems: 'center' }}>
+            {config.title}
+          </span>
+        </div>
+        
+        {/* Badges row - only show if present */}
+        {(config.timeRange || config.filters?.length > 0 || (config.yAxisScale && config.yAxisScale !== 'auto')) && (
+          <div style={{ 
+            display: 'flex', 
+            gap: '3px', 
+            flexWrap: 'wrap', 
+            alignItems: 'center',
+            pointerEvents: 'auto'
+          }}>
             {config.timeRange === 'last' && config.timeRangeLast && (
               <div style={{
-                padding: '3px 8px',
-                background: darkMode ? 'rgba(102, 126, 234, 0.3)' : 'rgba(102, 126, 234, 0.25)',
+                padding: '2px 6px',
+                background: darkMode ? 'rgba(102, 126, 234, 0.35)' : 'rgba(102, 126, 234, 0.3)',
                 backdropFilter: 'blur(4px)',
-                border: '1px solid rgba(102, 126, 234, 0.5)',
-                borderRadius: '8px',
-                fontSize: '9px',
-                color: darkMode ? '#a5b4fc' : '#667eea',
-                fontWeight: '600',
+                border: '1px solid rgba(102, 126, 234, 0.6)',
+                borderRadius: '6px',
+                fontSize: '8px',
+                color: darkMode ? '#c7d2fe' : '#4f46e5',
+                fontWeight: '700',
                 display: 'flex',
                 alignItems: 'center',
-                gap: '3px',
-                boxShadow: darkMode ? '0 2px 6px rgba(0,0,0,0.3)' : '0 1px 3px rgba(0,0,0,0.1)'
+                gap: '2px',
+                boxShadow: darkMode ? '0 1px 3px rgba(0,0,0,0.4)' : '0 1px 2px rgba(0,0,0,0.15)',
+                textShadow: darkMode ? '0 1px 2px rgba(0,0,0,0.5)' : 'none'
               }}>
-                <Clock size={9} />
+                <Clock size={7} />
                 {config.timeRangeLast}
               </div>
             )}
             {config.timeRange === 'custom' && config.timeRangeStart && (
               <div style={{
-                padding: '3px 8px',
-                background: darkMode ? 'rgba(102, 126, 234, 0.3)' : 'rgba(102, 126, 234, 0.25)',
+                padding: '2px 6px',
+                background: darkMode ? 'rgba(102, 126, 234, 0.35)' : 'rgba(102, 126, 234, 0.3)',
                 backdropFilter: 'blur(4px)',
-                border: '1px solid rgba(102, 126, 234, 0.5)',
-                borderRadius: '8px',
-                fontSize: '9px',
-                color: darkMode ? '#a5b4fc' : '#667eea',
-                fontWeight: '600',
+                border: '1px solid rgba(102, 126, 234, 0.6)',
+                borderRadius: '6px',
+                fontSize: '8px',
+                color: darkMode ? '#c7d2fe' : '#4f46e5',
+                fontWeight: '700',
                 display: 'flex',
                 alignItems: 'center',
-                gap: '3px',
-                boxShadow: darkMode ? '0 2px 6px rgba(0,0,0,0.3)' : '0 1px 3px rgba(0,0,0,0.1)'
+                gap: '2px',
+                boxShadow: darkMode ? '0 1px 3px rgba(0,0,0,0.4)' : '0 1px 2px rgba(0,0,0,0.15)',
+                textShadow: darkMode ? '0 1px 2px rgba(0,0,0,0.5)' : 'none'
               }}>
-                <Clock size={9} />
+                <Clock size={7} />
                 Custom
               </div>
             )}
             {config.filters && config.filters.length > 0 && (
               <div style={{
-                padding: '3px 8px',
-                background: darkMode ? 'rgba(16, 185, 129, 0.3)' : 'rgba(16, 185, 129, 0.25)',
+                padding: '2px 6px',
+                background: darkMode ? 'rgba(16, 185, 129, 0.35)' : 'rgba(16, 185, 129, 0.3)',
                 backdropFilter: 'blur(4px)',
-                border: '1px solid rgba(16, 185, 129, 0.5)',
-                borderRadius: '8px',
-                fontSize: '9px',
-                color: darkMode ? '#6ee7b7' : '#10b981',
-                fontWeight: '600',
+                border: '1px solid rgba(16, 185, 129, 0.6)',
+                borderRadius: '6px',
+                fontSize: '8px',
+                color: darkMode ? '#a7f3d0' : '#047857',
+                fontWeight: '700',
                 display: 'flex',
                 alignItems: 'center',
-                gap: '3px',
-                boxShadow: darkMode ? '0 2px 6px rgba(0,0,0,0.3)' : '0 1px 3px rgba(0,0,0,0.1)'
+                gap: '2px',
+                boxShadow: darkMode ? '0 1px 3px rgba(0,0,0,0.4)' : '0 1px 2px rgba(0,0,0,0.15)',
+                textShadow: darkMode ? '0 1px 2px rgba(0,0,0,0.5)' : 'none'
               }}>
-                <Filter size={9} />
+                <Filter size={7} />
                 {config.filters.length}
               </div>
             )}
             {config.yAxisScale && config.yAxisScale !== 'auto' && (
               <div style={{
-                padding: '3px 8px',
-                background: darkMode ? 'rgba(245, 158, 11, 0.3)' : 'rgba(245, 158, 11, 0.25)',
+                padding: '2px 6px',
+                background: darkMode ? 'rgba(245, 158, 11, 0.35)' : 'rgba(245, 158, 11, 0.3)',
                 backdropFilter: 'blur(4px)',
-                border: '1px solid rgba(245, 158, 11, 0.5)',
-                borderRadius: '8px',
-                fontSize: '9px',
-                color: darkMode ? '#fcd34d' : '#f59e0b',
-                fontWeight: '600',
+                border: '1px solid rgba(245, 158, 11, 0.6)',
+                borderRadius: '6px',
+                fontSize: '8px',
+                color: darkMode ? '#fde68a' : '#d97706',
+                fontWeight: '700',
                 textTransform: 'capitalize',
-                boxShadow: darkMode ? '0 2px 6px rgba(0,0,0,0.3)' : '0 1px 3px rgba(0,0,0,0.1)'
+                boxShadow: darkMode ? '0 1px 3px rgba(0,0,0,0.4)' : '0 1px 2px rgba(0,0,0,0.15)',
+                textShadow: darkMode ? '0 1px 2px rgba(0,0,0,0.5)' : 'none'
               }}>
                 {config.yAxisScale}
               </div>
             )}
           </div>
-        </div>
+        )}
       </div>
 
       {/* Action buttons overlay - top right */}
       <div style={{
         position: 'absolute',
-        top: '8px',
-        right: '8px',
+        top: '6px',
+        right: '6px',
         display: 'flex',
-        gap: '4px',
+        gap: '3px',
         zIndex: 10
       }}>
         <button onClick={() => fetchData()} style={{
-          padding: '6px',
-          background: 'transparent',
-          border: 'none',
+          padding: isSmall ? '5px' : '6px',
+          background: darkMode ? 'rgba(15, 20, 35, 0.85)' : 'rgba(255, 255, 255, 0.85)',
+          backdropFilter: 'blur(8px)',
+          border: `1.5px solid ${darkMode ? 'rgba(99, 102, 241, 0.4)' : 'rgba(99, 102, 241, 0.3)'}`,
           color: theme.text,
           cursor: 'pointer',
           borderRadius: '6px',
           transition: 'all 0.2s ease',
-          textShadow: darkMode ? '0 1px 3px rgba(0,0,0,0.8)' : '0 1px 2px rgba(255,255,255,0.9)'
+          boxShadow: darkMode 
+            ? '0 2px 8px rgba(0,0,0,0.4)' 
+            : '0 2px 6px rgba(0,0,0,0.15)'
         }} 
         onMouseEnter={(e) => {
-          e.currentTarget.style.background = darkMode ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.05)';
+          e.currentTarget.style.background = darkMode ? 'rgba(99, 102, 241, 0.2)' : 'rgba(99, 102, 241, 0.1)';
+          e.currentTarget.style.borderColor = theme.accent;
+          e.currentTarget.style.transform = 'translateY(-1px)';
         }}
         onMouseLeave={(e) => {
-          e.currentTarget.style.background = 'transparent';
+          e.currentTarget.style.background = darkMode ? 'rgba(15, 20, 35, 0.85)' : 'rgba(255, 255, 255, 0.85)';
+          e.currentTarget.style.borderColor = darkMode ? 'rgba(99, 102, 241, 0.4)' : 'rgba(99, 102, 241, 0.3)';
+          e.currentTarget.style.transform = 'translateY(0)';
         }}
         title="Refresh">
-          <RefreshCw size={14} style={{ animation: loading ? 'spin 1s linear infinite' : 'none' }} />
+          <RefreshCw size={isSmall ? 12 : 13} style={{ animation: loading ? 'spin 1s linear infinite' : 'none' }} />
         </button>
         <button onClick={() => onDuplicate(config)} style={{
-          padding: '6px',
-          background: 'transparent',
-          border: 'none',
+          padding: isSmall ? '5px' : '6px',
+          background: darkMode ? 'rgba(15, 20, 35, 0.85)' : 'rgba(255, 255, 255, 0.85)',
+          backdropFilter: 'blur(8px)',
+          border: `1.5px solid ${darkMode ? 'rgba(99, 102, 241, 0.4)' : 'rgba(99, 102, 241, 0.3)'}`,
           color: theme.text,
           cursor: 'pointer',
           borderRadius: '6px',
           transition: 'all 0.2s ease',
-          textShadow: darkMode ? '0 1px 3px rgba(0,0,0,0.8)' : '0 1px 2px rgba(255,255,255,0.9)'
+          boxShadow: darkMode 
+            ? '0 2px 8px rgba(0,0,0,0.4)' 
+            : '0 2px 6px rgba(0,0,0,0.15)'
         }}
         onMouseEnter={(e) => {
-          e.currentTarget.style.background = darkMode ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.05)';
+          e.currentTarget.style.background = darkMode ? 'rgba(99, 102, 241, 0.2)' : 'rgba(99, 102, 241, 0.1)';
+          e.currentTarget.style.borderColor = theme.accent;
+          e.currentTarget.style.transform = 'translateY(-1px)';
         }}
         onMouseLeave={(e) => {
-          e.currentTarget.style.background = 'transparent';
+          e.currentTarget.style.background = darkMode ? 'rgba(15, 20, 35, 0.85)' : 'rgba(255, 255, 255, 0.85)';
+          e.currentTarget.style.borderColor = darkMode ? 'rgba(99, 102, 241, 0.4)' : 'rgba(99, 102, 241, 0.3)';
+          e.currentTarget.style.transform = 'translateY(0)';
         }}
         title="Duplicate">
-          <Copy size={13} />
+          <Copy size={isSmall ? 11 : 12} />
         </button>
         <button onClick={() => onEdit(config)} style={{
-          padding: '6px',
-          background: 'transparent',
-          border: 'none',
+          padding: isSmall ? '5px' : '6px',
+          background: darkMode ? 'rgba(15, 20, 35, 0.85)' : 'rgba(255, 255, 255, 0.85)',
+          backdropFilter: 'blur(8px)',
+          border: `1.5px solid ${darkMode ? 'rgba(99, 102, 241, 0.4)' : 'rgba(99, 102, 241, 0.3)'}`,
           color: theme.text,
           cursor: 'pointer',
           borderRadius: '6px',
           transition: 'all 0.2s ease',
-          textShadow: darkMode ? '0 1px 3px rgba(0,0,0,0.8)' : '0 1px 2px rgba(255,255,255,0.9)'
+          boxShadow: darkMode 
+            ? '0 2px 8px rgba(0,0,0,0.4)' 
+            : '0 2px 6px rgba(0,0,0,0.15)'
         }}
         onMouseEnter={(e) => {
-          e.currentTarget.style.background = darkMode ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.05)';
+          e.currentTarget.style.background = darkMode ? 'rgba(99, 102, 241, 0.2)' : 'rgba(99, 102, 241, 0.1)';
+          e.currentTarget.style.borderColor = theme.accent;
+          e.currentTarget.style.transform = 'translateY(-1px)';
         }}
         onMouseLeave={(e) => {
-          e.currentTarget.style.background = 'transparent';
+          e.currentTarget.style.background = darkMode ? 'rgba(15, 20, 35, 0.85)' : 'rgba(255, 255, 255, 0.85)';
+          e.currentTarget.style.borderColor = darkMode ? 'rgba(99, 102, 241, 0.4)' : 'rgba(99, 102, 241, 0.3)';
+          e.currentTarget.style.transform = 'translateY(0)';
         }}
         title="Edit">
-          <Settings size={13} />
+          <Settings size={isSmall ? 11 : 12} />
         </button>
         <button onClick={() => onDelete(config.id)} style={{
-          padding: '6px',
-          background: 'transparent',
-          border: 'none',
+          padding: isSmall ? '5px' : '6px',
+          background: darkMode ? 'rgba(15, 20, 35, 0.85)' : 'rgba(255, 255, 255, 0.85)',
+          backdropFilter: 'blur(8px)',
+          border: `1.5px solid ${darkMode ? 'rgba(239, 68, 68, 0.4)' : 'rgba(239, 68, 68, 0.3)'}`,
           color: theme.danger,
           cursor: 'pointer',
           borderRadius: '6px',
           transition: 'all 0.2s ease',
-          textShadow: darkMode ? '0 1px 3px rgba(0,0,0,0.8)' : '0 1px 2px rgba(255,255,255,0.9)'
+          boxShadow: darkMode 
+            ? '0 2px 8px rgba(0,0,0,0.4)' 
+            : '0 2px 6px rgba(0,0,0,0.15)'
         }}
         onMouseEnter={(e) => {
           e.currentTarget.style.background = 'rgba(239, 68, 68, 0.15)';
+          e.currentTarget.style.borderColor = theme.danger;
+          e.currentTarget.style.transform = 'translateY(-1px)';
         }}
         onMouseLeave={(e) => {
-          e.currentTarget.style.background = 'transparent';
+          e.currentTarget.style.background = darkMode ? 'rgba(15, 20, 35, 0.85)' : 'rgba(255, 255, 255, 0.85)';
+          e.currentTarget.style.borderColor = darkMode ? 'rgba(239, 68, 68, 0.4)' : 'rgba(239, 68, 68, 0.3)';
+          e.currentTarget.style.transform = 'translateY(0)';
         }}
         title="Delete">
-          <Trash2 size={13} />
+          <Trash2 size={isSmall ? 11 : 12} />
         </button>
       </div>
 
-      {/* Footer info overlay - bottom left */}
+      {/* Footer info overlay - bottom */}
       <div style={{
         position: 'absolute',
-        bottom: '8px',
-        left: '8px',
-        right: '8px',
+        bottom: '6px',
+        left: '6px',
+        right: '6px',
         display: 'flex',
         justifyContent: 'space-between',
-        alignItems: 'flex-end',
+        alignItems: 'center',
         pointerEvents: 'none',
         zIndex: 10
       }}>
         <div style={{
-          fontSize: '9px',
+          background: darkMode ? 'rgba(10, 14, 26, 0.7)' : 'rgba(249, 250, 251, 0.7)',
+          backdropFilter: 'blur(6px)',
+          padding: '3px 8px',
+          borderRadius: '6px',
+          border: `1px solid ${darkMode ? 'rgba(99, 102, 241, 0.3)' : 'rgba(99, 102, 241, 0.2)'}`,
+          fontSize: isSmall ? '7px' : '8px',
           color: theme.textMuted,
           display: 'flex',
-          gap: '6px',
+          gap: isSmall ? '4px' : '6px',
           alignItems: 'center',
           flexWrap: 'wrap',
-          textShadow: darkMode ? '0 1px 3px rgba(0,0,0,0.8)' : '0 1px 2px rgba(255,255,255,0.9)'
+          boxShadow: darkMode 
+            ? '0 2px 8px rgba(0,0,0,0.4)' 
+            : '0 2px 6px rgba(0,0,0,0.15)',
+          fontWeight: '600'
         }}>
-          <div style={{ display: 'flex', gap: '3px', alignItems: 'center' }}>
-            <Play size={9} />
+          <div style={{ display: 'flex', gap: '2px', alignItems: 'center' }}>
+            <Play size={isSmall ? 7 : 8} />
             <span>{config.refreshInterval > 0 ? `${config.refreshInterval / 1000}s` : 'Manual'}</span>
           </div>
           <div>•</div>
           <div style={{ textTransform: 'capitalize' }}>{config.vizType}</div>
           <div>•</div>
           <div>{data.length} pts</div>
-          <div>•</div>
-          <div style={{ display: 'flex', gap: '3px', alignItems: 'center' }}>
-            <Clock size={8} />
-            <span>Q: {formatTimestamp(queryTime)}</span>
-          </div>
-          <div>•</div>
-          <div style={{ display: 'flex', gap: '3px', alignItems: 'center' }}>
-            <Database size={8} />
-            <span>L: {formatTimestamp(latestRecordTime)}</span>
-          </div>
+          {!isSmall && (
+            <>
+              <div>•</div>
+              <div style={{ display: 'flex', gap: '2px', alignItems: 'center' }}>
+                <Clock size={7} />
+                <span title="Query time">{formatTimestamp(queryTime)}</span>
+              </div>
+            </>
+          )}
         </div>
       </div>
 
