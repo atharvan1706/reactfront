@@ -42,7 +42,6 @@ function QuestDBPanel({ config, onEdit, onDelete, onDuplicate, onResize, style, 
     chartText: '#64748b'
   };
 
-  // ✅ UPDATED: Build query with filters and time range
   const fetchData = async () => {
     try {
       setError(null);
@@ -52,10 +51,8 @@ function QuestDBPanel({ config, onEdit, onDelete, onDuplicate, onResize, style, 
       if (config.dataSource === 'table' && config.table) {
         query = `SELECT * FROM ${config.table}`;
         
-        // Build WHERE clause for filters and time range
         const whereClauses = [];
         
-        // Time range filter
         if (config.timeRange === 'last' && config.timeRangeLast) {
           const intervals = {
             '5m': '5 minutes',
@@ -75,7 +72,6 @@ function QuestDBPanel({ config, onEdit, onDelete, onDuplicate, onResize, style, 
           );
         }
         
-        // Data filters
         if (config.filters && config.filters.length > 0) {
           config.filters.forEach(filter => {
             if (filter.field && filter.operator && filter.value !== '') {
@@ -99,7 +95,6 @@ function QuestDBPanel({ config, onEdit, onDelete, onDuplicate, onResize, style, 
       const result = await questdbService.query(query);
       const formatted = questdbService.formatForChart(result, config.timestampField);
       
-      // Apply transformations if configured
       let finalData = formatted;
       if (config.transformations && config.transformations.length > 0) {
         finalData = SimpleTransformations.applyTransformations(formatted, config.transformations);
@@ -147,7 +142,6 @@ function QuestDBPanel({ config, onEdit, onDelete, onDuplicate, onResize, style, 
     });
   };
 
-  // Helper function to get color for Y-axis field at given index
   const getColor = (idx) => {
     if (config.colors && config.colors.length > idx && config.colors[idx]) {
       return config.colors[idx];
@@ -155,7 +149,6 @@ function QuestDBPanel({ config, onEdit, onDelete, onDuplicate, onResize, style, 
     return COLORS[idx % COLORS.length];
   };
 
-  // ✅ NEW: Get Y-axis domain based on scaling configuration
   const getYAxisDomain = () => {
     if (config.yAxisScale === 'custom') {
       return [
@@ -213,13 +206,8 @@ function QuestDBPanel({ config, onEdit, onDelete, onDuplicate, onResize, style, 
       margin: { top: 5, right: 10, left: 0, bottom: 5 }
     };
 
-    // Get y-axis fields - support both single and multiple
     const yFields = (config.yAxes && config.yAxes.length > 0) ? config.yAxes : [config.yAxis].filter(Boolean);
-    
-    // Filter out 'value' if it's not explicitly selected
     const filteredYFields = yFields.filter(field => field && field !== 'value');
-    
-    // ✅ NEW: Get domain for axis scaling
     const yDomain = getYAxisDomain();
 
     switch (config.vizType) {
@@ -229,7 +217,6 @@ function QuestDBPanel({ config, onEdit, onDelete, onDuplicate, onResize, style, 
             <LineChart {...chartProps}>
               {config.showGrid && <CartesianGrid strokeDasharray="3 3" stroke={theme.chartGrid} />}
               <XAxis dataKey="_time" tick={{ fill: theme.chartText, fontSize: 11 }} stroke={theme.chartAxis} />
-              {/* ✅ UPDATED: Added domain and scale props */}
               <YAxis 
                 tick={{ fill: theme.chartText, fontSize: 11 }} 
                 stroke={theme.chartAxis}
@@ -268,7 +255,6 @@ function QuestDBPanel({ config, onEdit, onDelete, onDuplicate, onResize, style, 
             <AreaChart {...chartProps}>
               {config.showGrid && <CartesianGrid strokeDasharray="3 3" stroke={theme.chartGrid} />}
               <XAxis dataKey="_time" tick={{ fill: theme.chartText, fontSize: 11 }} stroke={theme.chartAxis} />
-              {/* ✅ UPDATED: Added domain and scale props */}
               <YAxis 
                 tick={{ fill: theme.chartText, fontSize: 11 }} 
                 stroke={theme.chartAxis}
@@ -308,7 +294,6 @@ function QuestDBPanel({ config, onEdit, onDelete, onDuplicate, onResize, style, 
             <BarChart {...chartProps}>
               {config.showGrid && <CartesianGrid strokeDasharray="3 3" stroke={theme.chartGrid} />}
               <XAxis dataKey="_time" tick={{ fill: theme.chartText, fontSize: 11 }} stroke={theme.chartAxis} />
-              {/* ✅ UPDATED: Added domain prop */}
               <YAxis 
                 tick={{ fill: theme.chartText, fontSize: 11 }} 
                 stroke={theme.chartAxis}
@@ -368,7 +353,6 @@ function QuestDBPanel({ config, onEdit, onDelete, onDuplicate, onResize, style, 
             <ScatterChart {...chartProps}>
               {config.showGrid && <CartesianGrid strokeDasharray="3 3" stroke={theme.chartGrid} />}
               <XAxis dataKey="_time" tick={{ fill: theme.chartText, fontSize: 11 }} stroke={theme.chartAxis} />
-              {/* ✅ UPDATED: Added domain and scale props */}
               <YAxis 
                 tick={{ fill: theme.chartText, fontSize: 11 }} 
                 stroke={theme.chartAxis}
@@ -494,8 +478,6 @@ function QuestDBPanel({ config, onEdit, onDelete, onDuplicate, onResize, style, 
       style={{
         ...style,
         height: '100%',
-        display: 'flex',
-        flexDirection: 'column',
         background: theme.card,
         border: `1px solid ${theme.border}`,
         borderRadius: '10px',
@@ -507,27 +489,40 @@ function QuestDBPanel({ config, onEdit, onDelete, onDuplicate, onResize, style, 
       onMouseEnter={(e) => e.currentTarget.style.boxShadow = darkMode ? '0 4px 12px rgba(0,0,0,0.4)' : '0 2px 8px rgba(0,0,0,0.1)'}
       onMouseLeave={(e) => e.currentTarget.style.boxShadow = darkMode ? '0 2px 8px rgba(0,0,0,0.3)' : '0 1px 4px rgba(0,0,0,0.06)'}
     >
-      {/* ✅ FIXED: Header with inline badges - NO MORE OVERLAP! */}
+      {/* Chart takes full space */}
+      <div style={{ width: '100%', height: '100%' }}>
+        {renderChart()}
+      </div>
+
+      {/* Header overlay - top left */}
       <div style={{
-        padding: '10px 12px',
-        background: theme.hover,
-        borderBottom: `1px solid ${theme.border}`,
+        position: 'absolute',
+        top: '8px',
+        left: '8px',
+        right: '60px',
         display: 'flex',
-        justifyContent: 'space-between',
         alignItems: 'flex-start',
         gap: '6px',
-        transition: 'all 0.2s ease'
+        pointerEvents: 'none',
+        zIndex: 10
       }}>
-        <div style={{ flex: 1, minWidth: 0 }}>
+        <div style={{
+          background: `${darkMode ? 'rgba(26, 31, 53, 0.95)' : 'rgba(255, 255, 255, 0.95)'}`,
+          backdropFilter: 'blur(8px)',
+          padding: '6px 10px',
+          borderRadius: '8px',
+          border: `1px solid ${theme.border}`,
+          boxShadow: darkMode ? '0 2px 12px rgba(0,0,0,0.5)' : '0 2px 8px rgba(0,0,0,0.1)',
+          pointerEvents: 'auto'
+        }}>
           <div style={{
             fontWeight: '600',
             color: theme.text,
-            fontSize: '13px',
+            fontSize: '12px',
             display: 'flex',
             alignItems: 'center',
             gap: '6px',
-            marginBottom: '4px',
-            transition: 'color 0.2s ease'
+            marginBottom: '4px'
           }}>
             <div style={{
               width: '6px',
@@ -538,75 +533,68 @@ function QuestDBPanel({ config, onEdit, onDelete, onDuplicate, onResize, style, 
               animation: 'pulse 2s infinite',
               flexShrink: 0
             }} />
-            <span style={{
-              whiteSpace: 'nowrap',
-              overflow: 'hidden',
-              textOverflow: 'ellipsis'
-            }}>
-              {config.title}
-            </span>
+            <span>{config.title}</span>
           </div>
           
-          {/* ✅ NEW: Inline badges for filters and time range */}
-          <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', alignItems: 'center' }}>
+          <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap', alignItems: 'center' }}>
             {config.timeRange === 'last' && config.timeRangeLast && (
               <div style={{
-                padding: '2px 8px',
-                background: 'rgba(102, 126, 234, 0.15)',
-                border: '1px solid rgba(102, 126, 234, 0.3)',
-                borderRadius: '10px',
-                fontSize: '10px',
+                padding: '2px 6px',
+                background: 'rgba(102, 126, 234, 0.2)',
+                border: '1px solid rgba(102, 126, 234, 0.4)',
+                borderRadius: '8px',
+                fontSize: '9px',
                 color: '#667eea',
                 fontWeight: '600',
                 display: 'flex',
                 alignItems: 'center',
-                gap: '4px'
+                gap: '3px'
               }}>
-                <Clock size={10} />
+                <Clock size={9} />
                 {config.timeRangeLast}
               </div>
             )}
             {config.timeRange === 'custom' && config.timeRangeStart && (
               <div style={{
-                padding: '2px 8px',
-                background: 'rgba(102, 126, 234, 0.15)',
-                border: '1px solid rgba(102, 126, 234, 0.3)',
-                borderRadius: '10px',
-                fontSize: '10px',
+                padding: '2px 6px',
+                background: 'rgba(102, 126, 234, 0.2)',
+                border: '1px solid rgba(102, 126, 234, 0.4)',
+                borderRadius: '8px',
+                fontSize: '9px',
                 color: '#667eea',
                 fontWeight: '600',
                 display: 'flex',
                 alignItems: 'center',
-                gap: '4px'
+                gap: '3px'
               }}>
-                <Clock size={10} />
+                <Clock size={9} />
                 Custom
               </div>
             )}
             {config.filters && config.filters.length > 0 && (
               <div style={{
-                padding: '2px 8px',
-                background: 'rgba(16, 185, 129, 0.15)',
-                border: '1px solid rgba(16, 185, 129, 0.3)',
-                borderRadius: '10px',
-                fontSize: '10px',
+                padding: '2px 6px',
+                background: 'rgba(16, 185, 129, 0.2)',
+                border: '1px solid rgba(16, 185, 129, 0.4)',
+                borderRadius: '8px',
+                fontSize: '9px',
                 color: '#10b981',
                 fontWeight: '600',
                 display: 'flex',
                 alignItems: 'center',
-                gap: '4px'
+                gap: '3px'
               }}>
-                <Filter size={10} />
+                <Filter size={9} />
                 {config.filters.length}
               </div>
             )}
             {config.yAxisScale && config.yAxisScale !== 'auto' && (
               <div style={{
-                padding: '2px 8px',
-                background: 'rgba(245, 158, 11, 0.15)',
-                border: '1px solid rgba(245, 158, 11, 0.3)',
-                borderRadius: '10px',
-                fontSize: '10px',
+                padding: '2px 6px',
+                background: 'rgba(245, 158, 11, 0.2)',
+                border: '1px solid rgba(245, 158, 11, 0.4)',
+                borderRadius: '8px',
+                fontSize: '9px',
                 color: '#f59e0b',
                 fontWeight: '600',
                 textTransform: 'capitalize'
@@ -616,133 +604,144 @@ function QuestDBPanel({ config, onEdit, onDelete, onDuplicate, onResize, style, 
             )}
           </div>
         </div>
-        
-        <div style={{ display: 'flex', gap: '4px', flexShrink: 0 }}>
-          <button onClick={() => fetchData()} style={{
-            padding: '6px',
-            background: 'transparent',
-            border: 'none',
-            color: theme.textMuted,
-            cursor: 'pointer',
-            borderRadius: '4px',
-            transition: 'all 0.3s ease'
-          }} 
-          onMouseEnter={(e) => {
-            e.target.style.background = darkMode ? '#475569' : '#e5e7eb';
-            e.target.style.color = theme.text;
-          }}
-          onMouseLeave={(e) => {
-            e.target.style.background = 'transparent';
-            e.target.style.color = theme.textMuted;
-          }}
-          title="Refresh">
-            <RefreshCw size={14} style={{ animation: loading ? 'spin 1s linear infinite' : 'none' }} />
-          </button>
-          <button onClick={() => onDuplicate(config)} style={{
-            padding: '5px',
-            background: 'transparent',
-            border: 'none',
-            color: theme.textMuted,
-            cursor: 'pointer',
-            borderRadius: '4px',
-            transition: 'all 0.2s ease'
-          }}
-          onMouseEnter={(e) => {
-            e.target.style.background = darkMode ? '#3f4a61' : '#e2e8f0';
-            e.target.style.color = theme.text;
-          }}
-          onMouseLeave={(e) => {
-            e.target.style.background = 'transparent';
-            e.target.style.color = theme.textMuted;
-          }}
-          title="Duplicate">
-            <Copy size={13} />
-          </button>
-          <button onClick={() => onEdit(config)} style={{
-            padding: '5px',
-            background: 'transparent',
-            border: 'none',
-            color: theme.textMuted,
-            cursor: 'pointer',
-            borderRadius: '4px',
-            transition: 'all 0.2s ease'
-          }}
-          onMouseEnter={(e) => {
-            e.target.style.background = darkMode ? '#3f4a61' : '#e2e8f0';
-            e.target.style.color = theme.text;
-          }}
-          onMouseLeave={(e) => {
-            e.target.style.background = 'transparent';
-            e.target.style.color = theme.textMuted;
-          }}
-          title="Edit">
-            <Settings size={13} />
-          </button>
-          <button onClick={() => onDelete(config.id)} style={{
-            padding: '5px',
-            background: 'transparent',
-            border: 'none',
-            color: '#ef4444',
-            cursor: 'pointer',
-            borderRadius: '4px',
-            transition: 'all 0.2s ease'
-          }}
-          onMouseEnter={(e) => e.target.style.background = 'rgba(239, 68, 68, 0.1)'}
-          onMouseLeave={(e) => e.target.style.background = 'transparent'}
-          title="Delete">
-            <Trash2 size={13} />
-          </button>
-        </div>
       </div>
 
-      <div style={{ flex: 1, minHeight: 0, padding: '8px' }}>
-        {renderChart()}
-      </div>
-
+      {/* Action buttons overlay - top right */}
       <div style={{
-        padding: '6px 10px',
-        borderTop: `1px solid ${theme.border}`,
-        background: theme.hover,
-        transition: 'all 0.2s ease'
+        position: 'absolute',
+        top: '8px',
+        right: '8px',
+        display: 'flex',
+        gap: '4px',
+        zIndex: 10
+      }}>
+        <button onClick={() => fetchData()} style={{
+          padding: '6px',
+          background: `${darkMode ? 'rgba(26, 31, 53, 0.95)' : 'rgba(255, 255, 255, 0.95)'}`,
+          backdropFilter: 'blur(8px)',
+          border: `1px solid ${theme.border}`,
+          color: theme.textMuted,
+          cursor: 'pointer',
+          borderRadius: '6px',
+          transition: 'all 0.2s ease',
+          boxShadow: darkMode ? '0 2px 12px rgba(0,0,0,0.5)' : '0 2px 8px rgba(0,0,0,0.1)'
+        }} 
+        onMouseEnter={(e) => {
+          e.currentTarget.style.background = darkMode ? 'rgba(37, 43, 69, 0.95)' : 'rgba(243, 244, 246, 0.95)';
+          e.currentTarget.style.color = theme.text;
+        }}
+        onMouseLeave={(e) => {
+          e.currentTarget.style.background = darkMode ? 'rgba(26, 31, 53, 0.95)' : 'rgba(255, 255, 255, 0.95)';
+          e.currentTarget.style.color = theme.textMuted;
+        }}
+        title="Refresh">
+          <RefreshCw size={14} style={{ animation: loading ? 'spin 1s linear infinite' : 'none' }} />
+        </button>
+        <button onClick={() => onDuplicate(config)} style={{
+          padding: '6px',
+          background: `${darkMode ? 'rgba(26, 31, 53, 0.95)' : 'rgba(255, 255, 255, 0.95)'}`,
+          backdropFilter: 'blur(8px)',
+          border: `1px solid ${theme.border}`,
+          color: theme.textMuted,
+          cursor: 'pointer',
+          borderRadius: '6px',
+          transition: 'all 0.2s ease',
+          boxShadow: darkMode ? '0 2px 12px rgba(0,0,0,0.5)' : '0 2px 8px rgba(0,0,0,0.1)'
+        }}
+        onMouseEnter={(e) => {
+          e.currentTarget.style.background = darkMode ? 'rgba(37, 43, 69, 0.95)' : 'rgba(243, 244, 246, 0.95)';
+          e.currentTarget.style.color = theme.text;
+        }}
+        onMouseLeave={(e) => {
+          e.currentTarget.style.background = darkMode ? 'rgba(26, 31, 53, 0.95)' : 'rgba(255, 255, 255, 0.95)';
+          e.currentTarget.style.color = theme.textMuted;
+        }}
+        title="Duplicate">
+          <Copy size={13} />
+        </button>
+        <button onClick={() => onEdit(config)} style={{
+          padding: '6px',
+          background: `${darkMode ? 'rgba(26, 31, 53, 0.95)' : 'rgba(255, 255, 255, 0.95)'}`,
+          backdropFilter: 'blur(8px)',
+          border: `1px solid ${theme.border}`,
+          color: theme.textMuted,
+          cursor: 'pointer',
+          borderRadius: '6px',
+          transition: 'all 0.2s ease',
+          boxShadow: darkMode ? '0 2px 12px rgba(0,0,0,0.5)' : '0 2px 8px rgba(0,0,0,0.1)'
+        }}
+        onMouseEnter={(e) => {
+          e.currentTarget.style.background = darkMode ? 'rgba(37, 43, 69, 0.95)' : 'rgba(243, 244, 246, 0.95)';
+          e.currentTarget.style.color = theme.text;
+        }}
+        onMouseLeave={(e) => {
+          e.currentTarget.style.background = darkMode ? 'rgba(26, 31, 53, 0.95)' : 'rgba(255, 255, 255, 0.95)';
+          e.currentTarget.style.color = theme.textMuted;
+        }}
+        title="Edit">
+          <Settings size={13} />
+        </button>
+        <button onClick={() => onDelete(config.id)} style={{
+          padding: '6px',
+          background: `${darkMode ? 'rgba(26, 31, 53, 0.95)' : 'rgba(255, 255, 255, 0.95)'}`,
+          backdropFilter: 'blur(8px)',
+          border: `1px solid ${theme.border}`,
+          color: '#ef4444',
+          cursor: 'pointer',
+          borderRadius: '6px',
+          transition: 'all 0.2s ease',
+          boxShadow: darkMode ? '0 2px 12px rgba(0,0,0,0.5)' : '0 2px 8px rgba(0,0,0,0.1)'
+        }}
+        onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(239, 68, 68, 0.15)'}
+        onMouseLeave={(e) => e.currentTarget.style.background = darkMode ? 'rgba(26, 31, 53, 0.95)' : 'rgba(255, 255, 255, 0.95)'}
+        title="Delete">
+          <Trash2 size={13} />
+        </button>
+      </div>
+
+      {/* Footer info overlay - bottom left */}
+      <div style={{
+        position: 'absolute',
+        bottom: '8px',
+        left: '8px',
+        right: '8px',
+        display: 'flex',
+        justifyContent: 'space-between',
+        alignItems: 'flex-end',
+        pointerEvents: 'none',
+        zIndex: 10
       }}>
         <div style={{
-          display: 'flex',
-          justifyContent: 'space-between',
-          fontSize: '10px',
+          background: `${darkMode ? 'rgba(26, 31, 53, 0.95)' : 'rgba(255, 255, 255, 0.95)'}`,
+          backdropFilter: 'blur(8px)',
+          padding: '4px 8px',
+          borderRadius: '6px',
+          border: `1px solid ${theme.border}`,
+          fontSize: '9px',
           color: theme.textMuted,
-          marginBottom: '4px',
-          transition: 'color 0.2s ease'
-        }}>
-          <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
-            <div style={{ display: 'flex', gap: '4px', alignItems: 'center' }}>
-              <Play size={10} />
-              <span>{config.refreshInterval > 0 ? `${config.refreshInterval / 1000}s` : 'Manual'}</span>
-            </div>
-            <div>•</div>
-            <div style={{ textTransform: 'capitalize' }}>{config.vizType}</div>
-            <div>•</div>
-            <div>{data.length} pts</div>
-          </div>
-          <div>{config.width}×{config.height}</div>
-        </div>
-        
-        <div style={{
+          boxShadow: darkMode ? '0 2px 12px rgba(0,0,0,0.5)' : '0 2px 8px rgba(0,0,0,0.1)',
           display: 'flex',
-          gap: '10px',
-          fontSize: '10px',
-          color: theme.textMuted,
-          paddingTop: '4px',
-          borderTop: `1px solid ${theme.border}`,
-          transition: 'all 0.2s ease'
+          gap: '8px',
+          alignItems: 'center',
+          flexWrap: 'wrap'
         }}>
-          <div style={{ display: 'flex', gap: '4px', alignItems: 'center' }} title="Query executed at">
-            <Clock size={9} />
-            <span>Query: {formatTimestamp(queryTime)}</span>
+          <div style={{ display: 'flex', gap: '3px', alignItems: 'center' }}>
+            <Play size={9} />
+            <span>{config.refreshInterval > 0 ? `${config.refreshInterval / 1000}s` : 'Manual'}</span>
           </div>
           <div>•</div>
-          <div style={{ display: 'flex', gap: '4px', alignItems: 'center' }} title="Latest record timestamp">
-            <Database size={9} />
-            <span>Latest: {formatTimestamp(latestRecordTime)}</span>
+          <div style={{ textTransform: 'capitalize' }}>{config.vizType}</div>
+          <div>•</div>
+          <div>{data.length} pts</div>
+          <div>•</div>
+          <div style={{ display: 'flex', gap: '3px', alignItems: 'center' }}>
+            <Clock size={8} />
+            <span>Q: {formatTimestamp(queryTime)}</span>
+          </div>
+          <div>•</div>
+          <div style={{ display: 'flex', gap: '3px', alignItems: 'center' }}>
+            <Database size={8} />
+            <span>L: {formatTimestamp(latestRecordTime)}</span>
           </div>
         </div>
       </div>
