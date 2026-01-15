@@ -18,6 +18,7 @@ function QuestDBPanel({ config, onEdit, onDelete, onDuplicate, onResize, style, 
   const [error, setError] = useState(null);
   const [queryTime, setQueryTime] = useState(null);
   const [latestRecordTime, setLatestRecordTime] = useState(null);
+  const [isInitialLoad, setIsInitialLoad] = useState(true);
   const timerRef = useRef(null);
 
   const theme = darkMode ? {
@@ -45,6 +46,7 @@ function QuestDBPanel({ config, onEdit, onDelete, onDuplicate, onResize, style, 
   const fetchData = async () => {
     try {
       setError(null);
+      setLoading(true);
       const startTime = Date.now();
       let query = config.query;
       
@@ -108,15 +110,21 @@ function QuestDBPanel({ config, onEdit, onDelete, onDuplicate, onResize, style, 
       }
       
       setData(finalData);
+      setIsInitialLoad(false);
       setLoading(false);
     } catch (err) {
       console.error('Error fetching data:', err);
       setError(err.message);
       setLoading(false);
+      // Keep previous data if available, only clear on initial load failure
+      if (isInitialLoad) {
+        setIsInitialLoad(false);
+      }
     }
   };
 
   useEffect(() => {
+    setIsInitialLoad(true);
     setLoading(true);
     fetchData();
 
@@ -166,7 +174,8 @@ function QuestDBPanel({ config, onEdit, onDelete, onDuplicate, onResize, style, 
   const fontSize = isSmall ? 9 : isMedium ? 10 : 11;
 
   const renderChart = () => {
-    if (loading && data.length === 0) {
+    // Only show loading spinner on initial load
+    if (loading && data.length === 0 && isInitialLoad) {
       return (
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%' }}>
           <div style={{ textAlign: 'center' }}>
@@ -177,7 +186,8 @@ function QuestDBPanel({ config, onEdit, onDelete, onDuplicate, onResize, style, 
       );
     }
 
-    if (error) {
+    // Only show big error on initial load failure
+    if (error && data.length === 0 && isInitialLoad) {
       return (
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', padding: '20px' }}>
           <div style={{
@@ -780,7 +790,7 @@ function QuestDBPanel({ config, onEdit, onDelete, onDuplicate, onResize, style, 
       }}>
         <div style={{
           fontSize: isSmall ? '7px' : '8px',
-          color: theme.textMuted,
+          color: error ? '#ef4444' : theme.textMuted,
           display: 'flex',
           gap: isSmall ? '4px' : '6px',
           alignItems: 'center',
@@ -788,21 +798,33 @@ function QuestDBPanel({ config, onEdit, onDelete, onDuplicate, onResize, style, 
           fontWeight: '600',
           textShadow: darkMode ? '1px 1px 3px rgba(0,0,0,0.9)' : '1px 1px 2px rgba(255,255,255,1)'
         }}>
-          <div style={{ display: 'flex', gap: '2px', alignItems: 'center' }}>
-            <Play size={isSmall ? 7 : 8} />
-            <span>{config.refreshInterval > 0 ? `${config.refreshInterval / 1000}s` : 'Manual'}</span>
-          </div>
-          <div>•</div>
-          <div style={{ textTransform: 'capitalize' }}>{config.vizType}</div>
-          <div>•</div>
-          <div>{data.length} pts</div>
-          {!isSmall && (
+          {error ? (
             <>
+              <AlertCircle size={isSmall ? 8 : 9} color="#ef4444" />
+              <span style={{ color: '#ef4444' }}>Error: {error}</span>
               <div>•</div>
+              <span style={{ color: theme.textMuted }}>Showing last data</span>
+            </>
+          ) : (
+            <>
               <div style={{ display: 'flex', gap: '2px', alignItems: 'center' }}>
-                <Clock size={7} />
-                <span title="Query time">{formatTimestamp(queryTime)}</span>
+                {loading && <RefreshCw size={isSmall ? 7 : 8} style={{ animation: 'spin 1s linear infinite' }} />}
+                {!loading && <Play size={isSmall ? 7 : 8} />}
+                <span>{config.refreshInterval > 0 ? `${config.refreshInterval / 1000}s` : 'Manual'}</span>
               </div>
+              <div>•</div>
+              <div style={{ textTransform: 'capitalize' }}>{config.vizType}</div>
+              <div>•</div>
+              <div>{data.length} pts</div>
+              {!isSmall && (
+                <>
+                  <div>•</div>
+                  <div style={{ display: 'flex', gap: '2px', alignItems: 'center' }}>
+                    <Clock size={7} />
+                    <span title="Query time">{formatTimestamp(queryTime)}</span>
+                  </div>
+                </>
+              )}
             </>
           )}
         </div>
