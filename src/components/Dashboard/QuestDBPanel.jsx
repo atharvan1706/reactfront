@@ -204,7 +204,7 @@ function QuestDBPanel({ config, onEdit, onDelete, onDuplicate, onResize, style, 
     // Increased margins to make room for overlays
     const chartProps = {
       data,
-      margin: { top: 45, right: 20, left: 10, bottom: 35 }
+      margin: { top: 60, right: 20, left: 10, bottom: 35 }
     };
 
     const yFields = (config.yAxes && config.yAxes.length > 0) ? config.yAxes : [config.yAxis].filter(Boolean);
@@ -510,13 +510,10 @@ function QuestDBPanel({ config, onEdit, onDelete, onDuplicate, onResize, style, 
         zIndex: 10
       }}>
         <div style={{
-          background: `${darkMode ? 'rgba(26, 31, 53, 0.95)' : 'rgba(255, 255, 255, 0.95)'}`,
-          backdropFilter: 'blur(8px)',
-          padding: '6px 10px',
-          borderRadius: '8px',
-          border: `1px solid ${theme.border}`,
-          boxShadow: darkMode ? '0 2px 12px rgba(0,0,0,0.5)' : '0 2px 8px rgba(0,0,0,0.1)',
-          pointerEvents: 'auto'
+          pointerEvents: 'auto',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '6px'
         }}>
           <div style={{
             fontWeight: '600',
@@ -525,14 +522,14 @@ function QuestDBPanel({ config, onEdit, onDelete, onDuplicate, onResize, style, 
             display: 'flex',
             alignItems: 'center',
             gap: '6px',
-            marginBottom: '4px'
+            textShadow: darkMode ? '0 1px 3px rgba(0,0,0,0.8)' : '0 1px 2px rgba(255,255,255,0.9)'
           }}>
             <div style={{
               width: '6px',
               height: '6px',
               borderRadius: '50%',
               background: getColor(0),
-              boxShadow: `0 0 6px ${getColor(0)}`,
+              boxShadow: `0 0 8px ${getColor(0)}`,
               animation: 'pulse 2s infinite',
               flexShrink: 0
             }} />
@@ -542,16 +539,18 @@ function QuestDBPanel({ config, onEdit, onDelete, onDuplicate, onResize, style, 
           <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap', alignItems: 'center' }}>
             {config.timeRange === 'last' && config.timeRangeLast && (
               <div style={{
-                padding: '2px 6px',
-                background: 'rgba(102, 126, 234, 0.2)',
-                border: '1px solid rgba(102, 126, 234, 0.4)',
+                padding: '3px 8px',
+                background: darkMode ? 'rgba(102, 126, 234, 0.3)' : 'rgba(102, 126, 234, 0.25)',
+                backdropFilter: 'blur(4px)',
+                border: '1px solid rgba(102, 126, 234, 0.5)',
                 borderRadius: '8px',
                 fontSize: '9px',
-                color: '#667eea',
+                color: darkMode ? '#a5b4fc' : '#667eea',
                 fontWeight: '600',
                 display: 'flex',
                 alignItems: 'center',
-                gap: '3px'
+                gap: '3px',
+                boxShadow: darkMode ? '0 2px 6px rgba(0,0,0,0.3)' : '0 1px 3px rgba(0,0,0,0.1)'
               }}>
                 <Clock size={9} />
                 {config.timeRangeLast}
@@ -559,16 +558,18 @@ function QuestDBPanel({ config, onEdit, onDelete, onDuplicate, onResize, style, 
             )}
             {config.timeRange === 'custom' && config.timeRangeStart && (
               <div style={{
-                padding: '2px 6px',
-                background: 'rgba(102, 126, 234, 0.2)',
-                border: '1px solid rgba(102, 126, 234, 0.4)',
+                padding: '3px 8px',
+                background: darkMode ? 'rgba(102, 126, 234, 0.3)' : 'rgba(102, 126, 234, 0.25)',
+                backdropFilter: 'blur(4px)',
+                border: '1px solid rgba(102, 126, 234, 0.5)',
                 borderRadius: '8px',
                 fontSize: '9px',
-                color: '#667eea',
+                color: darkMode ? '#a5b4fc' : '#667eea',
                 fontWeight: '600',
                 display: 'flex',
                 alignItems: 'center',
-                gap: '3px'
+                gap: '3px',
+                boxShadow: darkMode ? '0 2px 6px rgba(0,0,0,0.3)' : '0 1px 3px rgba(0,0,0,0.1)'
               }}>
                 <Clock size={9} />
                 Custom
@@ -576,16 +577,18 @@ function QuestDBPanel({ config, onEdit, onDelete, onDuplicate, onResize, style, 
             )}
             {config.filters && config.filters.length > 0 && (
               <div style={{
-                padding: '2px 6px',
-                background: 'rgba(16, 185, 129, 0.2)',
-                border: '1px solid rgba(16, 185, 129, 0.4)',
+                padding: '3px 8px',
+                background: darkMode ? 'rgba(16, 185, 129, 0.3)' : 'rgba(16, 185, 129, 0.25)',
+                backdropFilter: 'blur(4px)',
+                border: '1px solid rgba(16, 185, 129, 0.5)',
                 borderRadius: '8px',
                 fontSize: '9px',
-                color: '#10b981',
+                color: darkMode ? '#6ee7b7' : '#10b981',
                 fontWeight: '600',
                 display: 'flex',
                 alignItems: 'center',
-                gap: '3px'
+                gap: '3px',
+                boxShadow: darkMode ? '0 2px 6px rgba(0,0,0,0.3)' : '0 1px 3px rgba(0,0,0,0.1)'
               }}>
                 <Filter size={9} />
                 {config.filters.length}
@@ -593,14 +596,16 @@ function QuestDBPanel({ config, onEdit, onDelete, onDuplicate, onResize, style, 
             )}
             {config.yAxisScale && config.yAxisScale !== 'auto' && (
               <div style={{
-                padding: '2px 6px',
-                background: 'rgba(245, 158, 11, 0.2)',
-                border: '1px solid rgba(245, 158, 11, 0.4)',
+                padding: '3px 8px',
+                background: darkMode ? 'rgba(245, 158, 11, 0.3)' : 'rgba(245, 158, 11, 0.25)',
+                backdropFilter: 'blur(4px)',
+                border: '1px solid rgba(245, 158, 11, 0.5)',
                 borderRadius: '8px',
                 fontSize: '9px',
-                color: '#f59e0b',
+                color: darkMode ? '#fcd34d' : '#f59e0b',
                 fontWeight: '600',
-                textTransform: 'capitalize'
+                textTransform: 'capitalize',
+                boxShadow: darkMode ? '0 2px 6px rgba(0,0,0,0.3)' : '0 1px 3px rgba(0,0,0,0.1)'
               }}>
                 {config.yAxisScale}
               </div>
@@ -620,83 +625,77 @@ function QuestDBPanel({ config, onEdit, onDelete, onDuplicate, onResize, style, 
       }}>
         <button onClick={() => fetchData()} style={{
           padding: '6px',
-          background: `${darkMode ? 'rgba(26, 31, 53, 0.95)' : 'rgba(255, 255, 255, 0.95)'}`,
-          backdropFilter: 'blur(8px)',
-          border: `1px solid ${theme.border}`,
-          color: theme.textMuted,
+          background: 'transparent',
+          border: 'none',
+          color: theme.text,
           cursor: 'pointer',
           borderRadius: '6px',
           transition: 'all 0.2s ease',
-          boxShadow: darkMode ? '0 2px 12px rgba(0,0,0,0.5)' : '0 2px 8px rgba(0,0,0,0.1)'
+          textShadow: darkMode ? '0 1px 3px rgba(0,0,0,0.8)' : '0 1px 2px rgba(255,255,255,0.9)'
         }} 
         onMouseEnter={(e) => {
-          e.currentTarget.style.background = darkMode ? 'rgba(37, 43, 69, 0.95)' : 'rgba(243, 244, 246, 0.95)';
-          e.currentTarget.style.color = theme.text;
+          e.currentTarget.style.background = darkMode ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.05)';
         }}
         onMouseLeave={(e) => {
-          e.currentTarget.style.background = darkMode ? 'rgba(26, 31, 53, 0.95)' : 'rgba(255, 255, 255, 0.95)';
-          e.currentTarget.style.color = theme.textMuted;
+          e.currentTarget.style.background = 'transparent';
         }}
         title="Refresh">
           <RefreshCw size={14} style={{ animation: loading ? 'spin 1s linear infinite' : 'none' }} />
         </button>
         <button onClick={() => onDuplicate(config)} style={{
           padding: '6px',
-          background: `${darkMode ? 'rgba(26, 31, 53, 0.95)' : 'rgba(255, 255, 255, 0.95)'}`,
-          backdropFilter: 'blur(8px)',
-          border: `1px solid ${theme.border}`,
-          color: theme.textMuted,
+          background: 'transparent',
+          border: 'none',
+          color: theme.text,
           cursor: 'pointer',
           borderRadius: '6px',
           transition: 'all 0.2s ease',
-          boxShadow: darkMode ? '0 2px 12px rgba(0,0,0,0.5)' : '0 2px 8px rgba(0,0,0,0.1)'
+          textShadow: darkMode ? '0 1px 3px rgba(0,0,0,0.8)' : '0 1px 2px rgba(255,255,255,0.9)'
         }}
         onMouseEnter={(e) => {
-          e.currentTarget.style.background = darkMode ? 'rgba(37, 43, 69, 0.95)' : 'rgba(243, 244, 246, 0.95)';
-          e.currentTarget.style.color = theme.text;
+          e.currentTarget.style.background = darkMode ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.05)';
         }}
         onMouseLeave={(e) => {
-          e.currentTarget.style.background = darkMode ? 'rgba(26, 31, 53, 0.95)' : 'rgba(255, 255, 255, 0.95)';
-          e.currentTarget.style.color = theme.textMuted;
+          e.currentTarget.style.background = 'transparent';
         }}
         title="Duplicate">
           <Copy size={13} />
         </button>
         <button onClick={() => onEdit(config)} style={{
           padding: '6px',
-          background: `${darkMode ? 'rgba(26, 31, 53, 0.95)' : 'rgba(255, 255, 255, 0.95)'}`,
-          backdropFilter: 'blur(8px)',
-          border: `1px solid ${theme.border}`,
-          color: theme.textMuted,
+          background: 'transparent',
+          border: 'none',
+          color: theme.text,
           cursor: 'pointer',
           borderRadius: '6px',
           transition: 'all 0.2s ease',
-          boxShadow: darkMode ? '0 2px 12px rgba(0,0,0,0.5)' : '0 2px 8px rgba(0,0,0,0.1)'
+          textShadow: darkMode ? '0 1px 3px rgba(0,0,0,0.8)' : '0 1px 2px rgba(255,255,255,0.9)'
         }}
         onMouseEnter={(e) => {
-          e.currentTarget.style.background = darkMode ? 'rgba(37, 43, 69, 0.95)' : 'rgba(243, 244, 246, 0.95)';
-          e.currentTarget.style.color = theme.text;
+          e.currentTarget.style.background = darkMode ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.05)';
         }}
         onMouseLeave={(e) => {
-          e.currentTarget.style.background = darkMode ? 'rgba(26, 31, 53, 0.95)' : 'rgba(255, 255, 255, 0.95)';
-          e.currentTarget.style.color = theme.textMuted;
+          e.currentTarget.style.background = 'transparent';
         }}
         title="Edit">
           <Settings size={13} />
         </button>
         <button onClick={() => onDelete(config.id)} style={{
           padding: '6px',
-          background: `${darkMode ? 'rgba(26, 31, 53, 0.95)' : 'rgba(255, 255, 255, 0.95)'}`,
-          backdropFilter: 'blur(8px)',
-          border: `1px solid ${theme.border}`,
-          color: '#ef4444',
+          background: 'transparent',
+          border: 'none',
+          color: theme.danger,
           cursor: 'pointer',
           borderRadius: '6px',
           transition: 'all 0.2s ease',
-          boxShadow: darkMode ? '0 2px 12px rgba(0,0,0,0.5)' : '0 2px 8px rgba(0,0,0,0.1)'
+          textShadow: darkMode ? '0 1px 3px rgba(0,0,0,0.8)' : '0 1px 2px rgba(255,255,255,0.9)'
         }}
-        onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(239, 68, 68, 0.15)'}
-        onMouseLeave={(e) => e.currentTarget.style.background = darkMode ? 'rgba(26, 31, 53, 0.95)' : 'rgba(255, 255, 255, 0.95)'}
+        onMouseEnter={(e) => {
+          e.currentTarget.style.background = 'rgba(239, 68, 68, 0.15)';
+        }}
+        onMouseLeave={(e) => {
+          e.currentTarget.style.background = 'transparent';
+        }}
         title="Delete">
           <Trash2 size={13} />
         </button>
@@ -715,18 +714,13 @@ function QuestDBPanel({ config, onEdit, onDelete, onDuplicate, onResize, style, 
         zIndex: 10
       }}>
         <div style={{
-          background: `${darkMode ? 'rgba(26, 31, 53, 0.95)' : 'rgba(255, 255, 255, 0.95)'}`,
-          backdropFilter: 'blur(8px)',
-          padding: '4px 8px',
-          borderRadius: '6px',
-          border: `1px solid ${theme.border}`,
           fontSize: '9px',
           color: theme.textMuted,
-          boxShadow: darkMode ? '0 2px 12px rgba(0,0,0,0.5)' : '0 2px 8px rgba(0,0,0,0.1)',
           display: 'flex',
-          gap: '8px',
+          gap: '6px',
           alignItems: 'center',
-          flexWrap: 'wrap'
+          flexWrap: 'wrap',
+          textShadow: darkMode ? '0 1px 3px rgba(0,0,0,0.8)' : '0 1px 2px rgba(255,255,255,0.9)'
         }}>
           <div style={{ display: 'flex', gap: '3px', alignItems: 'center' }}>
             <Play size={9} />
