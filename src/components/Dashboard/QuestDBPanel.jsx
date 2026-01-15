@@ -560,12 +560,7 @@ function QuestDBPanel({ config, onEdit, onDelete, onDuplicate, onResize, style, 
           textShadow: darkMode 
             ? '1px 1px 3px rgba(0,0,0,0.9), -1px -1px 3px rgba(0,0,0,0.9)' 
             : '1px 1px 2px rgba(255,255,255,1), -1px -1px 2px rgba(255,255,255,1)',
-          pointerEvents: 'auto',
-          background: darkMode ? 'rgba(10, 14, 26, 0.4)' : 'rgba(249, 250, 251, 0.4)',
-          backdropFilter: 'blur(4px)',
-          padding: '4px 8px',
-          borderRadius: '6px',
-          alignSelf: 'flex-start'
+          pointerEvents: 'auto'
         }}>
           <div style={{
             width: '5px',
@@ -687,25 +682,20 @@ function QuestDBPanel({ config, onEdit, onDelete, onDuplicate, onResize, style, 
       }}>
         <button onClick={() => fetchData()} style={{
           padding: isSmall ? '5px' : '6px',
-          background: darkMode ? 'rgba(15, 20, 35, 0.85)' : 'rgba(255, 255, 255, 0.85)',
-          backdropFilter: 'blur(8px)',
-          border: `1.5px solid ${darkMode ? 'rgba(99, 102, 241, 0.4)' : 'rgba(99, 102, 241, 0.3)'}`,
+          background: 'transparent',
+          border: 'none',
           color: theme.text,
           cursor: 'pointer',
           borderRadius: '6px',
           transition: 'all 0.2s ease',
-          boxShadow: darkMode 
-            ? '0 2px 8px rgba(0,0,0,0.4)' 
-            : '0 2px 6px rgba(0,0,0,0.15)'
+          textShadow: darkMode ? '1px 1px 3px rgba(0,0,0,0.9)' : '1px 1px 2px rgba(255,255,255,1)'
         }} 
         onMouseEnter={(e) => {
           e.currentTarget.style.background = darkMode ? 'rgba(99, 102, 241, 0.2)' : 'rgba(99, 102, 241, 0.1)';
-          e.currentTarget.style.borderColor = theme.accent;
           e.currentTarget.style.transform = 'translateY(-1px)';
         }}
         onMouseLeave={(e) => {
-          e.currentTarget.style.background = darkMode ? 'rgba(15, 20, 35, 0.85)' : 'rgba(255, 255, 255, 0.85)';
-          e.currentTarget.style.borderColor = darkMode ? 'rgba(99, 102, 241, 0.4)' : 'rgba(99, 102, 241, 0.3)';
+          e.currentTarget.style.background = 'transparent';
           e.currentTarget.style.transform = 'translateY(0)';
         }}
         title="Refresh">
@@ -713,25 +703,20 @@ function QuestDBPanel({ config, onEdit, onDelete, onDuplicate, onResize, style, 
         </button>
         <button onClick={() => onDuplicate(config)} style={{
           padding: isSmall ? '5px' : '6px',
-          background: darkMode ? 'rgba(15, 20, 35, 0.85)' : 'rgba(255, 255, 255, 0.85)',
-          backdropFilter: 'blur(8px)',
-          border: `1.5px solid ${darkMode ? 'rgba(99, 102, 241, 0.4)' : 'rgba(99, 102, 241, 0.3)'}`,
+          background: 'transparent',
+          border: 'none',
           color: theme.text,
           cursor: 'pointer',
           borderRadius: '6px',
           transition: 'all 0.2s ease',
-          boxShadow: darkMode 
-            ? '0 2px 8px rgba(0,0,0,0.4)' 
-            : '0 2px 6px rgba(0,0,0,0.15)'
+          textShadow: darkMode ? '1px 1px 3px rgba(0,0,0,0.9)' : '1px 1px 2px rgba(255,255,255,1)'
         }}
         onMouseEnter={(e) => {
           e.currentTarget.style.background = darkMode ? 'rgba(99, 102, 241, 0.2)' : 'rgba(99, 102, 241, 0.1)';
-          e.currentTarget.style.borderColor = theme.accent;
           e.currentTarget.style.transform = 'translateY(-1px)';
         }}
         onMouseLeave={(e) => {
-          e.currentTarget.style.background = darkMode ? 'rgba(15, 20, 35, 0.85)' : 'rgba(255, 255, 255, 0.85)';
-          e.currentTarget.style.borderColor = darkMode ? 'rgba(99, 102, 241, 0.4)' : 'rgba(99, 102, 241, 0.3)';
+          e.currentTarget.style.background = 'transparent';
           e.currentTarget.style.transform = 'translateY(0)';
         }}
         title="Duplicate">
@@ -739,25 +724,20 @@ function QuestDBPanel({ config, onEdit, onDelete, onDuplicate, onResize, style, 
         </button>
         <button onClick={() => onEdit(config)} style={{
           padding: isSmall ? '5px' : '6px',
-          background: darkMode ? 'rgba(15, 20, 35, 0.85)' : 'rgba(255, 255, 255, 0.85)',
-          backdropFilter: 'blur(8px)',
-          border: `1.5px solid ${darkMode ? 'rgba(99, 102, 241, 0.4)' : 'rgba(99, 102, 241, 0.3)'}`,
+          background: 'transparent',
+          border: 'none',
           color: theme.text,
           cursor: 'pointer',
           borderRadius: '6px',
           transition: 'all 0.2s ease',
-          boxShadow: darkMode 
-            ? '0 2px 8px rgba(0,0,0,0.4)' 
-            : '0 2px 6px rgba(0,0,0,0.15)'
+          textShadow: darkMode ? '1px 1px 3px rgba(0,0,0,0.9)' : '1px 1px 2px rgba(255,255,255,1)'
         }}
         onMouseEnter={(e) => {
           e.currentTarget.style.background = darkMode ? 'rgba(99, 102, 241, 0.2)' : 'rgba(99, 102, 241, 0.1)';
-          e.currentTarget.style.borderColor = theme.accent;
           e.currentTarget.style.transform = 'translateY(-1px)';
         }}
         onMouseLeave={(e) => {
-          e.currentTarget.style.background = darkMode ? 'rgba(15, 20, 35, 0.85)' : 'rgba(255, 255, 255, 0.85)';
-          e.currentTarget.style.borderColor = darkMode ? 'rgba(99, 102, 241, 0.4)' : 'rgba(99, 102, 241, 0.3)';
+          e.currentTarget.style.background = 'transparent';
           e.currentTarget.style.transform = 'translateY(0)';
         }}
         title="Edit">
@@ -765,25 +745,20 @@ function QuestDBPanel({ config, onEdit, onDelete, onDuplicate, onResize, style, 
         </button>
         <button onClick={() => onDelete(config.id)} style={{
           padding: isSmall ? '5px' : '6px',
-          background: darkMode ? 'rgba(15, 20, 35, 0.85)' : 'rgba(255, 255, 255, 0.85)',
-          backdropFilter: 'blur(8px)',
-          border: `1.5px solid ${darkMode ? 'rgba(239, 68, 68, 0.4)' : 'rgba(239, 68, 68, 0.3)'}`,
+          background: 'transparent',
+          border: 'none',
           color: theme.danger,
           cursor: 'pointer',
           borderRadius: '6px',
           transition: 'all 0.2s ease',
-          boxShadow: darkMode 
-            ? '0 2px 8px rgba(0,0,0,0.4)' 
-            : '0 2px 6px rgba(0,0,0,0.15)'
+          textShadow: darkMode ? '1px 1px 3px rgba(0,0,0,0.9)' : '1px 1px 2px rgba(255,255,255,1)'
         }}
         onMouseEnter={(e) => {
           e.currentTarget.style.background = 'rgba(239, 68, 68, 0.15)';
-          e.currentTarget.style.borderColor = theme.danger;
           e.currentTarget.style.transform = 'translateY(-1px)';
         }}
         onMouseLeave={(e) => {
-          e.currentTarget.style.background = darkMode ? 'rgba(15, 20, 35, 0.85)' : 'rgba(255, 255, 255, 0.85)';
-          e.currentTarget.style.borderColor = darkMode ? 'rgba(239, 68, 68, 0.4)' : 'rgba(239, 68, 68, 0.3)';
+          e.currentTarget.style.background = 'transparent';
           e.currentTarget.style.transform = 'translateY(0)';
         }}
         title="Delete">
@@ -804,21 +779,14 @@ function QuestDBPanel({ config, onEdit, onDelete, onDuplicate, onResize, style, 
         zIndex: 10
       }}>
         <div style={{
-          background: darkMode ? 'rgba(10, 14, 26, 0.7)' : 'rgba(249, 250, 251, 0.7)',
-          backdropFilter: 'blur(6px)',
-          padding: '3px 8px',
-          borderRadius: '6px',
-          border: `1px solid ${darkMode ? 'rgba(99, 102, 241, 0.3)' : 'rgba(99, 102, 241, 0.2)'}`,
           fontSize: isSmall ? '7px' : '8px',
           color: theme.textMuted,
           display: 'flex',
           gap: isSmall ? '4px' : '6px',
           alignItems: 'center',
           flexWrap: 'wrap',
-          boxShadow: darkMode 
-            ? '0 2px 8px rgba(0,0,0,0.4)' 
-            : '0 2px 6px rgba(0,0,0,0.15)',
-          fontWeight: '600'
+          fontWeight: '600',
+          textShadow: darkMode ? '1px 1px 3px rgba(0,0,0,0.9)' : '1px 1px 2px rgba(255,255,255,1)'
         }}>
           <div style={{ display: 'flex', gap: '2px', alignItems: 'center' }}>
             <Play size={isSmall ? 7 : 8} />
