@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
-  Plus, LogOut, Database, Zap, Folder, Save, Download, Upload, Moon, Sun, Settings, X
+  Plus, LogOut, Database, Zap, Folder, Save, Download, Upload, Moon, Sun, Settings, X,
+  Grid, BarChart3, Activity, TrendingUp, Layers
 } from 'lucide-react';
 import authService from '../../services/auth';
 import questdbService from '../../services/questdb';
@@ -13,20 +14,17 @@ import ScadaDesigner from './ScadaDesigner';
 import ScadaPanel from './ScadaPanel';
 import { GRID_COLS, ROW_HEIGHT, DARK_COLORS } from './constants';
 
-// ✅ HELPER FUNCTION: Safely extract plantId from user object
 const getPlantId = (user) => {
   if (!user) {
     console.error('❌ No user object provided');
     return null;
   }
   
-  // Try plantId first (for backward compatibility)
   if (user.plantId) {
     console.log('✅ Found plantId:', user.plantId);
     return user.plantId;
   }
   
-  // Try plantAccess array (current structure)
   if (user.plantAccess && Array.isArray(user.plantAccess) && user.plantAccess.length > 0) {
     const plantId = user.plantAccess[0].plantId;
     console.log('✅ Found plantId from plantAccess:', plantId);
@@ -53,16 +51,14 @@ export default function Dashboard({ onLogout }) {
   const [syncError, setSyncError] = useState(null);
   const [darkMode, setDarkMode] = useState(() => {
     const saved = localStorage.getItem('miralys_dark_mode');
-    return saved ? JSON.parse(saved) : false;
+    return saved ? JSON.parse(saved) : true; // Default to dark mode for premium feel
   });
 
-  // Debug: Log user object on mount
   useEffect(() => {
     console.log('👤 Current user object:', user);
     console.log('🏭 Extracted plantId:', getPlantId(user));
   }, []);
 
-  // Fetch tables
   useEffect(() => {
     const fetchTables = async () => {
       try {
@@ -78,7 +74,6 @@ export default function Dashboard({ onLogout }) {
     fetchTables();
   }, []);
 
-  // Load dashboards from MongoDB on mount
   useEffect(() => {
     loadDashboards();
   }, []);
@@ -88,27 +83,23 @@ export default function Dashboard({ onLogout }) {
     setSyncError(null);
     
     try {
-      // Sync dashboards between localStorage and MongoDB
       const remoteDashboards = await dashboardService.syncDashboards();
       
       if (remoteDashboards && remoteDashboards.length > 0) {
         setDashboards(remoteDashboards);
         
-        // Set current dashboard (prefer default, or first one)
         const defaultDashboard = remoteDashboards.find(d => d.isDefault);
         const activeDashboardId = localStorage.getItem('miralys_active_dashboard');
         const activeDashboard = remoteDashboards.find(d => d.id === activeDashboardId);
         
         setCurrentDashboard(activeDashboard || defaultDashboard || remoteDashboards[0]);
       } else {
-        // Create default dashboard if none exist
         await createDefaultDashboard();
       }
     } catch (error) {
       console.error('Error loading dashboards:', error);
       setSyncError('Failed to load dashboards. Using offline mode.');
       
-      // Fallback to localStorage
       const saved = localStorage.getItem('miralys_dashboards');
       if (saved) {
         try {
@@ -170,7 +161,6 @@ export default function Dashboard({ onLogout }) {
     localStorage.setItem('miralys_dashboards', JSON.stringify([defaultDashboard]));
   };
 
-  // Save to localStorage as backup (keep existing behavior)
   useEffect(() => {
     if (dashboards.length > 0) {
       localStorage.setItem('miralys_dashboards', JSON.stringify(dashboards));
@@ -189,25 +179,37 @@ export default function Dashboard({ onLogout }) {
   };
 
   const theme = darkMode ? {
-    bg: DARK_COLORS.bg.main,
-    card: DARK_COLORS.bg.card,
-    hover: DARK_COLORS.bg.hover,
-    text: DARK_COLORS.text.primary,
-    textSecondary: DARK_COLORS.text.secondary,
-    textMuted: DARK_COLORS.text.muted,
-    border: DARK_COLORS.border.main,
-    borderLight: DARK_COLORS.border.light,
-    accent: DARK_COLORS.primary
+    bg: '#0a0e1a',
+    bgSecondary: '#111827',
+    card: '#1a1f35',
+    cardHover: '#252b45',
+    hover: '#1e2538',
+    text: '#f8fafc',
+    textSecondary: '#cbd5e1',
+    textMuted: '#94a3b8',
+    border: '#2d3548',
+    borderLight: '#3f4a61',
+    accent: '#6366f1',
+    accentHover: '#7c3aed',
+    success: '#10b981',
+    danger: '#ef4444',
+    warning: '#f59e0b'
   } : {
-    bg: '#f3f4f6',
-    card: 'white',
-    hover: '#f9fafb',
-    text: '#111827',
-    textSecondary: '#374151',
-    textMuted: '#6b7280',
-    border: '#e5e7eb',
-    borderLight: '#d1d5db',
-    accent: '#667eea'
+    bg: '#f9fafb',
+    bgSecondary: '#ffffff',
+    card: '#ffffff',
+    cardHover: '#f3f4f6',
+    hover: '#f3f4f6',
+    text: '#0f172a',
+    textSecondary: '#475569',
+    textMuted: '#64748b',
+    border: '#e2e8f0',
+    borderLight: '#cbd5e1',
+    accent: '#6366f1',
+    accentHover: '#7c3aed',
+    success: '#10b981',
+    danger: '#ef4444',
+    warning: '#f59e0b'
   };
 
   const handleLogout = () => {
@@ -225,71 +227,6 @@ export default function Dashboard({ onLogout }) {
     setShowScadaModal(true);
   };
 
-  const handleSavePanel = async (config) => {
-    try {
-      if (!config || !config.id) {
-        console.error('Invalid panel config:', config);
-        return;
-      }
-
-      const updatedDashboard = {
-        ...currentDashboard,
-        panels: [...(currentDashboard.panels || [])],
-      };
-
-      const panelExists = updatedDashboard.panels.some(p => p.id === config.id);
-
-      if (panelExists) {
-        updatedDashboard.panels = updatedDashboard.panels.map(p =>
-          p.id === config.id ? config : p
-        );
-      } else {
-        const newPanel = {
-          ...config,
-          x: 0,
-          y: getNextAvailableY(),
-          width: config.width || 12,
-          height: config.height || 6
-        };
-        updatedDashboard.panels.push(newPanel);
-      }
-
-      // Update in MongoDB
-      try {
-        await dashboardService.updateDashboard(updatedDashboard.id, {
-          panels: updatedDashboard.panels
-        });
-        console.log('✅ Panel saved to MongoDB');
-      } catch (error) {
-        console.error('❌ Failed to save to MongoDB:', error);
-      }
-
-      setDashboards(prevDashboards =>
-        prevDashboards.map(d =>
-          d.id === updatedDashboard.id ? updatedDashboard : d
-        )
-      );
-      
-      setCurrentDashboard(updatedDashboard);
-      
-      setTimeout(() => {
-        setShowConfigModal(false);
-        setShowScadaModal(false);
-        setEditingPanel(null);
-        setEditingScadaDiagram(null);
-      }, 0);
-    } catch (error) {
-      console.error('Error saving panel:', error);
-      alert('Failed to save panel. Please try again.');
-    }
-  };
-
-  const getNextAvailableY = () => {
-    if (!currentDashboard?.panels || currentDashboard.panels.length === 0) return 0;
-    const maxY = Math.max(...currentDashboard.panels.map(p => (p.y || 0) + (p.height || 1)));
-    return maxY;
-  };
-
   const handleEdit = (panel) => {
     if (panel.type === 'scada') {
       setEditingScadaDiagram(panel);
@@ -300,191 +237,77 @@ export default function Dashboard({ onLogout }) {
     }
   };
 
-  const handleDelete = async (panelId) => {
-    if (window.confirm('Are you sure you want to delete this panel?')) {
-      const updatedDashboard = {
-        ...currentDashboard,
-        panels: currentDashboard.panels.filter(p => p.id !== panelId)
-      };
-
-      try {
-        await dashboardService.updateDashboard(updatedDashboard.id, {
-          panels: updatedDashboard.panels
-        });
-        console.log('✅ Panel deleted from MongoDB');
-      } catch (error) {
-        console.error('❌ Failed to delete from MongoDB:', error);
-      }
-
-      setCurrentDashboard(updatedDashboard);
-      setDashboards(dashboards.map(d => 
-        d.id === updatedDashboard.id ? updatedDashboard : d
-      ));
-    }
+  const handleDelete = (panelId) => {
+    if (!currentDashboard) return;
+    const updated = {
+      ...currentDashboard,
+      panels: currentDashboard.panels.filter(p => p.id !== panelId)
+    };
+    updateDashboard(updated);
   };
 
-  const handleDuplicate = async (panel) => {
+  const handleDuplicate = (panel) => {
+    if (!currentDashboard) return;
     const newPanel = {
       ...panel,
       id: `panel_${Date.now()}`,
       title: `${panel.title} (Copy)`,
-      y: getNextAvailableY()
+      x: (panel.x + 2) % GRID_COLS,
+      y: panel.y + 1
     };
-    const updatedDashboard = {
+    const updated = {
       ...currentDashboard,
-      panels: [...(currentDashboard.panels || []), newPanel]
+      panels: [...currentDashboard.panels, newPanel]
     };
-
-    try {
-      await dashboardService.updateDashboard(updatedDashboard.id, {
-        panels: updatedDashboard.panels
-      });
-      console.log('✅ Panel duplicated in MongoDB');
-    } catch (error) {
-      console.error('❌ Failed to duplicate in MongoDB:', error);
-    }
-
-    setCurrentDashboard(updatedDashboard);
-    setDashboards(dashboards.map(d => 
-      d.id === updatedDashboard.id ? updatedDashboard : d
-    ));
+    updateDashboard(updated);
   };
 
-  const handleResize = async (panelId, newWidth, newHeight) => {
-    const updatedDashboard = {
+  const handleSavePanel = (panelData) => {
+    if (!currentDashboard) return;
+    
+    let updatedPanels;
+    if (editingPanel || editingScadaDiagram) {
+      const editingId = editingPanel?.id || editingScadaDiagram?.id;
+      updatedPanels = currentDashboard.panels.map(p => 
+        p.id === editingId ? { ...panelData, id: p.id } : p
+      );
+    } else {
+      const newPanel = {
+        ...panelData,
+        id: `panel_${Date.now()}`,
+        x: 0,
+        y: currentDashboard.panels.length > 0 
+          ? Math.max(...currentDashboard.panels.map(p => p.y + p.height)) 
+          : 0,
+        width: panelData.width || 4,
+        height: panelData.height || 2
+      };
+      updatedPanels = [...currentDashboard.panels, newPanel];
+    }
+
+    const updated = {
+      ...currentDashboard,
+      panels: updatedPanels
+    };
+    updateDashboard(updated);
+    
+    setShowConfigModal(false);
+    setShowScadaModal(false);
+    setEditingPanel(null);
+    setEditingScadaDiagram(null);
+  };
+
+  const handleResize = (panelId, newWidth, newHeight) => {
+    if (!currentDashboard) return;
+    const updated = {
       ...currentDashboard,
       panels: currentDashboard.panels.map(p =>
         p.id === panelId ? { ...p, width: newWidth, height: newHeight } : p
       )
     };
-
-    try {
-      await dashboardService.updateDashboard(updatedDashboard.id, {
-        panels: updatedDashboard.panels
-      });
-      console.log('✅ Panel resized in MongoDB');
-    } catch (error) {
-      console.error('❌ Failed to resize in MongoDB:', error);
-    }
-
-    setCurrentDashboard(updatedDashboard);
-    setDashboards(dashboards.map(d =>
-      d.id === updatedDashboard.id ? updatedDashboard : d
-    ));
+    updateDashboard(updated);
   };
 
-  const handleCreateDashboard = async (name) => {
-    try {
-      const plantId = getPlantId(user);
-      
-      if (!plantId) {
-        alert('No plant access found. Please contact your administrator.');
-        return;
-      }
-
-      console.log('📝 Creating new dashboard:', name, 'for plant:', plantId);
-      const newDashboard = await dashboardService.createDashboard(name, plantId);
-      setDashboards([...dashboards, newDashboard]);
-      setCurrentDashboard(newDashboard);
-      console.log('✅ Dashboard created successfully');
-    } catch (error) {
-      console.error('❌ Error creating dashboard:', error);
-      alert('Failed to create dashboard. Please try again.');
-    }
-  };
-
-  const handleSelectDashboard = (dashboardId) => {
-    const dashboard = dashboards.find(d => d.id === dashboardId);
-    if (dashboard) {
-      setCurrentDashboard(dashboard);
-      setShowDashboardModal(false);
-    }
-  };
-
-  const handleRenameDashboard = async (dashboardId, newName) => {
-    try {
-      await dashboardService.updateDashboard(dashboardId, { name: newName });
-      console.log('✅ Dashboard renamed in MongoDB');
-      
-      const updatedDashboards = dashboards.map(d =>
-        d.id === dashboardId ? { ...d, name: newName } : d
-      );
-      setDashboards(updatedDashboards);
-      
-      if (currentDashboard?.id === dashboardId) {
-        setCurrentDashboard({ ...currentDashboard, name: newName });
-      }
-    } catch (error) {
-      console.error('❌ Error renaming dashboard:', error);
-      alert('Failed to rename dashboard. Please try again.');
-    }
-  };
-
-  const handleDeleteDashboard = async (dashboardId) => {
-    try {
-      await dashboardService.deleteDashboard(dashboardId);
-      console.log('✅ Dashboard deleted from MongoDB');
-      
-      const updatedDashboards = dashboards.filter(d => d.id !== dashboardId);
-      setDashboards(updatedDashboards);
-      
-      if (currentDashboard?.id === dashboardId) {
-        setCurrentDashboard(updatedDashboards[0] || null);
-      }
-    } catch (error) {
-      console.error('❌ Error deleting dashboard:', error);
-      alert('Failed to delete dashboard. Please try again.');
-    }
-  };
-
-  const handleExportDashboard = () => {
-    if (!currentDashboard) return;
-    
-    const dataStr = JSON.stringify(currentDashboard, null, 2);
-    const dataBlob = new Blob([dataStr], { type: 'application/json' });
-    const url = URL.createObjectURL(dataBlob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = `${currentDashboard.name.replace(/\s+/g, '_')}_${Date.now()}.json`;
-    link.click();
-    URL.revokeObjectURL(url);
-  };
-
-  const handleImportDashboard = async (e) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    const reader = new FileReader();
-    reader.onload = async (event) => {
-      try {
-        const imported = JSON.parse(event.target.result);
-        const plantId = getPlantId(user);
-        
-        if (!plantId) {
-          alert('No plant access found. Please contact your administrator.');
-          return;
-        }
-
-        console.log('📥 Importing dashboard for plant:', plantId);
-        const newDashboard = await dashboardService.createDashboard(
-          `${imported.name} (Imported)`,
-          plantId,
-          imported.panels || []
-        );
-        
-        setDashboards([...dashboards, newDashboard]);
-        setCurrentDashboard(newDashboard);
-        console.log('✅ Dashboard imported successfully');
-      } catch (error) {
-        alert('Failed to import dashboard. Please check the file format.');
-        console.error('Import error:', error);
-      }
-    };
-    reader.readAsText(file);
-    e.target.value = '';
-  };
-
-  // Drag and drop handlers
   const handleDragStart = (e, panel) => {
     setDraggingPanel(panel);
     e.dataTransfer.effectAllowed = 'move';
@@ -495,490 +318,573 @@ export default function Dashboard({ onLogout }) {
     e.dataTransfer.dropEffect = 'move';
   };
 
-  const handleDrop = async (e, targetPanel) => {
+  const handleDrop = (e, targetPanel) => {
     e.preventDefault();
-    if (!draggingPanel || draggingPanel.id === targetPanel.id) {
+    if (!draggingPanel || !currentDashboard || draggingPanel.id === targetPanel.id) {
       setDraggingPanel(null);
       return;
     }
 
-    const updatedPanels = [...currentDashboard.panels];
-    const dragIndex = updatedPanels.findIndex(p => p.id === draggingPanel.id);
-    const targetIndex = updatedPanels.findIndex(p => p.id === targetPanel.id);
-
-    if (dragIndex !== -1 && targetIndex !== -1) {
-      [updatedPanels[dragIndex], updatedPanels[targetIndex]] = 
-      [updatedPanels[targetIndex], updatedPanels[dragIndex]];
-
-      const updatedDashboard = {
-        ...currentDashboard,
-        panels: updatedPanels
-      };
-
-      try {
-        await dashboardService.updateDashboard(updatedDashboard.id, {
-          panels: updatedPanels
-        });
-        console.log('✅ Panel order updated in MongoDB');
-      } catch (error) {
-        console.error('❌ Failed to update panel order in MongoDB:', error);
+    const updatedPanels = currentDashboard.panels.map(p => {
+      if (p.id === draggingPanel.id) {
+        return { ...p, x: targetPanel.x, y: targetPanel.y };
       }
+      if (p.id === targetPanel.id) {
+        return { ...p, x: draggingPanel.x, y: draggingPanel.y };
+      }
+      return p;
+    });
 
-      setCurrentDashboard(updatedDashboard);
-      setDashboards(dashboards.map(d => 
-        d.id === updatedDashboard.id ? updatedDashboard : d
-      ));
-    }
+    const updated = {
+      ...currentDashboard,
+      panels: updatedPanels
+    };
+    updateDashboard(updated);
     setDraggingPanel(null);
   };
 
+  const updateDashboard = async (updatedDashboard) => {
+    try {
+      const saved = await dashboardService.updateDashboard(updatedDashboard.id, {
+        name: updatedDashboard.name,
+        panels: updatedDashboard.panels
+      });
+      
+      setDashboards(dashboards.map(d => d.id === saved.id ? saved : d));
+      setCurrentDashboard(saved);
+    } catch (error) {
+      console.error('Error updating dashboard:', error);
+      setDashboards(dashboards.map(d => d.id === updatedDashboard.id ? updatedDashboard : d));
+      setCurrentDashboard(updatedDashboard);
+    }
+  };
+
+  const handleSelectDashboard = (dashboard) => {
+    setCurrentDashboard(dashboard);
+    setShowDashboardModal(false);
+  };
+
+  const handleCreateDashboard = async (name) => {
+    try {
+      const plantId = getPlantId(user);
+      if (!plantId) {
+        throw new Error('No plantId found');
+      }
+
+      const newDashboard = await dashboardService.createDashboard(name, plantId, [], false);
+      setDashboards([...dashboards, newDashboard]);
+      setCurrentDashboard(newDashboard);
+      setShowDashboardModal(false);
+    } catch (error) {
+      console.error('Error creating dashboard:', error);
+      const offlineDashboard = {
+        id: `dashboard_${Date.now()}`,
+        name,
+        panels: []
+      };
+      setDashboards([...dashboards, offlineDashboard]);
+      setCurrentDashboard(offlineDashboard);
+      setShowDashboardModal(false);
+    }
+  };
+
+  const handleRenameDashboard = async (dashboardId, newName) => {
+    try {
+      const dashboard = dashboards.find(d => d.id === dashboardId);
+      if (!dashboard) return;
+
+      const updated = await dashboardService.updateDashboard(dashboardId, {
+        name: newName,
+        panels: dashboard.panels
+      });
+
+      setDashboards(dashboards.map(d => d.id === dashboardId ? updated : d));
+      if (currentDashboard?.id === dashboardId) {
+        setCurrentDashboard(updated);
+      }
+    } catch (error) {
+      console.error('Error renaming dashboard:', error);
+      const updatedDashboards = dashboards.map(d =>
+        d.id === dashboardId ? { ...d, name: newName } : d
+      );
+      setDashboards(updatedDashboards);
+      if (currentDashboard?.id === dashboardId) {
+        setCurrentDashboard(updatedDashboards.find(d => d.id === dashboardId));
+      }
+    }
+  };
+
+  const handleDeleteDashboard = async (dashboardId) => {
+    try {
+      await dashboardService.deleteDashboard(dashboardId);
+      const remaining = dashboards.filter(d => d.id !== dashboardId);
+      setDashboards(remaining);
+      
+      if (currentDashboard?.id === dashboardId) {
+        setCurrentDashboard(remaining[0] || null);
+      }
+    } catch (error) {
+      console.error('Error deleting dashboard:', error);
+      const remaining = dashboards.filter(d => d.id !== dashboardId);
+      setDashboards(remaining);
+      
+      if (currentDashboard?.id === dashboardId) {
+        setCurrentDashboard(remaining[0] || null);
+      }
+    }
+  };
+
   const calculatePanelStyle = (panel) => {
-    const width = panel.width || 1;
-    const height = panel.height || 1;
-    
     return {
-      gridColumn: `span ${Math.min(width, GRID_COLS)}`,
-      gridRow: `span ${height}`,
-      minHeight: `${height * ROW_HEIGHT}px`
+      gridColumn: `span ${panel.width || 4}`,
+      gridRow: `span ${panel.height || 2}`
     };
   };
 
-  // Loading state
   if (loading) {
     return (
-      <div style={{ 
-        minHeight: '100vh', 
-        background: theme.bg,
+      <div style={{
+        width: '100vw',
+        height: '100vh',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        transition: 'background 0.3s ease'
+        background: theme.bg,
+        color: theme.text
       }}>
         <div style={{ textAlign: 'center' }}>
-          <Zap size={48} color="#667eea" style={{ animation: 'pulse 2s infinite' }} />
-          <p style={{ marginTop: '16px', color: theme.textMuted, fontSize: '16px' }}>
-            Loading dashboards...
-          </p>
+          <div style={{
+            width: '48px',
+            height: '48px',
+            border: `3px solid ${theme.border}`,
+            borderTopColor: theme.accent,
+            borderRadius: '50%',
+            animation: 'spin 1s linear infinite',
+            margin: '0 auto 16px'
+          }} />
+          <p style={{ fontSize: '14px', color: theme.textMuted }}>Loading dashboards...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div style={{ 
-      minHeight: '100vh', 
+    <div style={{
+      width: '100vw',
+      height: '100vh',
       background: theme.bg,
-      transition: 'background 0.3s ease'
+      color: theme.text,
+      fontFamily: '"DM Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
+      overflow: 'hidden',
+      display: 'flex',
+      flexDirection: 'column'
     }}>
-      {/* Sync Error Banner */}
-      {syncError && (
-        <div style={{
-          background: '#fef3c7',
-          border: '1px solid #fbbf24',
-          padding: '12px 24px',
-          textAlign: 'center',
-          fontSize: '14px',
-          color: '#92400e',
-          fontWeight: '600'
-        }}>
-          ⚠️ {syncError}
-        </div>
-      )}
-
-      {/* Header */}
+      {/* Premium Header with Tabs */}
       <div style={{
         background: theme.card,
-        borderBottom: `2px solid ${theme.border}`,
-        padding: '12px 24px',
+        borderBottom: `1px solid ${theme.border}`,
         display: 'flex',
-        justifyContent: 'space-between',
         alignItems: 'center',
-        position: 'sticky',
-        top: 0,
-        zIndex: 100,
-        boxShadow: darkMode ? '0 2px 8px rgba(0,0,0,0.3)' : '0 2px 4px rgba(0,0,0,0.05)',
-        backdropFilter: 'blur(10px)',
-        transition: 'all 0.3s ease'
+        height: '56px',
+        padding: '0 16px',
+        gap: '16px',
+        flexShrink: 0
       }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+        {/* Logo */}
+        <div style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: '8px',
+          marginRight: '8px'
+        }}>
           <div style={{
-            width: '40px',
-            height: '40px',
-            background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-            borderRadius: '10px',
+            width: '32px',
+            height: '32px',
+            background: `linear-gradient(135deg, ${theme.accent} 0%, ${theme.accentHover} 100%)`,
+            borderRadius: '8px',
             display: 'flex',
             alignItems: 'center',
-            justifyContent: 'center',
-            boxShadow: darkMode ? '0 4px 12px rgba(102, 126, 234, 0.4)' : '0 2px 8px rgba(102, 126, 234, 0.3)',
-            transition: 'all 0.3s ease'
+            justifyContent: 'center'
           }}>
-            <Zap size={24} color="white" />
+            <Activity size={18} color="white" />
           </div>
-          <div>
-            <h1 style={{ 
-              margin: 0, 
-              fontSize: '18px', 
-              fontWeight: '700', 
-              color: theme.text,
-              transition: 'color 0.3s ease'
-            }}>
-              Miralys
-            </h1>
-            <p style={{ 
-              margin: 0, 
-              fontSize: '12px', 
-              color: theme.textMuted,
-              transition: 'color 0.3s ease'
-            }}>
-              {currentDashboard?.name || 'Real-Time Data Intelligence'}
-            </p>
-          </div>
+          <span style={{
+            fontSize: '16px',
+            fontWeight: '700',
+            letterSpacing: '-0.02em',
+            color: theme.text
+          }}>
+            Miralys
+          </span>
         </div>
-        
-        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+
+        {/* Dashboard Tabs */}
+        <div style={{
+          display: 'flex',
+          gap: '4px',
+          flex: 1,
+          overflowX: 'auto',
+          overflowY: 'hidden',
+          alignItems: 'center'
+        }}>
+          {dashboards.map((dashboard) => (
+            <button
+              key={dashboard.id}
+              onClick={() => handleSelectDashboard(dashboard)}
+              style={{
+                padding: '6px 14px',
+                background: currentDashboard?.id === dashboard.id 
+                  ? theme.accent 
+                  : 'transparent',
+                color: currentDashboard?.id === dashboard.id 
+                  ? '#ffffff' 
+                  : theme.textSecondary,
+                border: 'none',
+                borderRadius: '6px',
+                fontSize: '13px',
+                fontWeight: '600',
+                cursor: 'pointer',
+                whiteSpace: 'nowrap',
+                transition: 'all 0.2s ease',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px'
+              }}
+              onMouseEnter={(e) => {
+                if (currentDashboard?.id !== dashboard.id) {
+                  e.target.style.background = theme.hover;
+                }
+              }}
+              onMouseLeave={(e) => {
+                if (currentDashboard?.id !== dashboard.id) {
+                  e.target.style.background = 'transparent';
+                }
+              }}
+            >
+              <Grid size={14} />
+              {dashboard.name}
+              {dashboard.panels?.length > 0 && (
+                <span style={{
+                  fontSize: '10px',
+                  background: currentDashboard?.id === dashboard.id 
+                    ? 'rgba(255,255,255,0.2)' 
+                    : theme.border,
+                  padding: '2px 6px',
+                  borderRadius: '10px',
+                  fontWeight: '700'
+                }}>
+                  {dashboard.panels.length}
+                </span>
+              )}
+            </button>
+          ))}
+          
           <button
-            onClick={toggleDarkMode}
+            onClick={() => setShowDashboardModal(true)}
             style={{
-              padding: '10px',
-              background: darkMode ? DARK_COLORS.bg.hover : '#f9fafb',
-              border: `2px solid ${theme.border}`,
-              borderRadius: '8px',
-              color: theme.text,
+              padding: '6px 10px',
+              background: 'transparent',
+              color: theme.textMuted,
+              border: `1px dashed ${theme.border}`,
+              borderRadius: '6px',
+              fontSize: '13px',
+              fontWeight: '600',
               cursor: 'pointer',
+              whiteSpace: 'nowrap',
+              transition: 'all 0.2s ease',
               display: 'flex',
               alignItems: 'center',
-              transition: 'all 0.3s ease',
-              boxShadow: darkMode ? '0 2px 8px rgba(0,0,0,0.2)' : 'none'
+              gap: '6px'
             }}
             onMouseEnter={(e) => {
               e.target.style.borderColor = theme.accent;
-              e.target.style.transform = 'translateY(-2px)';
+              e.target.style.color = theme.accent;
             }}
             onMouseLeave={(e) => {
               e.target.style.borderColor = theme.border;
-              e.target.style.transform = 'translateY(0)';
+              e.target.style.color = theme.textMuted;
             }}
-            title={darkMode ? 'Light Mode' : 'Dark Mode'}
+          >
+            <Plus size={14} />
+            New
+          </button>
+        </div>
+
+        {/* Action Buttons */}
+        <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
+          <button
+            onClick={handleAddPanel}
+            disabled={!currentDashboard}
+            style={{
+              padding: '8px 14px',
+              background: currentDashboard ? theme.accent : theme.border,
+              color: 'white',
+              border: 'none',
+              borderRadius: '6px',
+              fontSize: '13px',
+              fontWeight: '600',
+              cursor: currentDashboard ? 'pointer' : 'not-allowed',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px',
+              transition: 'all 0.2s ease',
+              opacity: currentDashboard ? 1 : 0.5
+            }}
+            onMouseEnter={(e) => {
+              if (currentDashboard) {
+                e.target.style.background = theme.accentHover;
+              }
+            }}
+            onMouseLeave={(e) => {
+              if (currentDashboard) {
+                e.target.style.background = theme.accent;
+              }
+            }}
+          >
+            <BarChart3 size={14} />
+            Panel
+          </button>
+
+          <button
+            onClick={handleAddScada}
+            disabled={!currentDashboard}
+            style={{
+              padding: '8px 14px',
+              background: currentDashboard ? theme.success : theme.border,
+              color: 'white',
+              border: 'none',
+              borderRadius: '6px',
+              fontSize: '13px',
+              fontWeight: '600',
+              cursor: currentDashboard ? 'pointer' : 'not-allowed',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px',
+              transition: 'all 0.2s ease',
+              opacity: currentDashboard ? 1 : 0.5
+            }}
+            onMouseEnter={(e) => {
+              if (currentDashboard) {
+                e.target.style.background = '#059669';
+              }
+            }}
+            onMouseLeave={(e) => {
+              if (currentDashboard) {
+                e.target.style.background = theme.success;
+              }
+            }}
+          >
+            <Settings size={14} />
+            SCADA
+          </button>
+
+          <div style={{
+            width: '1px',
+            height: '24px',
+            background: theme.border,
+            margin: '0 4px'
+          }} />
+
+          <button
+            onClick={toggleDarkMode}
+            style={{
+              width: '36px',
+              height: '36px',
+              background: 'transparent',
+              border: 'none',
+              color: theme.textSecondary,
+              cursor: 'pointer',
+              borderRadius: '6px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              transition: 'all 0.2s ease'
+            }}
+            onMouseEnter={(e) => {
+              e.target.style.background = theme.hover;
+            }}
+            onMouseLeave={(e) => {
+              e.target.style.background = 'transparent';
+            }}
           >
             {darkMode ? <Sun size={18} /> : <Moon size={18} />}
           </button>
 
           <button
-            onClick={() => setShowDashboardModal(true)}
+            onClick={handleLogout}
             style={{
-              padding: '10px 16px',
-              background: theme.card,
-              border: `2px solid ${theme.border}`,
-              borderRadius: '8px',
-              color: theme.textSecondary,
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '8px',
-              fontSize: '14px',
-              fontWeight: '600',
-              transition: 'all 0.3s ease',
-              boxShadow: darkMode ? '0 2px 8px rgba(0,0,0,0.2)' : 'none'
-            }}
-            onMouseEnter={(e) => {
-              e.target.style.borderColor = theme.accent;
-              e.target.style.transform = 'translateY(-2px)';
-            }}
-            onMouseLeave={(e) => {
-              e.target.style.borderColor = theme.border;
-              e.target.style.transform = 'translateY(0)';
-            }}
-          >
-            <Folder size={16} />
-            Dashboards ({dashboards.length})
-          </button>
-
-          <button
-            onClick={handleExportDashboard}
-            disabled={!currentDashboard}
-            style={{
-              padding: '10px 16px',
-              background: theme.card,
-              border: `2px solid ${theme.border}`,
-              borderRadius: '8px',
-              color: theme.textSecondary,
-              cursor: currentDashboard ? 'pointer' : 'not-allowed',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '8px',
-              fontSize: '14px',
-              fontWeight: '600',
-              opacity: currentDashboard ? 1 : 0.5,
-              transition: 'all 0.3s ease',
-              boxShadow: darkMode ? '0 2px 8px rgba(0,0,0,0.2)' : 'none'
-            }}
-            title="Export Dashboard"
-            onMouseEnter={(e) => currentDashboard && (e.target.style.transform = 'translateY(-2px)')}
-            onMouseLeave={(e) => (e.target.style.transform = 'translateY(0)')}
-          >
-            <Download size={16} />
-          </button>
-
-          <label style={{
-            padding: '10px 16px',
-            background: theme.card,
-            border: `2px solid ${theme.border}`,
-            borderRadius: '8px',
-            color: theme.textSecondary,
-            cursor: 'pointer',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '8px',
-            fontSize: '14px',
-            fontWeight: '600',
-            transition: 'all 0.3s ease',
-            boxShadow: darkMode ? '0 2px 8px rgba(0,0,0,0.2)' : 'none'
-          }}
-          onMouseEnter={(e) => e.currentTarget.style.transform = 'translateY(-2px)'}
-          onMouseLeave={(e) => e.currentTarget.style.transform = 'translateY(0)'}
-          >
-            <Upload size={16} />
-            <input
-              type="file"
-              accept=".json"
-              onChange={handleImportDashboard}
-              style={{ display: 'none' }}
-            />
-          </label>
-          
-          <button
-            onClick={handleAddScada}
-            style={{
-              padding: '10px 16px',
-              background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
+              width: '36px',
+              height: '36px',
+              background: 'transparent',
               border: 'none',
-              borderRadius: '8px',
-              color: 'white',
+              color: theme.danger,
               cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '8px',
-              fontSize: '14px',
-              fontWeight: '600',
-              transition: 'all 0.3s ease',
-              boxShadow: darkMode ? '0 4px 12px rgba(16, 185, 129, 0.4)' : '0 2px 8px rgba(16, 185, 129, 0.3)'
-            }}
-            onMouseEnter={(e) => {
-              e.target.style.transform = 'translateY(-2px)';
-              e.target.style.boxShadow = darkMode ? '0 6px 16px rgba(16, 185, 129, 0.5)' : '0 4px 12px rgba(16, 185, 129, 0.4)';
-            }}
-            onMouseLeave={(e) => {
-              e.target.style.transform = 'translateY(0)';
-              e.target.style.boxShadow = darkMode ? '0 4px 12px rgba(16, 185, 129, 0.4)' : '0 2px 8px rgba(16, 185, 129, 0.3)';
-            }}
-          >
-            <Settings size={16} />
-            SCADA Designer
-          </button>
-
-          <button
-            onClick={handleAddPanel}
-            style={{
-              padding: '10px 16px',
-              background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-              border: 'none',
-              borderRadius: '8px',
-              color: 'white',
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '8px',
-              fontSize: '14px',
-              fontWeight: '600',
-              transition: 'all 0.3s ease',
-              boxShadow: darkMode ? '0 4px 12px rgba(102, 126, 234, 0.4)' : '0 2px 8px rgba(102, 126, 234, 0.3)'
-            }}
-            onMouseEnter={(e) => {
-              e.target.style.transform = 'translateY(-2px)';
-              e.target.style.boxShadow = darkMode ? '0 6px 16px rgba(102, 126, 234, 0.5)' : '0 4px 12px rgba(102, 126, 234, 0.4)';
-            }}
-            onMouseLeave={(e) => {
-              e.target.style.transform = 'translateY(0)';
-              e.target.style.boxShadow = darkMode ? '0 4px 12px rgba(102, 126, 234, 0.4)' : '0 2px 8px rgba(102, 126, 234, 0.3)';
-            }}
-          >
-            <Plus size={16} />
-            Add Panel
-          </button>
-          
-          <div style={{
-            padding: '8px 16px',
-            background: theme.hover,
-            border: `2px solid ${theme.border}`,
-            borderRadius: '8px',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '12px',
-            transition: 'all 0.3s ease',
-            boxShadow: darkMode ? '0 2px 8px rgba(0,0,0,0.2)' : 'none'
-          }}>
-            <div style={{ textAlign: 'right' }}>
-              <div style={{ 
-                fontSize: '13px', 
-                fontWeight: '600', 
-                color: theme.text,
-                transition: 'color 0.3s ease'
-              }}>
-                {user?.name}
-              </div>
-              <div style={{ 
-                fontSize: '11px', 
-                color: theme.textMuted,
-                transition: 'color 0.3s ease'
-              }}>
-                {user?.email}
-              </div>
-            </div>
-            <button
-              onClick={handleLogout}
-              style={{
-                padding: '8px',
-                background: 'transparent',
-                border: 'none',
-                color: theme.textMuted,
-                cursor: 'pointer',
-                borderRadius: '6px',
-                transition: 'all 0.3s ease'
-              }}
-              onMouseEnter={(e) => {
-                e.target.style.background = darkMode ? DARK_COLORS.bg.hover : '#e5e7eb';
-                e.target.style.color = DARK_COLORS.danger;
-              }}
-              onMouseLeave={(e) => {
-                e.target.style.background = 'transparent';
-                e.target.style.color = theme.textMuted;
-              }}
-              title="Logout"
-            >
-              <LogOut size={18} />
-            </button>
-          </div>
-        </div>
-      </div>
-
-      {/* Main Content */}
-      <div style={{ padding: '24px' }}>
-        {!currentDashboard || currentDashboard.panels?.length === 0 ? (
-          <div style={{
-            background: theme.card,
-            border: `2px dashed ${theme.borderLight}`,
-            borderRadius: '16px',
-            padding: '60px 40px',
-            textAlign: 'center',
-            maxWidth: '600px',
-            margin: '60px auto',
-            transition: 'all 0.3s ease',
-            boxShadow: darkMode ? '0 8px 24px rgba(0,0,0,0.3)' : '0 2px 8px rgba(0,0,0,0.05)'
-          }}>
-            <div style={{
-              width: '80px',
-              height: '80px',
-              background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-              borderRadius: '20px',
+              borderRadius: '6px',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              margin: '0 auto 24px',
-              boxShadow: darkMode ? '0 8px 24px rgba(102, 126, 234, 0.5)' : '0 4px 16px rgba(102, 126, 234, 0.3)',
-              animation: 'pulse 2s infinite'
-            }}>
-              <Database size={40} color="white" />
-            </div>
-            <h3 style={{ 
-              margin: '0 0 12px', 
-              color: theme.text, 
-              fontSize: '24px', 
-              fontWeight: '700',
-              transition: 'color 0.3s ease'
-            }}>
-              {currentDashboard ? 'Add Your First Panel' : 'Create Your First Dashboard'}
-            </h3>
-            <p style={{ 
-              margin: '0 0 32px', 
-              color: theme.textMuted, 
-              fontSize: '15px', 
-              lineHeight: '1.6',
-              transition: 'color 0.3s ease'
-            }}>
-              {currentDashboard
-                ? 'Build powerful visualizations from your QuestDB data or create SCADA diagrams. Drag panels to reorder them.'
-                : 'Create a dashboard to organize your data visualizations and start monitoring in real-time.'}
-            </p>
-            <div style={{ display: 'flex', gap: '12px', justifyContent: 'center' }}>
-              <button
-                onClick={currentDashboard ? handleAddPanel : () => setShowDashboardModal(true)}
-                style={{
-                  padding: '14px 28px',
-                  background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-                  border: 'none',
-                  borderRadius: '10px',
-                  color: 'white',
-                  cursor: 'pointer',
-                  fontSize: '15px',
-                  fontWeight: '600',
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: '10px',
-                  transition: 'all 0.3s ease',
-                  boxShadow: darkMode ? '0 8px 24px rgba(102, 126, 234, 0.5)' : '0 4px 16px rgba(102, 126, 234, 0.3)'
-                }}
-                onMouseEnter={(e) => {
-                  e.target.style.transform = 'translateY(-3px)';
-                  e.target.style.boxShadow = darkMode ? '0 12px 32px rgba(102, 126, 234, 0.6)' : '0 6px 20px rgba(102, 126, 234, 0.4)';
-                }}
-                onMouseLeave={(e) => {
-                  e.target.style.transform = 'translateY(0)';
-                  e.target.style.boxShadow = darkMode ? '0 8px 24px rgba(102, 126, 234, 0.5)' : '0 4px 16px rgba(102, 126, 234, 0.3)';
-                }}
-              >
-                <Plus size={20} />
-                {currentDashboard ? 'Add Data Panel' : 'Create Dashboard'}
-              </button>
-              {currentDashboard && (
+              transition: 'all 0.2s ease'
+            }}
+            onMouseEnter={(e) => {
+              e.target.style.background = 'rgba(239, 68, 68, 0.1)';
+            }}
+            onMouseLeave={(e) => {
+              e.target.style.background = 'transparent';
+            }}
+          >
+            <LogOut size={18} />
+          </button>
+        </div>
+      </div>
+
+      {/* Sync Error Banner */}
+      {syncError && (
+        <div style={{
+          padding: '10px 16px',
+          background: 'rgba(245, 158, 11, 0.1)',
+          borderBottom: `1px solid ${theme.warning}`,
+          color: theme.warning,
+          fontSize: '13px',
+          fontWeight: '500',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '8px',
+          flexShrink: 0
+        }}>
+          <Database size={16} />
+          {syncError}
+        </div>
+      )}
+
+      {/* Main Content Area */}
+      <div style={{
+        flex: 1,
+        overflow: 'auto',
+        padding: '12px',
+        background: theme.bg
+      }}>
+        {!currentDashboard || currentDashboard.panels.length === 0 ? (
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            height: '100%',
+            textAlign: 'center'
+          }}>
+            <div style={{ maxWidth: '480px' }}>
+              <div style={{
+                width: '80px',
+                height: '80px',
+                background: `linear-gradient(135deg, ${theme.accent} 0%, ${theme.accentHover} 100%)`,
+                borderRadius: '20px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                margin: '0 auto 24px',
+                opacity: 0.9
+              }}>
+                <Layers size={36} color="white" />
+              </div>
+              <h2 style={{
+                fontSize: '24px',
+                fontWeight: '700',
+                marginBottom: '12px',
+                color: theme.text,
+                letterSpacing: '-0.02em'
+              }}>
+                {currentDashboard ? 'Start Building Your Dashboard' : 'Welcome to Miralys'}
+              </h2>
+              <p style={{
+                fontSize: '14px',
+                color: theme.textMuted,
+                marginBottom: '28px',
+                lineHeight: '1.6'
+              }}>
+                {currentDashboard
+                  ? 'Add data panels and SCADA diagrams to visualize your real-time data streams.'
+                  : 'Create your first dashboard to organize visualizations and monitor your systems.'}
+              </p>
+              <div style={{ display: 'flex', gap: '10px', justifyContent: 'center' }}>
                 <button
-                  onClick={handleAddScada}
+                  onClick={currentDashboard ? handleAddPanel : () => setShowDashboardModal(true)}
                   style={{
-                    padding: '14px 28px',
-                    background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
+                    padding: '12px 24px',
+                    background: `linear-gradient(135deg, ${theme.accent} 0%, ${theme.accentHover} 100%)`,
                     border: 'none',
-                    borderRadius: '10px',
+                    borderRadius: '8px',
                     color: 'white',
                     cursor: 'pointer',
-                    fontSize: '15px',
+                    fontSize: '14px',
                     fontWeight: '600',
                     display: 'inline-flex',
                     alignItems: 'center',
-                    gap: '10px',
-                    transition: 'all 0.3s ease',
-                    boxShadow: darkMode ? '0 8px 24px rgba(16, 185, 129, 0.5)' : '0 4px 16px rgba(16, 185, 129, 0.3)'
+                    gap: '8px',
+                    transition: 'all 0.2s ease',
+                    boxShadow: darkMode 
+                      ? '0 4px 16px rgba(99, 102, 241, 0.4)' 
+                      : '0 2px 12px rgba(99, 102, 241, 0.3)'
                   }}
                   onMouseEnter={(e) => {
-                    e.target.style.transform = 'translateY(-3px)';
-                    e.target.style.boxShadow = darkMode ? '0 12px 32px rgba(16, 185, 129, 0.6)' : '0 6px 20px rgba(16, 185, 129, 0.4)';
+                    e.target.style.transform = 'translateY(-2px)';
+                    e.target.style.boxShadow = darkMode 
+                      ? '0 6px 20px rgba(99, 102, 241, 0.5)' 
+                      : '0 4px 16px rgba(99, 102, 241, 0.4)';
                   }}
                   onMouseLeave={(e) => {
                     e.target.style.transform = 'translateY(0)';
-                    e.target.style.boxShadow = darkMode ? '0 8px 24px rgba(16, 185, 129, 0.5)' : '0 4px 16px rgba(16, 185, 129, 0.3)';
+                    e.target.style.boxShadow = darkMode 
+                      ? '0 4px 16px rgba(99, 102, 241, 0.4)' 
+                      : '0 2px 12px rgba(99, 102, 241, 0.3)';
                   }}
                 >
-                  <Settings size={20} />
-                  Add SCADA Diagram
+                  <Plus size={18} />
+                  {currentDashboard ? 'Add Data Panel' : 'Create Dashboard'}
                 </button>
-              )}
+                {currentDashboard && (
+                  <button
+                    onClick={handleAddScada}
+                    style={{
+                      padding: '12px 24px',
+                      background: `linear-gradient(135deg, ${theme.success} 0%, #059669 100%)`,
+                      border: 'none',
+                      borderRadius: '8px',
+                      color: 'white',
+                      cursor: 'pointer',
+                      fontSize: '14px',
+                      fontWeight: '600',
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '8px',
+                      transition: 'all 0.2s ease',
+                      boxShadow: darkMode 
+                        ? '0 4px 16px rgba(16, 185, 129, 0.4)' 
+                        : '0 2px 12px rgba(16, 185, 129, 0.3)'
+                    }}
+                    onMouseEnter={(e) => {
+                      e.target.style.transform = 'translateY(-2px)';
+                      e.target.style.boxShadow = darkMode 
+                        ? '0 6px 20px rgba(16, 185, 129, 0.5)' 
+                        : '0 4px 16px rgba(16, 185, 129, 0.4)';
+                    }}
+                    onMouseLeave={(e) => {
+                      e.target.style.transform = 'translateY(0)';
+                      e.target.style.boxShadow = darkMode 
+                        ? '0 4px 16px rgba(16, 185, 129, 0.4)' 
+                        : '0 2px 12px rgba(16, 185, 129, 0.3)';
+                    }}
+                  >
+                    <Settings size={18} />
+                    Add SCADA Diagram
+                  </button>
+                )}
+              </div>
             </div>
           </div>
         ) : (
           <div style={{
             display: 'grid',
             gridTemplateColumns: `repeat(${GRID_COLS}, 1fr)`,
-            gap: '20px',
-            maxWidth: '1600px',
-            margin: '0 auto',
+            gap: '12px',
             gridAutoRows: `${ROW_HEIGHT}px`
           }}>
             {currentDashboard.panels.map((panel) => (
@@ -988,8 +894,7 @@ export default function Dashboard({ onLogout }) {
                   ...calculatePanelStyle(panel),
                   cursor: 'move',
                   opacity: draggingPanel?.id === panel.id ? 0.5 : 1,
-                  transition: 'opacity 0.3s ease, transform 0.3s ease',
-                  animation: 'fadeIn 0.5s ease'
+                  transition: 'opacity 0.2s ease'
                 }}
                 draggable
                 onDragStart={(e) => handleDragStart(e, panel)}
@@ -1000,28 +905,35 @@ export default function Dashboard({ onLogout }) {
                   <div style={{
                     height: '100%',
                     background: theme.card,
-                    borderRadius: '12px',
-                    border: `2px solid ${theme.border}`,
+                    borderRadius: '10px',
+                    border: `1px solid ${theme.border}`,
                     overflow: 'hidden',
-                    boxShadow: darkMode ? '0 4px 12px rgba(0,0,0,0.3)' : '0 2px 8px rgba(0,0,0,0.08)',
+                    boxShadow: darkMode 
+                      ? '0 2px 8px rgba(0,0,0,0.3)' 
+                      : '0 1px 4px rgba(0,0,0,0.06)',
                     position: 'relative'
                   }}>
                     <div style={{
-                      padding: '2px 2px',
+                      padding: '10px 12px',
                       borderBottom: `1px solid ${theme.border}`,
                       display: 'flex',
                       justifyContent: 'space-between',
                       alignItems: 'center',
-                      background: theme.hover
+                      background: theme.cardHover
                     }}>
-                      <h3 style={{ margin: 0, fontSize: '14px', fontWeight: '600', color: theme.text }}>
+                      <h3 style={{ 
+                        margin: 0, 
+                        fontSize: '13px', 
+                        fontWeight: '600', 
+                        color: theme.text 
+                      }}>
                         {panel.title}
                       </h3>
-                      <div style={{ display: 'flex', gap: '8px' }}>
+                      <div style={{ display: 'flex', gap: '4px' }}>
                         <button
                           onClick={() => handleEdit(panel)}
                           style={{
-                            padding: '6px',
+                            padding: '5px',
                             background: 'transparent',
                             border: 'none',
                             color: theme.textSecondary,
@@ -1029,12 +941,12 @@ export default function Dashboard({ onLogout }) {
                             borderRadius: '4px'
                           }}
                         >
-                          <Settings size={16} />
+                          <Settings size={14} />
                         </button>
                         <button
                           onClick={() => handleDuplicate(panel)}
                           style={{
-                            padding: '6px',
+                            padding: '5px',
                             background: 'transparent',
                             border: 'none',
                             color: theme.textSecondary,
@@ -1042,20 +954,20 @@ export default function Dashboard({ onLogout }) {
                             borderRadius: '4px'
                           }}
                         >
-                          <Plus size={16} />
+                          <Plus size={14} />
                         </button>
                         <button
                           onClick={() => handleDelete(panel.id)}
                           style={{
-                            padding: '6px',
+                            padding: '5px',
                             background: 'transparent',
                             border: 'none',
-                            color: '#ef4444',
+                            color: theme.danger,
                             cursor: 'pointer',
                             borderRadius: '4px'
                           }}
                         >
-                          <X size={16} />
+                          <X size={14} />
                         </button>
                       </div>
                     </div>
@@ -1117,14 +1029,33 @@ export default function Dashboard({ onLogout }) {
       )}
 
       <style>{`
-        @keyframes pulse {
-          0%, 100% { transform: scale(1); }
-          50% { transform: scale(1.05); }
+        @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap');
+        
+        @keyframes spin {
+          to { transform: rotate(360deg); }
         }
         
-        @keyframes fadeIn {
-          from { opacity: 0; transform: translateY(10px); }
-          to { opacity: 1; transform: translateY(0); }
+        * {
+          scrollbar-width: thin;
+          scrollbar-color: ${theme.border} transparent;
+        }
+        
+        *::-webkit-scrollbar {
+          width: 6px;
+          height: 6px;
+        }
+        
+        *::-webkit-scrollbar-track {
+          background: transparent;
+        }
+        
+        *::-webkit-scrollbar-thumb {
+          background: ${theme.border};
+          border-radius: 3px;
+        }
+        
+        *::-webkit-scrollbar-thumb:hover {
+          background: ${theme.borderLight};
         }
       `}</style>
     </div>
