@@ -537,327 +537,223 @@ export default function Dashboard({ onLogout }) {
       display: 'flex',
       flexDirection: 'column'
     }}>
-      {/* Premium Header with Chrome-Style Tabs */}
-      <div style={{
-        background: theme.card,
-        borderBottom: `1px solid ${theme.border}`,
+     
+      {/* Premium Header */}
+<div style={{
+  background: theme.card,
+  borderBottom: `1px solid ${theme.border}`,
+  display: 'flex',
+  alignItems: 'center',
+  height: '56px',
+  padding: '0 16px',
+  gap: '12px',
+  flexShrink: 0
+}}>
+  {/* Logo */}
+  <div style={{
+    display: 'flex',
+    alignItems: 'center',
+    gap: '8px',
+    flexShrink: 0
+  }}>
+    <div style={{
+      width: '32px',
+      height: '32px',
+      background: `linear-gradient(135deg, ${theme.accent} 0%, ${theme.accentHover} 100%)`,
+      borderRadius: '8px',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center'
+    }}>
+      <Activity size={18} color="white" />
+    </div>
+    <span style={{
+      fontSize: '16px',
+      fontWeight: '700',
+      letterSpacing: '-0.02em',
+      color: theme.text
+    }}>
+      Miralys
+    </span>
+  </div>
+
+  {/* Tabs - Scrollable */}
+  <div 
+    style={{
+      display: 'flex',
+      gap: '4px',
+      overflowX: 'auto',
+      scrollbarWidth: 'none',
+      flex: 1,
+      minWidth: 0,
+      alignItems: 'flex-end'
+    }}
+    onWheel={(e) => {
+      e.currentTarget.scrollLeft += e.deltaY;
+    }}
+  >
+    {dashboards.map((dashboard) => (
+      <button
+        key={dashboard.id}
+        onClick={() => handleSelectDashboard(dashboard)}
+        style={{
+          padding: '10px 16px',
+          background: currentDashboard?.id === dashboard.id ? theme.card : 'transparent',
+          color: currentDashboard?.id === dashboard.id ? theme.text : theme.textMuted,
+          border: 'none',
+          borderRadius: '6px 6px 0 0',
+          borderBottom: currentDashboard?.id === dashboard.id ? `3px solid ${theme.accent}` : '3px solid transparent',
+          fontSize: '13px',
+          fontWeight: '600',
+          cursor: 'pointer',
+          whiteSpace: 'nowrap',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '6px',
+          flexShrink: 0,
+          maxWidth: '180px'
+        }}
+        onMouseEnter={(e) => {
+          if (currentDashboard?.id !== dashboard.id) {
+            e.target.style.background = theme.hover;
+          }
+        }}
+        onMouseLeave={(e) => {
+          if (currentDashboard?.id !== dashboard.id) {
+            e.target.style.background = 'transparent';
+          }
+        }}
+      >
+        <Grid size={14} />
+        <span style={{ overflow: 'hidden', textOverflow: 'ellipsis' }}>
+          {dashboard.name}
+        </span>
+        {dashboard.panels?.length > 0 && (
+          <span style={{
+            fontSize: '10px',
+            background: currentDashboard?.id === dashboard.id ? theme.accent : theme.border,
+            color: currentDashboard?.id === dashboard.id ? 'white' : theme.textMuted,
+            padding: '2px 6px',
+            borderRadius: '10px',
+            fontWeight: '700'
+          }}>
+            {dashboard.panels.length}
+          </span>
+        )}
+      </button>
+    ))}
+  </div>
+  
+  {/* New Tab + Button */}
+  <button
+    onClick={() => setShowDashboardModal(true)}
+    style={{
+      width: '32px',
+      height: '32px',
+      background: 'transparent',
+      border: `1px solid ${theme.border}`,
+      borderRadius: '6px',
+      cursor: 'pointer',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      flexShrink: 0
+    }}
+  >
+    <Plus size={16} />
+  </button>
+
+  {/* Divider */}
+  <div style={{ width: '1px', height: '28px', background: theme.border, flexShrink: 0 }} />
+
+  {/* ALL BUTTONS - ALWAYS VISIBLE */}
+  <div style={{ display: 'flex', gap: '6px', flexShrink: 0 }}>
+    <button
+      onClick={handleAddPanel}
+      disabled={!currentDashboard}
+      style={{
+        padding: '8px 14px',
+        background: currentDashboard ? theme.accent : theme.border,
+        color: 'white',
+        border: 'none',
+        borderRadius: '6px',
+        fontSize: '13px',
+        fontWeight: '600',
+        cursor: currentDashboard ? 'pointer' : 'not-allowed',
         display: 'flex',
         alignItems: 'center',
-        height: '56px',
-        padding: '0 16px',
-        gap: '16px',
+        gap: '6px',
+        opacity: currentDashboard ? 1 : 0.5,
         flexShrink: 0
-      }}>
-        {/* Logo */}
-        <div style={{
-          display: 'flex',
-          alignItems: 'center',
-          gap: '8px',
-          marginRight: '8px',
-          flexShrink: 0
-        }}>
-          <div style={{
-            width: '32px',
-            height: '32px',
-            background: `linear-gradient(135deg, ${theme.accent} 0%, ${theme.accentHover} 100%)`,
-            borderRadius: '8px',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            flexShrink: 0
-          }}>
-            <Activity size={18} color="white" />
-          </div>
-          <span style={{
-            fontSize: '16px',
-            fontWeight: '700',
-            letterSpacing: '-0.02em',
-            color: theme.text,
-            flexShrink: 0
-          }}>
-            Miralys
-          </span>
-        </div>
+      }}
+    >
+      <BarChart3 size={14} />
+      Panel
+    </button>
 
-        {/* Chrome-Style Dashboard Tabs */}
-        <div style={{
-          display: 'flex',
-          alignItems: 'center',
-          flex: 1,
-          minWidth: 0,
-          maxWidth: '900px',
-          gap: '8px'
-        }}>
-          <div 
-            style={{
-              display: 'flex',
-              gap: '2px',
-              overflowX: 'auto',
-              overflowY: 'hidden',
-              scrollbarWidth: 'none',
-              msOverflowStyle: 'none',
-              WebkitOverflowScrolling: 'touch',
-              flex: 1,
-              minWidth: 0,
-              paddingBottom: '2px'
-            }}
-            onWheel={(e) => {
-              e.currentTarget.scrollLeft += e.deltaY;
-              e.preventDefault();
-            }}
-          >
-            {dashboards.map((dashboard, index) => (
-              <button
-                key={dashboard.id}
-                onClick={() => handleSelectDashboard(dashboard)}
-                style={{
-                  padding: '8px 16px',
-                  background: currentDashboard?.id === dashboard.id 
-                    ? theme.bgSecondary 
-                    : 'transparent',
-                  color: currentDashboard?.id === dashboard.id 
-                    ? theme.text 
-                    : theme.textMuted,
-                  border: currentDashboard?.id === dashboard.id
-                    ? `1px solid ${theme.border}`
-                    : '1px solid transparent',
-                  borderBottom: 'none',
-                  borderRadius: '8px 8px 0 0',
-                  fontSize: '13px',
-                  fontWeight: '600',
-                  cursor: 'pointer',
-                  whiteSpace: 'nowrap',
-                  transition: 'all 0.2s ease',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '6px',
-                  flexShrink: 0,
-                  maxWidth: '200px',
-                  overflow: 'hidden',
-                  textOverflow: 'ellipsis',
-                  position: 'relative',
-                  boxShadow: currentDashboard?.id === dashboard.id 
-                    ? `0 -3px 0 0 ${theme.accent} inset, 0 1px 3px rgba(0,0,0,0.1)` 
-                    : 'none',
-                  marginBottom: '-1px'
-                }}
-                onMouseEnter={(e) => {
-                  if (currentDashboard?.id !== dashboard.id) {
-                    e.target.style.background = theme.hover;
-                    e.target.style.color = theme.text;
-                  }
-                }}
-                onMouseLeave={(e) => {
-                  if (currentDashboard?.id !== dashboard.id) {
-                    e.target.style.background = 'transparent';
-                    e.target.style.color = theme.textMuted;
-                  }
-                }}
-                title={dashboard.name}
-              >
-                <Grid size={14} style={{ flexShrink: 0 }} />
-                <span style={{
-                  overflow: 'hidden',
-                  textOverflow: 'ellipsis',
-                  whiteSpace: 'nowrap'
-                }}>
-                  {dashboard.name}
-                </span>
-                {dashboard.panels?.length > 0 && (
-                  <span style={{
-                    fontSize: '10px',
-                    background: currentDashboard?.id === dashboard.id 
-                      ? theme.accent 
-                      : theme.border,
-                    color: currentDashboard?.id === dashboard.id 
-                      ? 'white' 
-                      : theme.textMuted,
-                    padding: '2px 6px',
-                    borderRadius: '10px',
-                    fontWeight: '700',
-                    flexShrink: 0
-                  }}>
-                    {dashboard.panels.length}
-                  </span>
-                )}
-              </button>
-            ))}
-          </div>
-          
-          {/* New Tab Button - Chrome Style */}
-          <button
-            onClick={() => setShowDashboardModal(true)}
-            style={{
-              width: '32px',
-              height: '32px',
-              background: 'transparent',
-              color: theme.textMuted,
-              border: `1px solid ${theme.border}`,
-              borderRadius: '6px',
-              cursor: 'pointer',
-              transition: 'all 0.2s ease',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              flexShrink: 0
-            }}
-            onMouseEnter={(e) => {
-              e.target.style.borderColor = theme.accent;
-              e.target.style.color = theme.accent;
-              e.target.style.background = theme.hover;
-            }}
-            onMouseLeave={(e) => {
-              e.target.style.borderColor = theme.border;
-              e.target.style.color = theme.textMuted;
-              e.target.style.background = 'transparent';
-            }}
-            title="New Dashboard"
-          >
-            <Plus size={16} />
-          </button>
-        </div>
+    <button
+      onClick={handleAddScada}
+      disabled={!currentDashboard}
+      style={{
+        padding: '8px 14px',
+        background: currentDashboard ? theme.success : theme.border,
+        color: 'white',
+        border: 'none',
+        borderRadius: '6px',
+        fontSize: '13px',
+        fontWeight: '600',
+        cursor: currentDashboard ? 'pointer' : 'not-allowed',
+        display: 'flex',
+        alignItems: 'center',
+        gap: '6px',
+        opacity: currentDashboard ? 1 : 0.5,
+        flexShrink: 0
+      }}
+    >
+      <Settings size={14} />
+      SCADA
+    </button>
 
-        <div style={{
-          width: '1px',
-          height: '28px',
-          background: theme.border,
-          margin: '0 8px',
-          flexShrink: 0
-        }} />
+    <div style={{ width: '1px', height: '24px', background: theme.border, flexShrink: 0 }} />
 
-        {/* Action Buttons - Always visible with flexShrink: 0 */}
-        <div style={{ display: 'flex', gap: '6px', alignItems: 'center', flexShrink: 0, marginLeft: 'auto' }}>
-          <button
-            onClick={handleAddPanel}
-            disabled={!currentDashboard}
-            style={{
-              padding: '8px 14px',
-              background: currentDashboard ? theme.accent : theme.border,
-              color: 'white',
-              border: 'none',
-              borderRadius: '6px',
-              fontSize: '13px',
-              fontWeight: '600',
-              cursor: currentDashboard ? 'pointer' : 'not-allowed',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '6px',
-              transition: 'all 0.2s ease',
-              opacity: currentDashboard ? 1 : 0.5,
-              flexShrink: 0,
-              minWidth: 'fit-content'
-            }}
-            onMouseEnter={(e) => {
-              if (currentDashboard) {
-                e.target.style.background = theme.accentHover;
-              }
-            }}
-            onMouseLeave={(e) => {
-              if (currentDashboard) {
-                e.target.style.background = theme.accent;
-              }
-            }}
-          >
-            <BarChart3 size={14} />
-            Panel
-          </button>
+    <button
+      onClick={toggleDarkMode}
+      style={{
+        width: '36px',
+        height: '36px',
+        background: 'transparent',
+        border: 'none',
+        cursor: 'pointer',
+        borderRadius: '6px',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        flexShrink: 0
+      }}
+    >
+      {darkMode ? <Sun size={18} /> : <Moon size={18} />}
+    </button>
 
-          <button
-            onClick={handleAddScada}
-            disabled={!currentDashboard}
-            style={{
-              padding: '8px 14px',
-              background: currentDashboard ? theme.success : theme.border,
-              color: 'white',
-              border: 'none',
-              borderRadius: '6px',
-              fontSize: '13px',
-              fontWeight: '600',
-              cursor: currentDashboard ? 'pointer' : 'not-allowed',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '6px',
-              transition: 'all 0.2s ease',
-              opacity: currentDashboard ? 1 : 0.5,
-              flexShrink: 0,
-              minWidth: 'fit-content'
-            }}
-            onMouseEnter={(e) => {
-              if (currentDashboard) {
-                e.target.style.background = '#059669';
-              }
-            }}
-            onMouseLeave={(e) => {
-              if (currentDashboard) {
-                e.target.style.background = theme.success;
-              }
-            }}
-          >
-            <Settings size={14} />
-            SCADA
-          </button>
-
-          <div style={{
-            width: '1px',
-            height: '24px',
-            background: theme.border,
-            margin: '0 4px',
-            flexShrink: 0
-          }} />
-
-          <button
-            onClick={toggleDarkMode}
-            style={{
-              width: '36px',
-              height: '36px',
-              background: 'transparent',
-              border: 'none',
-              color: theme.textSecondary,
-              cursor: 'pointer',
-              borderRadius: '6px',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              transition: 'all 0.2s ease',
-              flexShrink: 0
-            }}
-            onMouseEnter={(e) => {
-              e.target.style.background = theme.hover;
-            }}
-            onMouseLeave={(e) => {
-              e.target.style.background = 'transparent';
-            }}
-          >
-            {darkMode ? <Sun size={18} /> : <Moon size={18} />}
-          </button>
-
-          <button
-            onClick={handleLogout}
-            style={{
-              width: '36px',
-              height: '36px',
-              background: 'transparent',
-              border: 'none',
-              color: theme.danger,
-              cursor: 'pointer',
-              borderRadius: '6px',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              transition: 'all 0.2s ease',
-              flexShrink: 0
-            }}
-            onMouseEnter={(e) => {
-              e.target.style.background = 'rgba(239, 68, 68, 0.1)';
-            }}
-            onMouseLeave={(e) => {
-              e.target.style.background = 'transparent';
-            }}
-          >
-            <LogOut size={18} />
-          </button>
-        </div>
-      </div>
+    <button
+      onClick={handleLogout}
+      style={{
+        width: '36px',
+        height: '36px',
+        background: 'transparent',
+        border: 'none',
+        color: theme.danger,
+        cursor: 'pointer',
+        borderRadius: '6px',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        flexShrink: 0
+      }}
+    >
+      <LogOut size={18} />
+    </button>
+  </div>
+</div>
 
       {/* Sync Error Banner */}
       {syncError && (
