@@ -821,7 +821,12 @@ function QuestDBPanel({ config, onEdit, onDelete, onDuplicate, onResize, style, 
                   <div>•</div>
                   <div style={{ display: 'flex', gap: '2px', alignItems: 'center' }}>
                     <Clock size={7} />
-                    <span title="Query time">{formatTimestamp(queryTime)}</span>
+                    <span title="Query time">Q: {formatTimestamp(queryTime)}</span>
+                  </div>
+                  <div>•</div>
+                  <div style={{ display: 'flex', gap: '2px', alignItems: 'center' }}>
+                    <Database size={7} />
+                    <span title="Latest record time">L: {formatTimestamp(latestRecordTime)}</span>
                   </div>
                 </>
               )}
