@@ -21,25 +21,25 @@ function QuestDBPanel({ config, onEdit, onDelete, onDuplicate, onResize, style, 
   const timerRef = useRef(null);
 
   const theme = darkMode ? {
-    card: '#1e293b',
-    hover: '#334155',
-    text: '#f1f5f9',
+    card: '#1a1f35',
+    hover: '#252b45',
+    text: '#f8fafc',
     textSecondary: '#cbd5e1',
     textMuted: '#94a3b8',
-    border: '#334155',
-    chartGrid: 'rgba(148, 163, 184, 0.1)',
-    chartAxis: '#475569',
+    border: '#2d3548',
+    chartGrid: 'rgba(148, 163, 184, 0.08)',
+    chartAxis: '#3f4a61',
     chartText: '#94a3b8'
   } : {
-    card: 'white',
-    hover: '#f9fafb',
-    text: '#111827',
-    textSecondary: '#374151',
-    textMuted: '#6b7280',
-    border: '#e5e7eb',
-    chartGrid: 'rgba(0,0,0,0.1)',
-    chartAxis: '#e5e7eb',
-    chartText: '#6b7280'
+    card: '#ffffff',
+    hover: '#f3f4f6',
+    text: '#0f172a',
+    textSecondary: '#475569',
+    textMuted: '#64748b',
+    border: '#e2e8f0',
+    chartGrid: 'rgba(0,0,0,0.06)',
+    chartAxis: '#cbd5e1',
+    chartText: '#64748b'
   };
 
   // ✅ UPDATED: Build query with filters and time range
@@ -210,7 +210,7 @@ function QuestDBPanel({ config, onEdit, onDelete, onDuplicate, onResize, style, 
 
     const chartProps = {
       data,
-      margin: { top: 10, right: 20, left: 10, bottom: 5 }
+      margin: { top: 5, right: 10, left: 0, bottom: 5 }
     };
 
     // Get y-axis fields - support both single and multiple
@@ -497,44 +497,44 @@ function QuestDBPanel({ config, onEdit, onDelete, onDuplicate, onResize, style, 
         display: 'flex',
         flexDirection: 'column',
         background: theme.card,
-        border: `2px solid ${theme.border}`,
-        borderRadius: '12px',
+        border: `1px solid ${theme.border}`,
+        borderRadius: '10px',
         overflow: 'hidden',
-        boxShadow: darkMode ? '0 8px 24px rgba(0,0,0,0.3)' : '0 4px 6px rgba(0,0,0,0.05)',
-        transition: 'all 0.3s ease',
+        boxShadow: darkMode ? '0 2px 8px rgba(0,0,0,0.3)' : '0 1px 4px rgba(0,0,0,0.06)',
+        transition: 'all 0.2s ease',
         position: 'relative'
       }}
-      onMouseEnter={(e) => e.currentTarget.style.boxShadow = darkMode ? '0 12px 32px rgba(0,0,0,0.4)' : '0 8px 12px rgba(0,0,0,0.1)'}
-      onMouseLeave={(e) => e.currentTarget.style.boxShadow = darkMode ? '0 8px 24px rgba(0,0,0,0.3)' : '0 4px 6px rgba(0,0,0,0.05)'}
+      onMouseEnter={(e) => e.currentTarget.style.boxShadow = darkMode ? '0 4px 12px rgba(0,0,0,0.4)' : '0 2px 8px rgba(0,0,0,0.1)'}
+      onMouseLeave={(e) => e.currentTarget.style.boxShadow = darkMode ? '0 2px 8px rgba(0,0,0,0.3)' : '0 1px 4px rgba(0,0,0,0.06)'}
     >
       {/* ✅ FIXED: Header with inline badges - NO MORE OVERLAP! */}
       <div style={{
-        padding: '12px 12px',
+        padding: '10px 12px',
         background: theme.hover,
-        borderBottom: `2px solid ${theme.border}`,
+        borderBottom: `1px solid ${theme.border}`,
         display: 'flex',
         justifyContent: 'space-between',
         alignItems: 'flex-start',
-        gap: '8px',
-        transition: 'all 0.3s ease'
+        gap: '6px',
+        transition: 'all 0.2s ease'
       }}>
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{
             fontWeight: '600',
             color: theme.text,
-            fontSize: '14px',
+            fontSize: '13px',
             display: 'flex',
             alignItems: 'center',
-            gap: '8px',
-            marginBottom: '6px',
-            transition: 'color 0.3s ease'
+            gap: '6px',
+            marginBottom: '4px',
+            transition: 'color 0.2s ease'
           }}>
             <div style={{
-              width: '8px',
-              height: '8px',
+              width: '6px',
+              height: '6px',
               borderRadius: '50%',
               background: getColor(0),
-              boxShadow: `0 0 8px ${getColor(0)}`,
+              boxShadow: `0 0 6px ${getColor(0)}`,
               animation: 'pulse 2s infinite',
               flexShrink: 0
             }} />
@@ -639,16 +639,16 @@ function QuestDBPanel({ config, onEdit, onDelete, onDuplicate, onResize, style, 
             <RefreshCw size={14} style={{ animation: loading ? 'spin 1s linear infinite' : 'none' }} />
           </button>
           <button onClick={() => onDuplicate(config)} style={{
-            padding: '6px',
+            padding: '5px',
             background: 'transparent',
             border: 'none',
             color: theme.textMuted,
             cursor: 'pointer',
             borderRadius: '4px',
-            transition: 'all 0.3s ease'
+            transition: 'all 0.2s ease'
           }}
           onMouseEnter={(e) => {
-            e.target.style.background = darkMode ? '#475569' : '#e5e7eb';
+            e.target.style.background = darkMode ? '#3f4a61' : '#e2e8f0';
             e.target.style.color = theme.text;
           }}
           onMouseLeave={(e) => {
@@ -656,19 +656,19 @@ function QuestDBPanel({ config, onEdit, onDelete, onDuplicate, onResize, style, 
             e.target.style.color = theme.textMuted;
           }}
           title="Duplicate">
-            <Copy size={14} />
+            <Copy size={13} />
           </button>
           <button onClick={() => onEdit(config)} style={{
-            padding: '6px',
+            padding: '5px',
             background: 'transparent',
             border: 'none',
             color: theme.textMuted,
             cursor: 'pointer',
             borderRadius: '4px',
-            transition: 'all 0.3s ease'
+            transition: 'all 0.2s ease'
           }}
           onMouseEnter={(e) => {
-            e.target.style.background = darkMode ? '#475569' : '#e5e7eb';
+            e.target.style.background = darkMode ? '#3f4a61' : '#e2e8f0';
             e.target.style.color = theme.text;
           }}
           onMouseLeave={(e) => {
@@ -676,44 +676,44 @@ function QuestDBPanel({ config, onEdit, onDelete, onDuplicate, onResize, style, 
             e.target.style.color = theme.textMuted;
           }}
           title="Edit">
-            <Settings size={14} />
+            <Settings size={13} />
           </button>
           <button onClick={() => onDelete(config.id)} style={{
-            padding: '6px',
+            padding: '5px',
             background: 'transparent',
             border: 'none',
             color: '#ef4444',
             cursor: 'pointer',
             borderRadius: '4px',
-            transition: 'all 0.3s ease'
+            transition: 'all 0.2s ease'
           }}
           onMouseEnter={(e) => e.target.style.background = 'rgba(239, 68, 68, 0.1)'}
           onMouseLeave={(e) => e.target.style.background = 'transparent'}
           title="Delete">
-            <Trash2 size={14} />
+            <Trash2 size={13} />
           </button>
         </div>
       </div>
 
-      <div style={{ flex: 1, minHeight: 0, padding: '16px' }}>
+      <div style={{ flex: 1, minHeight: 0, padding: '10px' }}>
         {renderChart()}
       </div>
 
       <div style={{
-        padding: '8px 12px',
+        padding: '6px 10px',
         borderTop: `1px solid ${theme.border}`,
         background: theme.hover,
-        transition: 'all 0.3s ease'
+        transition: 'all 0.2s ease'
       }}>
         <div style={{
           display: 'flex',
           justifyContent: 'space-between',
-          fontSize: '11px',
+          fontSize: '10px',
           color: theme.textMuted,
-          marginBottom: '4px',
-          transition: 'color 0.3s ease'
+          marginBottom: '3px',
+          transition: 'color 0.2s ease'
         }}>
-          <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
+          <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
             <div style={{ display: 'flex', gap: '4px', alignItems: 'center' }}>
               <Play size={10} />
               <span>{config.refreshInterval > 0 ? `${config.refreshInterval / 1000}s` : 'Manual'}</span>
@@ -726,20 +726,20 @@ function QuestDBPanel({ config, onEdit, onDelete, onDuplicate, onResize, style, 
         
         <div style={{
           display: 'flex',
-          gap: '12px',
+          gap: '10px',
           fontSize: '10px',
           color: theme.textMuted,
-          paddingTop: '6px',
+          paddingTop: '4px',
           borderTop: `1px solid ${theme.border}`,
-          transition: 'all 0.3s ease'
+          transition: 'all 0.2s ease'
         }}>
           <div style={{ display: 'flex', gap: '4px', alignItems: 'center' }} title="Query executed at">
-            <Clock size={10} />
+            <Clock size={9} />
             <span>Query: {formatTimestamp(queryTime)}</span>
           </div>
           <div>•</div>
           <div style={{ display: 'flex', gap: '4px', alignItems: 'center' }} title="Latest record timestamp">
-            <Database size={10} />
+            <Database size={9} />
             <span>Latest: {formatTimestamp(latestRecordTime)}</span>
           </div>
         </div>
