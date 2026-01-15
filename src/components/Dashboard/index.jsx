@@ -538,56 +538,83 @@ export default function Dashboard({ onLogout }) {
       flexDirection: 'column'
     }}>
      
-      {/* Premium Header */}
+      {/* Premium Header - Sleek Design */}
 <div style={{
-  background: theme.card,
-  borderBottom: `1px solid ${theme.border}`,
+  background: darkMode 
+    ? 'linear-gradient(180deg, #1a1f35 0%, #151929 100%)'
+    : 'linear-gradient(180deg, #ffffff 0%, #f8fafc 100%)',
+  borderBottom: darkMode 
+    ? '1px solid rgba(99, 102, 241, 0.2)' 
+    : '1px solid rgba(99, 102, 241, 0.1)',
   display: 'flex',
   alignItems: 'center',
-  height: '56px',
-  padding: '0 16px',
-  gap: '12px',
-  flexShrink: 0
+  height: '64px',
+  padding: '0 24px',
+  gap: '16px',
+  flexShrink: 0,
+  boxShadow: darkMode 
+    ? '0 4px 24px rgba(0, 0, 0, 0.4)' 
+    : '0 2px 16px rgba(0, 0, 0, 0.04)',
+  position: 'relative',
+  zIndex: 100
 }}>
-  {/* Logo */}
+  {/* Logo - Premium Gradient */}
   <div style={{
     display: 'flex',
     alignItems: 'center',
-    gap: '8px',
-    flexShrink: 0
+    gap: '10px',
+    flexShrink: 0,
+    marginRight: '8px'
   }}>
     <div style={{
-      width: '32px',
-      height: '32px',
-      background: `linear-gradient(135deg, ${theme.accent} 0%, ${theme.accentHover} 100%)`,
-      borderRadius: '8px',
+      width: '40px',
+      height: '40px',
+      background: 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 50%, #d946ef 100%)',
+      borderRadius: '10px',
       display: 'flex',
       alignItems: 'center',
-      justifyContent: 'center'
+      justifyContent: 'center',
+      boxShadow: darkMode 
+        ? '0 4px 16px rgba(99, 102, 241, 0.5)' 
+        : '0 2px 12px rgba(99, 102, 241, 0.3)',
+      position: 'relative',
+      overflow: 'hidden'
     }}>
-      <Activity size={18} color="white" />
+      <div style={{
+        position: 'absolute',
+        inset: 0,
+        background: 'linear-gradient(135deg, rgba(255,255,255,0.3) 0%, transparent 100%)',
+      }} />
+      <Activity size={20} color="white" style={{ position: 'relative', zIndex: 1 }} />
     </div>
     <span style={{
-      fontSize: '16px',
+      fontSize: '18px',
       fontWeight: '700',
-      letterSpacing: '-0.02em',
-      color: theme.text
+      letterSpacing: '-0.03em',
+      background: 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)',
+      WebkitBackgroundClip: 'text',
+      WebkitTextFillColor: 'transparent',
+      backgroundClip: 'text'
     }}>
       Miralys
     </span>
   </div>
 
-  {/* Tabs - Scrollable */}
+  {/* Tabs Container with Scroll */}
   <div 
     style={{
       display: 'flex',
-      gap: '4px',
+      gap: '6px',
       overflowX: 'auto',
       scrollbarWidth: 'none',
+      msOverflowStyle: 'none',
       flex: 1,
       minWidth: 0,
-      alignItems: 'flex-end'
+      maxWidth: '600px',
+      alignItems: 'center',
+      paddingBottom: '2px'
     }}
+    className="tabs-scroll"
     onWheel={(e) => {
       e.currentTarget.scrollLeft += e.deltaY;
     }}
@@ -597,12 +624,17 @@ export default function Dashboard({ onLogout }) {
         key={dashboard.id}
         onClick={() => handleSelectDashboard(dashboard)}
         style={{
-          padding: '10px 16px',
-          background: currentDashboard?.id === dashboard.id ? theme.card : 'transparent',
-          color: currentDashboard?.id === dashboard.id ? theme.text : theme.textMuted,
-          border: 'none',
-          borderRadius: '6px 6px 0 0',
-          borderBottom: currentDashboard?.id === dashboard.id ? `3px solid ${theme.accent}` : '3px solid transparent',
+          padding: '8px 14px',
+          background: currentDashboard?.id === dashboard.id 
+            ? darkMode 
+              ? 'rgba(99, 102, 241, 0.15)' 
+              : 'rgba(99, 102, 241, 0.08)'
+            : 'transparent',
+          color: currentDashboard?.id === dashboard.id ? theme.accent : theme.textMuted,
+          border: currentDashboard?.id === dashboard.id 
+            ? `1px solid ${darkMode ? 'rgba(99, 102, 241, 0.4)' : 'rgba(99, 102, 241, 0.2)'}` 
+            : '1px solid transparent',
+          borderRadius: '8px',
           fontSize: '13px',
           fontWeight: '600',
           cursor: 'pointer',
@@ -611,31 +643,42 @@ export default function Dashboard({ onLogout }) {
           alignItems: 'center',
           gap: '6px',
           flexShrink: 0,
-          maxWidth: '180px'
+          maxWidth: '180px',
+          transition: 'all 0.2s ease',
+          boxShadow: currentDashboard?.id === dashboard.id 
+            ? darkMode 
+              ? '0 2px 8px rgba(99, 102, 241, 0.25)' 
+              : '0 1px 4px rgba(99, 102, 241, 0.15)'
+            : 'none'
         }}
         onMouseEnter={(e) => {
           if (currentDashboard?.id !== dashboard.id) {
-            e.target.style.background = theme.hover;
+            e.currentTarget.style.background = darkMode ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.03)';
+            e.currentTarget.style.borderColor = darkMode ? 'rgba(99, 102, 241, 0.2)' : 'rgba(99, 102, 241, 0.1)';
           }
         }}
         onMouseLeave={(e) => {
           if (currentDashboard?.id !== dashboard.id) {
-            e.target.style.background = 'transparent';
+            e.currentTarget.style.background = 'transparent';
+            e.currentTarget.style.borderColor = 'transparent';
           }
         }}
       >
-        <Grid size={14} />
+        <Grid size={13} />
         <span style={{ overflow: 'hidden', textOverflow: 'ellipsis' }}>
           {dashboard.name}
         </span>
         {dashboard.panels?.length > 0 && (
           <span style={{
             fontSize: '10px',
-            background: currentDashboard?.id === dashboard.id ? theme.accent : theme.border,
+            background: currentDashboard?.id === dashboard.id 
+              ? 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)' 
+              : darkMode ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.06)',
             color: currentDashboard?.id === dashboard.id ? 'white' : theme.textMuted,
-            padding: '2px 6px',
-            borderRadius: '10px',
-            fontWeight: '700'
+            padding: '3px 7px',
+            borderRadius: '12px',
+            fontWeight: '700',
+            lineHeight: '1'
           }}>
             {dashboard.panels.length}
           </span>
@@ -644,39 +687,61 @@ export default function Dashboard({ onLogout }) {
     ))}
   </div>
   
-  {/* New Tab + Button */}
+  {/* New Dashboard Button */}
   <button
     onClick={() => setShowDashboardModal(true)}
     style={{
-      width: '32px',
-      height: '32px',
-      background: 'transparent',
-      border: `1px solid ${theme.border}`,
-      borderRadius: '6px',
+      width: '36px',
+      height: '36px',
+      background: darkMode ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.03)',
+      border: `1px solid ${darkMode ? 'rgba(99, 102, 241, 0.3)' : 'rgba(99, 102, 241, 0.15)'}`,
+      borderRadius: '8px',
       cursor: 'pointer',
       display: 'flex',
       alignItems: 'center',
       justifyContent: 'center',
-      flexShrink: 0
+      flexShrink: 0,
+      transition: 'all 0.2s ease',
+      color: theme.accent
+    }}
+    onMouseEnter={(e) => {
+      e.currentTarget.style.background = darkMode ? 'rgba(99, 102, 241, 0.15)' : 'rgba(99, 102, 241, 0.08)';
+      e.currentTarget.style.borderColor = theme.accent;
+      e.currentTarget.style.transform = 'scale(1.05)';
+    }}
+    onMouseLeave={(e) => {
+      e.currentTarget.style.background = darkMode ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.03)';
+      e.currentTarget.style.borderColor = darkMode ? 'rgba(99, 102, 241, 0.3)' : 'rgba(99, 102, 241, 0.15)';
+      e.currentTarget.style.transform = 'scale(1)';
     }}
   >
-    <Plus size={16} />
+    <Plus size={16} strokeWidth={2.5} />
   </button>
 
-  {/* Divider */}
-  <div style={{ width: '1px', height: '28px', background: theme.border, flexShrink: 0 }} />
+  {/* Premium Divider */}
+  <div style={{ 
+    width: '1px', 
+    height: '32px', 
+    background: darkMode 
+      ? 'linear-gradient(180deg, transparent 0%, rgba(99, 102, 241, 0.4) 50%, transparent 100%)'
+      : 'linear-gradient(180deg, transparent 0%, rgba(99, 102, 241, 0.2) 50%, transparent 100%)',
+    flexShrink: 0 
+  }} />
 
-  {/* ALL BUTTONS - ALWAYS VISIBLE */}
-  <div style={{ display: 'flex', gap: '6px', flexShrink: 0 }}>
+  {/* Action Buttons - Always Visible */}
+  <div style={{ display: 'flex', gap: '8px', flexShrink: 0, alignItems: 'center' }}>
     <button
       onClick={handleAddPanel}
       disabled={!currentDashboard}
+      title="Add Data Panel"
       style={{
-        padding: '8px 14px',
-        background: currentDashboard ? theme.accent : theme.border,
-        color: 'white',
+        padding: '8px 16px',
+        background: currentDashboard 
+          ? 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)'
+          : darkMode ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.05)',
+        color: currentDashboard ? 'white' : theme.textMuted,
         border: 'none',
-        borderRadius: '6px',
+        borderRadius: '8px',
         fontSize: '13px',
         fontWeight: '600',
         cursor: currentDashboard ? 'pointer' : 'not-allowed',
@@ -684,22 +749,47 @@ export default function Dashboard({ onLogout }) {
         alignItems: 'center',
         gap: '6px',
         opacity: currentDashboard ? 1 : 0.5,
-        flexShrink: 0
+        flexShrink: 0,
+        transition: 'all 0.2s ease',
+        boxShadow: currentDashboard 
+          ? darkMode 
+            ? '0 2px 12px rgba(99, 102, 241, 0.4)' 
+            : '0 2px 8px rgba(99, 102, 241, 0.3)'
+          : 'none'
+      }}
+      onMouseEnter={(e) => {
+        if (currentDashboard) {
+          e.currentTarget.style.transform = 'translateY(-1px)';
+          e.currentTarget.style.boxShadow = darkMode 
+            ? '0 4px 16px rgba(99, 102, 241, 0.5)' 
+            : '0 3px 12px rgba(99, 102, 241, 0.4)';
+        }
+      }}
+      onMouseLeave={(e) => {
+        if (currentDashboard) {
+          e.currentTarget.style.transform = 'translateY(0)';
+          e.currentTarget.style.boxShadow = darkMode 
+            ? '0 2px 12px rgba(99, 102, 241, 0.4)' 
+            : '0 2px 8px rgba(99, 102, 241, 0.3)';
+        }
       }}
     >
-      <BarChart3 size={14} />
-      Panel
+      <BarChart3 size={14} strokeWidth={2.5} />
+      <span style={{ display: 'inline-block' }}>Panel</span>
     </button>
 
     <button
       onClick={handleAddScada}
       disabled={!currentDashboard}
+      title="Add SCADA Diagram"
       style={{
-        padding: '8px 14px',
-        background: currentDashboard ? theme.success : theme.border,
-        color: 'white',
+        padding: '8px 16px',
+        background: currentDashboard 
+          ? 'linear-gradient(135deg, #10b981 0%, #059669 100%)'
+          : darkMode ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.05)',
+        color: currentDashboard ? 'white' : theme.textMuted,
         border: 'none',
-        borderRadius: '6px',
+        borderRadius: '8px',
         fontSize: '13px',
         fontWeight: '600',
         cursor: currentDashboard ? 'pointer' : 'not-allowed',
@@ -707,50 +797,106 @@ export default function Dashboard({ onLogout }) {
         alignItems: 'center',
         gap: '6px',
         opacity: currentDashboard ? 1 : 0.5,
-        flexShrink: 0
+        flexShrink: 0,
+        transition: 'all 0.2s ease',
+        boxShadow: currentDashboard 
+          ? darkMode 
+            ? '0 2px 12px rgba(16, 185, 129, 0.4)' 
+            : '0 2px 8px rgba(16, 185, 129, 0.3)'
+          : 'none'
+      }}
+      onMouseEnter={(e) => {
+        if (currentDashboard) {
+          e.currentTarget.style.transform = 'translateY(-1px)';
+          e.currentTarget.style.boxShadow = darkMode 
+            ? '0 4px 16px rgba(16, 185, 129, 0.5)' 
+            : '0 3px 12px rgba(16, 185, 129, 0.4)';
+        }
+      }}
+      onMouseLeave={(e) => {
+        if (currentDashboard) {
+          e.currentTarget.style.transform = 'translateY(0)';
+          e.currentTarget.style.boxShadow = darkMode 
+            ? '0 2px 12px rgba(16, 185, 129, 0.4)' 
+            : '0 2px 8px rgba(16, 185, 129, 0.3)';
+        }
       }}
     >
-      <Settings size={14} />
-      SCADA
+      <Settings size={14} strokeWidth={2.5} />
+      <span style={{ display: 'inline-block' }}>SCADA</span>
     </button>
 
-    <div style={{ width: '1px', height: '24px', background: theme.border, flexShrink: 0 }} />
+    {/* Icon Buttons with Hover Effects */}
+    <div style={{ 
+      width: '1px', 
+      height: '28px', 
+      background: darkMode 
+        ? 'linear-gradient(180deg, transparent 0%, rgba(99, 102, 241, 0.3) 50%, transparent 100%)'
+        : 'linear-gradient(180deg, transparent 0%, rgba(99, 102, 241, 0.15) 50%, transparent 100%)',
+      margin: '0 4px',
+      flexShrink: 0 
+    }} />
 
     <button
       onClick={toggleDarkMode}
+      title={darkMode ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
       style={{
-        width: '36px',
-        height: '36px',
-        background: 'transparent',
-        border: 'none',
+        width: '40px',
+        height: '40px',
+        background: darkMode ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.03)',
+        border: `1px solid ${darkMode ? 'rgba(99, 102, 241, 0.2)' : 'rgba(99, 102, 241, 0.1)'}`,
         cursor: 'pointer',
-        borderRadius: '6px',
+        borderRadius: '8px',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        flexShrink: 0
+        flexShrink: 0,
+        transition: 'all 0.2s ease',
+        color: theme.accent
+      }}
+      onMouseEnter={(e) => {
+        e.currentTarget.style.background = darkMode ? 'rgba(99, 102, 241, 0.15)' : 'rgba(99, 102, 241, 0.08)';
+        e.currentTarget.style.transform = 'scale(1.05)';
+        e.currentTarget.style.borderColor = theme.accent;
+      }}
+      onMouseLeave={(e) => {
+        e.currentTarget.style.background = darkMode ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.03)';
+        e.currentTarget.style.transform = 'scale(1)';
+        e.currentTarget.style.borderColor = darkMode ? 'rgba(99, 102, 241, 0.2)' : 'rgba(99, 102, 241, 0.1)';
       }}
     >
-      {darkMode ? <Sun size={18} /> : <Moon size={18} />}
+      {darkMode ? <Sun size={18} strokeWidth={2.5} /> : <Moon size={18} strokeWidth={2.5} />}
     </button>
 
     <button
       onClick={handleLogout}
+      title="Logout"
       style={{
-        width: '36px',
-        height: '36px',
-        background: 'transparent',
-        border: 'none',
+        width: '40px',
+        height: '40px',
+        background: darkMode ? 'rgba(239, 68, 68, 0.1)' : 'rgba(239, 68, 68, 0.05)',
+        border: `1px solid ${darkMode ? 'rgba(239, 68, 68, 0.3)' : 'rgba(239, 68, 68, 0.2)'}`,
         color: theme.danger,
         cursor: 'pointer',
-        borderRadius: '6px',
+        borderRadius: '8px',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        flexShrink: 0
+        flexShrink: 0,
+        transition: 'all 0.2s ease'
+      }}
+      onMouseEnter={(e) => {
+        e.currentTarget.style.background = darkMode ? 'rgba(239, 68, 68, 0.2)' : 'rgba(239, 68, 68, 0.1)';
+        e.currentTarget.style.transform = 'scale(1.05)';
+        e.currentTarget.style.borderColor = theme.danger;
+      }}
+      onMouseLeave={(e) => {
+        e.currentTarget.style.background = darkMode ? 'rgba(239, 68, 68, 0.1)' : 'rgba(239, 68, 68, 0.05)';
+        e.currentTarget.style.transform = 'scale(1)';
+        e.currentTarget.style.borderColor = darkMode ? 'rgba(239, 68, 68, 0.3)' : 'rgba(239, 68, 68, 0.2)';
       }}
     >
-      <LogOut size={18} />
+      <LogOut size={18} strokeWidth={2.5} />
     </button>
   </div>
 </div>
@@ -1160,11 +1306,11 @@ export default function Dashboard({ onLogout }) {
         }
 
         /* Hide scrollbar for tabs but keep functionality */
-        div[style*="overflowX: auto"]::-webkit-scrollbar {
+        .tabs-scroll::-webkit-scrollbar {
           display: none;
         }
         
-        div[style*="overflowX: auto"] {
+        .tabs-scroll {
           scrollbar-width: none;
           -ms-overflow-style: none;
         }
