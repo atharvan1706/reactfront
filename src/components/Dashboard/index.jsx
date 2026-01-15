@@ -579,9 +579,10 @@ export default function Dashboard({ onLogout }) {
         <div style={{
           display: 'flex',
           gap: '4px',
-          flex: 1,
+          flex: '1 1 auto',
           minWidth: 0,
-          alignItems: 'flex-end'
+          alignItems: 'flex-end',
+          overflow: 'hidden'
         }}>
           {dashboards.map((dashboard) => (
             <button
@@ -603,9 +604,9 @@ export default function Dashboard({ onLogout }) {
                 display: 'flex',
                 alignItems: 'center',
                 gap: '6px',
-                flex: dashboards.length > 8 ? '0 1 auto' : '0 0 auto',
-                minWidth: dashboards.length > 8 ? '100px' : 'auto',
-                maxWidth: dashboards.length > 8 ? '200px' : 'none',
+                flex: '1 1 auto',
+                minWidth: '120px',
+                maxWidth: '200px',
                 overflow: 'hidden'
               }}
               onMouseEnter={(e) => {
@@ -630,7 +631,8 @@ export default function Dashboard({ onLogout }) {
                   color: currentDashboard?.id === dashboard.id ? 'white' : theme.textMuted,
                   padding: '2px 6px',
                   borderRadius: '10px',
-                  fontWeight: '700'
+                  fontWeight: '700',
+                  flexShrink: 0
                 }}>
                   {dashboard.panels.length}
                 </span>
@@ -668,7 +670,7 @@ export default function Dashboard({ onLogout }) {
         {/* Divider */}
         <div style={{ width: '1px', height: '28px', background: theme.border, flexShrink: 0 }} />
 
-        {/* Action Buttons - Emoji Based */}
+        {/* Action Buttons */}
         <div style={{ display: 'flex', gap: '6px', flexShrink: 0 }}>
           <button
             onClick={handleAddPanel}
@@ -689,7 +691,8 @@ export default function Dashboard({ onLogout }) {
               flexShrink: 0
             }}
           >
-            📊 Panel
+            <BarChart3 size={14} color="white" />
+            Panel
           </button>
 
           <button
@@ -711,7 +714,8 @@ export default function Dashboard({ onLogout }) {
               flexShrink: 0
             }}
           >
-            ⚙️ SCADA
+            <Settings size={14} color="white" />
+            SCADA
           </button>
 
           <div style={{ width: '1px', height: '24px', background: theme.border, flexShrink: 0 }} />
@@ -729,7 +733,7 @@ export default function Dashboard({ onLogout }) {
               alignItems: 'center',
               justifyContent: 'center',
               flexShrink: 0,
-              fontSize: '18px'
+              color: theme.text
             }}
             onMouseEnter={(e) => {
               e.currentTarget.style.background = theme.hover;
@@ -739,7 +743,7 @@ export default function Dashboard({ onLogout }) {
             }}
             title={darkMode ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
           >
-            {darkMode ? '☀️' : '🌙'}
+            {darkMode ? <Sun size={18} color={theme.text} /> : <Moon size={18} color={theme.text} />}
           </button>
 
           <button
@@ -755,7 +759,7 @@ export default function Dashboard({ onLogout }) {
               alignItems: 'center',
               justifyContent: 'center',
               flexShrink: 0,
-              fontSize: '18px'
+              color: theme.danger
             }}
             onMouseEnter={(e) => {
               e.currentTarget.style.background = theme.hover;
@@ -765,7 +769,7 @@ export default function Dashboard({ onLogout }) {
             }}
             title="Logout"
           >
-            🚪
+            <LogOut size={18} color={theme.danger} />
           </button>
         </div>
       </div>
@@ -814,10 +818,9 @@ export default function Dashboard({ onLogout }) {
                 alignItems: 'center',
                 justifyContent: 'center',
                 margin: '0 auto 24px',
-                opacity: 0.9,
-                fontSize: '42px'
+                opacity: 0.9
               }}>
-                📊
+                <Layers size={36} color="white" />
               </div>
               <h2 style={{
                 fontSize: '24px',
@@ -871,7 +874,8 @@ export default function Dashboard({ onLogout }) {
                       : '0 2px 12px rgba(99, 102, 241, 0.3)';
                   }}
                 >
-                  ➕ {currentDashboard ? 'Add Data Panel' : 'Create Dashboard'}
+                  <Plus size={18} color="white" />
+                  {currentDashboard ? 'Add Data Panel' : 'Create Dashboard'}
                 </button>
                 {currentDashboard && (
                   <button
@@ -906,7 +910,8 @@ export default function Dashboard({ onLogout }) {
                         : '0 2px 12px rgba(16, 185, 129, 0.3)';
                     }}
                   >
-                    ⚙️ Add SCADA Diagram
+                    <Settings size={18} color="white" />
+                    Add SCADA Diagram
                   </button>
                 )}
               </div>
