@@ -55,6 +55,27 @@ export default function Dashboard({ onLogout }) {
     const saved = localStorage.getItem('miralys_dark_mode');
     return saved ? JSON.parse(saved) : true;
   });
+  const [windowWidth, setWindowWidth] = useState(window.innerWidth);
+
+  // Responsive grid columns based on window width
+  const getResponsiveGridCols = () => {
+    if (windowWidth < 640) return 1;        // Mobile: 1 column
+    if (windowWidth < 1024) return 2;       // Tablet: 2 columns
+    if (windowWidth < 1440) return 4;       // Laptop: 4 columns
+    return GRID_COLS;                       // Desktop: 6 columns
+  };
+
+  const responsiveGridCols = getResponsiveGridCols();
+
+  // Handle window resize
+  useEffect(() => {
+    const handleResize = () => {
+      setWindowWidth(window.innerWidth);
+    };
+
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   useEffect(() => {
     console.log('👤 Current user object:', user);
@@ -491,9 +512,13 @@ export default function Dashboard({ onLogout }) {
   };
 
   const calculatePanelStyle = (panel) => {
+    // Adjust panel width to fit responsive grid
+    const adjustedWidth = Math.min(panel.width || 4, responsiveGridCols);
+    const adjustedHeight = windowWidth < 640 ? 1 : (panel.height || 2);
+    
     return {
-      gridColumn: `span ${panel.width || 4}`,
-      gridRow: `span ${panel.height || 2}`
+      gridColumn: `span ${adjustedWidth}`,
+      gridRow: `span ${adjustedHeight}`
     };
   };
 
@@ -542,113 +567,118 @@ export default function Dashboard({ onLogout }) {
         borderBottom: `1px solid ${theme.border}`,
         display: 'flex',
         alignItems: 'center',
-        height: '56px',
-        padding: '0 16px',
-        gap: '12px',
-        flexShrink: 0
+        minHeight: windowWidth < 640 ? '48px' : '56px',
+        padding: windowWidth < 640 ? '0 8px' : '0 16px',
+        gap: windowWidth < 640 ? '6px' : '12px',
+        flexShrink: 0,
+        flexWrap: windowWidth < 1024 ? 'wrap' : 'nowrap'
       }}>
         {/* Logo */}
         <div style={{
           display: 'flex',
           alignItems: 'center',
-          gap: '8px',
+          gap: windowWidth < 640 ? '6px' : '8px',
           flexShrink: 0
         }}>
           <div style={{
-            width: '32px',
-            height: '32px',
+            width: windowWidth < 640 ? '28px' : '32px',
+            height: windowWidth < 640 ? '28px' : '32px',
             background: `linear-gradient(135deg, ${theme.accent} 0%, ${theme.accentHover} 100%)`,
-            borderRadius: '8px',
+            borderRadius: windowWidth < 640 ? '6px' : '8px',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center'
           }}>
-            <Activity size={18} color="white" />
+            <Activity size={windowWidth < 640 ? 16 : 18} color="white" />
           </div>
-          <span style={{
-            fontSize: '16px',
-            fontWeight: '700',
-            letterSpacing: '-0.02em',
-            color: theme.text
-          }}>
-            Miralys
-          </span>
+          {windowWidth >= 640 && (
+            <span style={{
+              fontSize: '16px',
+              fontWeight: '700',
+              letterSpacing: '-0.02em',
+              color: theme.text
+            }}>
+              Miralys
+            </span>
+          )}
         </div>
 
-        {/* Chrome-style Auto-shrinking Tabs */}
-        <div style={{
-          display: 'flex',
-          gap: '4px',
-          flex: '1 1 auto',
-          minWidth: 0,
-          alignItems: 'flex-end',
-          overflow: 'hidden'
-        }}>
-          {dashboards.map((dashboard) => (
-            <button
-              key={dashboard.id}
-              onClick={() => handleSelectDashboard(dashboard)}
-              style={{
-                padding: '8px 14px',
-                background: currentDashboard?.id === dashboard.id ? theme.card : 'transparent',
-                color: currentDashboard?.id === dashboard.id ? theme.text : theme.textMuted,
-                border: 'none',
-                borderBottom: currentDashboard?.id === dashboard.id
-                  ? `2px solid ${theme.accent}`
-                  : '2px solid transparent',
-                fontWeight: 600,
-                cursor: 'pointer',
-                whiteSpace: 'nowrap',
-                borderRadius: '6px 6px 0 0',
-                fontSize: '13px',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '6px',
-                flex: '1 1 auto',
-                minWidth: '120px',
-                maxWidth: '200px',
-                overflow: 'hidden'
-              }}
-              onMouseEnter={(e) => {
-                if (currentDashboard?.id !== dashboard.id) {
-                  e.currentTarget.style.background = theme.hover;
-                }
-              }}
-              onMouseLeave={(e) => {
-                if (currentDashboard?.id !== dashboard.id) {
-                  e.currentTarget.style.background = 'transparent';
-                }
-              }}
-            >
-              <Grid size={14} color={currentDashboard?.id === dashboard.id ? theme.text : theme.textMuted} />
-              <span style={{ overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                {dashboard.name}
-              </span>
-              {dashboard.panels?.length > 0 && (
-                <span style={{
-                  fontSize: '10px',
-                  background: currentDashboard?.id === dashboard.id ? theme.accent : theme.border,
-                  color: currentDashboard?.id === dashboard.id ? 'white' : theme.textMuted,
-                  padding: '2px 6px',
-                  borderRadius: '10px',
-                  fontWeight: '700',
-                  flexShrink: 0
-                }}>
-                  {dashboard.panels.length}
+        {/* Chrome-style Auto-shrinking Tabs - Hide on mobile */}
+        {windowWidth >= 640 && (
+          <div style={{
+            display: 'flex',
+            gap: '4px',
+            flex: '1 1 auto',
+            minWidth: 0,
+            alignItems: 'flex-end',
+            overflow: 'hidden'
+          }}>
+            {dashboards.slice(0, windowWidth < 1024 ? 2 : dashboards.length).map((dashboard) => (
+              <button
+                key={dashboard.id}
+                onClick={() => handleSelectDashboard(dashboard)}
+                style={{
+                  padding: windowWidth < 1024 ? '6px 10px' : '8px 14px',
+                  background: currentDashboard?.id === dashboard.id ? theme.card : 'transparent',
+                  color: currentDashboard?.id === dashboard.id ? theme.text : theme.textMuted,
+                  border: 'none',
+                  borderBottom: currentDashboard?.id === dashboard.id
+                    ? `2px solid ${theme.accent}`
+                    : '2px solid transparent',
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                  whiteSpace: 'nowrap',
+                  borderRadius: '6px 6px 0 0',
+                  fontSize: windowWidth < 1024 ? '12px' : '13px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  flex: '1 1 auto',
+                  minWidth: windowWidth < 1024 ? '80px' : '120px',
+                  maxWidth: windowWidth < 1024 ? '140px' : '200px',
+                  overflow: 'hidden'
+                }}
+                onMouseEnter={(e) => {
+                  if (currentDashboard?.id !== dashboard.id) {
+                    e.currentTarget.style.background = theme.hover;
+                  }
+                }}
+                onMouseLeave={(e) => {
+                  if (currentDashboard?.id !== dashboard.id) {
+                    e.currentTarget.style.background = 'transparent';
+                  }
+                }}
+              >
+                <Grid size={windowWidth < 1024 ? 12 : 14} color={currentDashboard?.id === dashboard.id ? theme.text : theme.textMuted} />
+                <span style={{ overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                  {dashboard.name}
                 </span>
-              )}
-            </button>
-          ))}
-        </div>
+                {dashboard.panels?.length > 0 && windowWidth >= 1024 && (
+                  <span style={{
+                    fontSize: '10px',
+                    background: currentDashboard?.id === dashboard.id ? theme.accent : theme.border,
+                    color: currentDashboard?.id === dashboard.id ? 'white' : theme.textMuted,
+                    padding: '2px 6px',
+                    borderRadius: '10px',
+                    fontWeight: '700',
+                    flexShrink: 0
+                  }}>
+                    {dashboard.panels.length}
+                  </span>
+                )}
+              </button>
+            ))}
+          </div>
+        )}
         
         {/* New Tab + Button */}
         <button
           onClick={() => setShowDashboardModal(true)}
           style={{
-            padding: '10px',
+            padding: windowWidth < 640 ? '8px' : '10px',
             background: 'transparent',
             border: `2px solid ${theme.border}`,
-            borderRadius: '8px',
+            borderRadius: windowWidth < 640 ? '6px' : '8px',
             color: theme.text,
             cursor: 'pointer',
             display: 'flex',
@@ -666,69 +696,73 @@ export default function Dashboard({ onLogout }) {
             e.currentTarget.style.transform = 'translateY(0)';
           }}
         >
-          <Plus size={16} />
+          <Plus size={windowWidth < 640 ? 14 : 16} />
         </button>
 
-        {/* Divider */}
-        <div style={{ width: '1px', height: '28px', background: theme.border, flexShrink: 0 }} />
+        {/* Divider - Hide on mobile */}
+        {windowWidth >= 640 && (
+          <div style={{ width: '1px', height: '28px', background: theme.border, flexShrink: 0 }} />
+        )}
 
         {/* Action Buttons */}
-        <div style={{ display: 'flex', gap: '6px', flexShrink: 0 }}>
+        <div style={{ display: 'flex', gap: windowWidth < 640 ? '4px' : '6px', flexShrink: 0 }}>
           <button
             onClick={handleAddPanel}
             disabled={!currentDashboard}
             style={{
-              padding: '8px 14px',
+              padding: windowWidth < 640 ? '6px 10px' : '8px 14px',
               background: currentDashboard ? theme.accent : theme.border,
               color: 'white',
               border: 'none',
               borderRadius: '6px',
-              fontSize: '13px',
+              fontSize: windowWidth < 640 ? '11px' : '13px',
               fontWeight: '600',
               cursor: currentDashboard ? 'pointer' : 'not-allowed',
               display: 'flex',
               alignItems: 'center',
-              gap: '6px',
+              gap: windowWidth < 640 ? '4px' : '6px',
               opacity: currentDashboard ? 1 : 0.5,
               flexShrink: 0
             }}
           >
-            <BarChart3 size={14} />
-            Panel
+            <BarChart3 size={windowWidth < 640 ? 12 : 14} />
+            {windowWidth >= 1024 && 'Panel'}
           </button>
 
           <button
             onClick={handleAddScada}
             disabled={!currentDashboard}
             style={{
-              padding: '8px 14px',
+              padding: windowWidth < 640 ? '6px 10px' : '8px 14px',
               background: currentDashboard ? theme.success : theme.border,
               color: 'white',
               border: 'none',
               borderRadius: '6px',
-              fontSize: '13px',
+              fontSize: windowWidth < 640 ? '11px' : '13px',
               fontWeight: '600',
               cursor: currentDashboard ? 'pointer' : 'not-allowed',
               display: 'flex',
               alignItems: 'center',
-              gap: '6px',
+              gap: windowWidth < 640 ? '4px' : '6px',
               opacity: currentDashboard ? 1 : 0.5,
               flexShrink: 0
             }}
           >
-            <Settings size={14} />
-            SCADA
+            <Settings size={windowWidth < 640 ? 12 : 14} />
+            {windowWidth >= 1024 && 'SCADA'}
           </button>
 
-          <div style={{ width: '1px', height: '24px', background: theme.border, flexShrink: 0 }} />
+          {windowWidth >= 640 && (
+            <div style={{ width: '1px', height: '24px', background: theme.border, flexShrink: 0 }} />
+          )}
 
           <button
             onClick={toggleDarkMode}
             style={{
-              padding: '10px',
+              padding: windowWidth < 640 ? '8px' : '10px',
               background: darkMode ? theme.cardHover : '#f9fafb',
               border: `2px solid ${theme.border}`,
-              borderRadius: '8px',
+              borderRadius: windowWidth < 640 ? '6px' : '8px',
               color: theme.text,
               cursor: 'pointer',
               display: 'flex',
@@ -747,13 +781,13 @@ export default function Dashboard({ onLogout }) {
             }}
             title={darkMode ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
           >
-            {darkMode ? <Sun size={18} /> : <Moon size={18} />}
+            {darkMode ? <Sun size={windowWidth < 640 ? 16 : 18} /> : <Moon size={windowWidth < 640 ? 16 : 18} />}
           </button>
 
           <button
             onClick={handleLogout}
             style={{
-              padding: '8px',
+              padding: windowWidth < 640 ? '6px' : '8px',
               background: 'transparent',
               border: 'none',
               color: theme.textMuted,
@@ -772,7 +806,7 @@ export default function Dashboard({ onLogout }) {
             }}
             title="Logout"
           >
-            <LogOut size={18} />
+            <LogOut size={windowWidth < 640 ? 16 : 18} />
           </button>
         </div>
       </div>
@@ -800,7 +834,7 @@ export default function Dashboard({ onLogout }) {
       <div style={{
         flex: 1,
         overflow: 'auto',
-        padding: '12px',
+        padding: windowWidth < 640 ? '8px' : windowWidth < 1024 ? '10px' : '12px',
         background: theme.bg
       }}>
         {!currentDashboard || currentDashboard.panels.length === 0 ? (
@@ -809,24 +843,25 @@ export default function Dashboard({ onLogout }) {
             alignItems: 'center',
             justifyContent: 'center',
             height: '100%',
-            textAlign: 'center'
+            textAlign: 'center',
+            padding: windowWidth < 640 ? '16px' : '0'
           }}>
-            <div style={{ maxWidth: '480px' }}>
+            <div style={{ maxWidth: windowWidth < 640 ? '320px' : '480px' }}>
               <div style={{
-                width: '80px',
-                height: '80px',
+                width: windowWidth < 640 ? '60px' : '80px',
+                height: windowWidth < 640 ? '60px' : '80px',
                 background: `linear-gradient(135deg, ${theme.accent} 0%, ${theme.accentHover} 100%)`,
-                borderRadius: '20px',
+                borderRadius: windowWidth < 640 ? '16px' : '20px',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
                 margin: '0 auto 24px',
                 opacity: 0.9
               }}>
-                <Layers size={36} color="white" />
+                <Layers size={windowWidth < 640 ? 28 : 36} color="white" />
               </div>
               <h2 style={{
-                fontSize: '24px',
+                fontSize: windowWidth < 640 ? '20px' : '24px',
                 fontWeight: '700',
                 marginBottom: '12px',
                 color: theme.text,
@@ -835,7 +870,7 @@ export default function Dashboard({ onLogout }) {
                 {currentDashboard ? 'Start Building Your Dashboard' : 'Welcome to Miralys'}
               </h2>
               <p style={{
-                fontSize: '14px',
+                fontSize: windowWidth < 640 ? '13px' : '14px',
                 color: theme.textMuted,
                 marginBottom: '28px',
                 lineHeight: '1.6'
@@ -844,25 +879,32 @@ export default function Dashboard({ onLogout }) {
                   ? 'Add data panels and SCADA diagrams to visualize your real-time data streams.'
                   : 'Create your first dashboard to organize visualizations and monitor your systems.'}
               </p>
-              <div style={{ display: 'flex', gap: '10px', justifyContent: 'center' }}>
+              <div style={{ 
+                display: 'flex', 
+                gap: windowWidth < 640 ? '8px' : '10px', 
+                justifyContent: 'center',
+                flexDirection: windowWidth < 640 ? 'column' : 'row'
+              }}>
                 <button
                   onClick={currentDashboard ? handleAddPanel : () => setShowDashboardModal(true)}
                   style={{
-                    padding: '12px 24px',
+                    padding: windowWidth < 640 ? '10px 20px' : '12px 24px',
                     background: `linear-gradient(135deg, ${theme.accent} 0%, ${theme.accentHover} 100%)`,
                     border: 'none',
                     borderRadius: '8px',
                     color: 'white',
                     cursor: 'pointer',
-                    fontSize: '14px',
+                    fontSize: windowWidth < 640 ? '13px' : '14px',
                     fontWeight: '600',
                     display: 'inline-flex',
                     alignItems: 'center',
+                    justifyContent: 'center',
                     gap: '8px',
                     transition: 'all 0.2s ease',
                     boxShadow: darkMode 
                       ? '0 4px 16px rgba(99, 102, 241, 0.4)' 
-                      : '0 2px 12px rgba(99, 102, 241, 0.3)'
+                      : '0 2px 12px rgba(99, 102, 241, 0.3)',
+                    width: windowWidth < 640 ? '100%' : 'auto'
                   }}
                   onMouseEnter={(e) => {
                     e.currentTarget.style.transform = 'translateY(-2px)';
@@ -877,28 +919,30 @@ export default function Dashboard({ onLogout }) {
                       : '0 2px 12px rgba(99, 102, 241, 0.3)';
                   }}
                 >
-                  <Plus size={18} color="white" />
+                  <Plus size={windowWidth < 640 ? 16 : 18} color="white" />
                   {currentDashboard ? 'Add Data Panel' : 'Create Dashboard'}
                 </button>
                 {currentDashboard && (
                   <button
                     onClick={handleAddScada}
                     style={{
-                      padding: '12px 24px',
+                      padding: windowWidth < 640 ? '10px 20px' : '12px 24px',
                       background: `linear-gradient(135deg, ${theme.success} 0%, #059669 100%)`,
                       border: 'none',
                       borderRadius: '8px',
                       color: 'white',
                       cursor: 'pointer',
-                      fontSize: '14px',
+                      fontSize: windowWidth < 640 ? '13px' : '14px',
                       fontWeight: '600',
                       display: 'inline-flex',
                       alignItems: 'center',
+                      justifyContent: 'center',
                       gap: '8px',
                       transition: 'all 0.2s ease',
                       boxShadow: darkMode 
                         ? '0 4px 16px rgba(16, 185, 129, 0.4)' 
-                        : '0 2px 12px rgba(16, 185, 129, 0.3)'
+                        : '0 2px 12px rgba(16, 185, 129, 0.3)',
+                      width: windowWidth < 640 ? '100%' : 'auto'
                     }}
                     onMouseEnter={(e) => {
                       e.currentTarget.style.transform = 'translateY(-2px)';
@@ -913,7 +957,7 @@ export default function Dashboard({ onLogout }) {
                         : '0 2px 12px rgba(16, 185, 129, 0.3)';
                     }}
                   >
-                    <Settings size={18} color="white" />
+                    <Settings size={windowWidth < 640 ? 16 : 18} color="white" />
                     Add SCADA Diagram
                   </button>
                 )}
@@ -923,9 +967,9 @@ export default function Dashboard({ onLogout }) {
         ) : (
           <div style={{
             display: 'grid',
-            gridTemplateColumns: `repeat(${GRID_COLS}, 1fr)`,
-            gap: '12px',
-            gridAutoRows: `${ROW_HEIGHT}px`
+            gridTemplateColumns: `repeat(${responsiveGridCols}, 1fr)`,
+            gap: windowWidth < 640 ? '8px' : windowWidth < 1024 ? '10px' : '12px',
+            gridAutoRows: windowWidth < 640 ? '180px' : `${ROW_HEIGHT}px`
           }}>
             {currentDashboard.panels.map((panel) => (
               <div 
