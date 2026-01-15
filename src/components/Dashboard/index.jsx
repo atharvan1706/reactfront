@@ -659,12 +659,14 @@ export default function Dashboard({ onLogout }) {
           }}
           onMouseEnter={(e) => {
             e.currentTarget.style.background = theme.hover;
+            e.currentTarget.style.color = theme.text;
           }}
           onMouseLeave={(e) => {
             e.currentTarget.style.background = 'transparent';
+            e.currentTarget.style.color = theme.text;
           }}
         >
-          <Plus size={16} color={theme.text} />
+          <Plus size={16} />
         </button>
 
         {/* Divider */}
@@ -737,13 +739,15 @@ export default function Dashboard({ onLogout }) {
             }}
             onMouseEnter={(e) => {
               e.currentTarget.style.background = theme.hover;
+              e.currentTarget.style.color = theme.text;
             }}
             onMouseLeave={(e) => {
               e.currentTarget.style.background = 'transparent';
+              e.currentTarget.style.color = theme.text;
             }}
             title={darkMode ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
           >
-            {darkMode ? <Sun size={18} color= "white"  /> : <Moon size={18} color="white" />}
+            {darkMode ? <Sun size={18} /> : <Moon size={18} />}
           </button>
 
           <button
@@ -763,13 +767,15 @@ export default function Dashboard({ onLogout }) {
             }}
             onMouseEnter={(e) => {
               e.currentTarget.style.background = theme.hover;
+              e.currentTarget.style.color = theme.danger;
             }}
             onMouseLeave={(e) => {
               e.currentTarget.style.background = 'transparent';
+              e.currentTarget.style.color = theme.danger;
             }}
             title="Logout"
           >
-            <LogOut size={18} color={theme.danger} />
+            <LogOut size={18} />
           </button>
         </div>
       </div>
