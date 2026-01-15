@@ -159,6 +159,12 @@ function QuestDBPanel({ config, onEdit, onDelete, onDuplicate, onResize, style, 
     return ['auto', 'auto'];
   };
 
+  // Calculate responsive sizing based on panel width
+  const panelWidth = config.width || 4;
+  const isSmall = panelWidth <= 2;
+  const isMedium = panelWidth > 2 && panelWidth <= 4;
+  const fontSize = isSmall ? 9 : isMedium ? 10 : 11;
+
   const renderChart = () => {
     if (loading && data.length === 0) {
       return (
@@ -202,10 +208,6 @@ function QuestDBPanel({ config, onEdit, onDelete, onDuplicate, onResize, style, 
     }
 
     // Responsive margins based on panel width
-    const panelWidth = config.width || 4;
-    const isSmall = panelWidth <= 2;
-    const isMedium = panelWidth > 2 && panelWidth <= 4;
-    
     const chartProps = {
       data,
       margin: isSmall 
@@ -214,9 +216,6 @@ function QuestDBPanel({ config, onEdit, onDelete, onDuplicate, onResize, style, 
         ? { top: 55, right: 18, left: 8, bottom: 30 }
         : { top: 58, right: 22, left: 12, bottom: 32 }
     };
-    
-    // Responsive font sizes
-    const fontSize = isSmall ? 9 : isMedium ? 10 : 11;
 
     const yFields = (config.yAxes && config.yAxes.length > 0) ? config.yAxes : [config.yAxis].filter(Boolean);
     const filteredYFields = yFields.filter(field => field && field !== 'value');
