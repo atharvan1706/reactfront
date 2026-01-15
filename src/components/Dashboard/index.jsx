@@ -537,7 +537,7 @@ export default function Dashboard({ onLogout }) {
       display: 'flex',
       flexDirection: 'column'
     }}>
-      {/* Premium Header with Tabs */}
+      {/* Premium Header with Chrome-Style Tabs */}
       <div style={{
         background: theme.card,
         borderBottom: `1px solid ${theme.border}`,
@@ -553,7 +553,8 @@ export default function Dashboard({ onLogout }) {
           display: 'flex',
           alignItems: 'center',
           gap: '8px',
-          marginRight: '8px'
+          marginRight: '8px',
+          flexShrink: 0
         }}>
           <div style={{
             width: '32px',
@@ -562,7 +563,8 @@ export default function Dashboard({ onLogout }) {
             borderRadius: '8px',
             display: 'flex',
             alignItems: 'center',
-            justifyContent: 'center'
+            justifyContent: 'center',
+            flexShrink: 0
           }}>
             <Activity size={18} color="white" />
           </div>
@@ -570,7 +572,8 @@ export default function Dashboard({ onLogout }) {
             fontSize: '16px',
             fontWeight: '700',
             letterSpacing: '-0.02em',
-            color: theme.text
+            color: theme.text,
+            flexShrink: 0
           }}>
             Miralys
           </span>
@@ -582,20 +585,27 @@ export default function Dashboard({ onLogout }) {
           alignItems: 'center',
           flex: 1,
           minWidth: 0,
+          maxWidth: '900px',
           gap: '8px'
         }}>
-          <div style={{
-            display: 'flex',
-            gap: '2px',
-            overflowX: 'auto',
-            overflowY: 'hidden',
-            scrollbarWidth: 'none',
-            msOverflowStyle: 'none',
-            WebkitOverflowScrolling: 'touch',
-            flex: 1,
-            minWidth: 0,
-            paddingBottom: '2px'
-          }}>
+          <div 
+            style={{
+              display: 'flex',
+              gap: '2px',
+              overflowX: 'auto',
+              overflowY: 'hidden',
+              scrollbarWidth: 'none',
+              msOverflowStyle: 'none',
+              WebkitOverflowScrolling: 'touch',
+              flex: 1,
+              minWidth: 0,
+              paddingBottom: '2px'
+            }}
+            onWheel={(e) => {
+              e.currentTarget.scrollLeft += e.deltaY;
+              e.preventDefault();
+            }}
+          >
             {dashboards.map((dashboard, index) => (
               <button
                 key={dashboard.id}
@@ -603,12 +613,15 @@ export default function Dashboard({ onLogout }) {
                 style={{
                   padding: '8px 16px',
                   background: currentDashboard?.id === dashboard.id 
-                    ? theme.card 
+                    ? theme.bgSecondary 
                     : 'transparent',
                   color: currentDashboard?.id === dashboard.id 
                     ? theme.text 
                     : theme.textMuted,
-                  border: 'none',
+                  border: currentDashboard?.id === dashboard.id
+                    ? `1px solid ${theme.border}`
+                    : '1px solid transparent',
+                  borderBottom: 'none',
                   borderRadius: '8px 8px 0 0',
                   fontSize: '13px',
                   fontWeight: '600',
@@ -623,9 +636,10 @@ export default function Dashboard({ onLogout }) {
                   overflow: 'hidden',
                   textOverflow: 'ellipsis',
                   position: 'relative',
-                  borderBottom: currentDashboard?.id === dashboard.id 
-                    ? `2px solid ${theme.accent}` 
-                    : `2px solid transparent`
+                  boxShadow: currentDashboard?.id === dashboard.id 
+                    ? `0 -3px 0 0 ${theme.accent} inset, 0 1px 3px rgba(0,0,0,0.1)` 
+                    : 'none',
+                  marginBottom: '-1px'
                 }}
                 onMouseEnter={(e) => {
                   if (currentDashboard?.id !== dashboard.id) {
@@ -712,7 +726,7 @@ export default function Dashboard({ onLogout }) {
         }} />
 
         {/* Action Buttons - Always visible with flexShrink: 0 */}
-        <div style={{ display: 'flex', gap: '6px', alignItems: 'center', flexShrink: 0 }}>
+        <div style={{ display: 'flex', gap: '6px', alignItems: 'center', flexShrink: 0, marginLeft: 'auto' }}>
           <button
             onClick={handleAddPanel}
             disabled={!currentDashboard}
