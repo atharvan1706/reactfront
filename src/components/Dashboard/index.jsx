@@ -43,7 +43,6 @@ export default function Dashboard({ onLogout }) {
   const [showConfigModal, setShowConfigModal] = useState(false);
   const [showDashboardModal, setShowDashboardModal] = useState(false);
   const [showScadaModal, setShowScadaModal] = useState(false);
-  const [showOverflowMenu, setShowOverflowMenu] = useState(false);
   const [editingPanel, setEditingPanel] = useState(null);
   const [editingScadaDiagram, setEditingScadaDiagram] = useState(null);
   const [availableTables, setAvailableTables] = useState([]);
@@ -56,8 +55,6 @@ export default function Dashboard({ onLogout }) {
     const saved = localStorage.getItem('miralys_dark_mode');
     return saved ? JSON.parse(saved) : true;
   });
-
-  const MAX_VISIBLE_TABS = 6;
 
   useEffect(() => {
     console.log('👤 Current user object:', user);
@@ -421,7 +418,6 @@ export default function Dashboard({ onLogout }) {
   const handleSelectDashboard = (dashboard) => {
     setCurrentDashboard(dashboard);
     setShowDashboardModal(false);
-    setShowOverflowMenu(false);
   };
 
   const handleCreateDashboard = async (name) => {
@@ -501,10 +497,6 @@ export default function Dashboard({ onLogout }) {
     };
   };
 
-  // Split dashboards into visible and overflow
-  const visibleTabs = dashboards.slice(0, MAX_VISIBLE_TABS);
-  const overflowTabs = dashboards.slice(MAX_VISIBLE_TABS);
-
   if (loading) {
     return (
       <div style={{
@@ -583,15 +575,15 @@ export default function Dashboard({ onLogout }) {
           </span>
         </div>
 
-        {/* Chrome-style Tabs */}
+        {/* Chrome-style Auto-shrinking Tabs */}
         <div style={{
           display: 'flex',
-          alignItems: 'center',
           gap: '4px',
           flex: 1,
-          minWidth: 0
+          minWidth: 0,
+          alignItems: 'flex-end'
         }}>
-          {visibleTabs.map((dashboard) => (
+          {dashboards.map((dashboard) => (
             <button
               key={dashboard.id}
               onClick={() => handleSelectDashboard(dashboard)}
@@ -610,16 +602,20 @@ export default function Dashboard({ onLogout }) {
                 fontSize: '13px',
                 display: 'flex',
                 alignItems: 'center',
-                gap: '6px'
+                gap: '6px',
+                flex: dashboards.length > 8 ? '0 1 auto' : '0 0 auto',
+                minWidth: dashboards.length > 8 ? '100px' : 'auto',
+                maxWidth: dashboards.length > 8 ? '200px' : 'none',
+                overflow: 'hidden'
               }}
               onMouseEnter={(e) => {
                 if (currentDashboard?.id !== dashboard.id) {
-                  e.target.style.background = theme.hover;
+                  e.currentTarget.style.background = theme.hover;
                 }
               }}
               onMouseLeave={(e) => {
                 if (currentDashboard?.id !== dashboard.id) {
-                  e.target.style.background = 'transparent';
+                  e.currentTarget.style.background = 'transparent';
                 }
               }}
             >
@@ -641,89 +637,6 @@ export default function Dashboard({ onLogout }) {
               )}
             </button>
           ))}
-
-          {/* Overflow Menu */}
-          {overflowTabs.length > 0 && (
-            <div style={{ position: 'relative' }}>
-              <button
-                onClick={() => setShowOverflowMenu(!showOverflowMenu)}
-                style={{
-                  padding: '8px',
-                  background: 'transparent',
-                  border: `1px solid ${theme.border}`,
-                  borderRadius: '6px',
-                  cursor: 'pointer',
-                  color: theme.text,
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center'
-                }}
-                onMouseEnter={(e) => {
-                  e.target.style.background = theme.hover;
-                }}
-                onMouseLeave={(e) => {
-                  e.target.style.background = 'transparent';
-                }}
-              >
-                <MoreHorizontal size={16} color={theme.text} />
-              </button>
-
-              {showOverflowMenu && (
-                <div style={{
-                  position: 'absolute',
-                  top: '100%',
-                  right: 0,
-                  marginTop: '4px',
-                  background: theme.card,
-                  border: `1px solid ${theme.border}`,
-                  borderRadius: '8px',
-                  boxShadow: darkMode 
-                    ? '0 10px 30px rgba(0,0,0,0.5)' 
-                    : '0 4px 20px rgba(0,0,0,0.15)',
-                  minWidth: '200px',
-                  zIndex: 100,
-                  overflow: 'hidden'
-                }}>
-                  {overflowTabs.map(d => (
-                    <div
-                      key={d.id}
-                      onClick={() => handleSelectDashboard(d)}
-                      style={{
-                        padding: '10px 14px',
-                        cursor: 'pointer',
-                        color: theme.text,
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '8px',
-                        transition: 'background 0.15s ease'
-                      }}
-                      onMouseEnter={(e) => {
-                        e.target.style.background = theme.hover;
-                      }}
-                      onMouseLeave={(e) => {
-                        e.target.style.background = 'transparent';
-                      }}
-                    >
-                      <Grid size={14} color={theme.textMuted} />
-                      <span style={{ flex: 1 }}>{d.name}</span>
-                      {d.panels?.length > 0 && (
-                        <span style={{
-                          fontSize: '10px',
-                          background: theme.border,
-                          color: theme.textMuted,
-                          padding: '2px 6px',
-                          borderRadius: '10px',
-                          fontWeight: '700'
-                        }}>
-                          {d.panels.length}
-                        </span>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          )}
         </div>
         
         {/* New Tab + Button */}
@@ -743,10 +656,10 @@ export default function Dashboard({ onLogout }) {
             color: theme.text
           }}
           onMouseEnter={(e) => {
-            e.target.style.background = theme.hover;
+            e.currentTarget.style.background = theme.hover;
           }}
           onMouseLeave={(e) => {
-            e.target.style.background = 'transparent';
+            e.currentTarget.style.background = 'transparent';
           }}
         >
           <Plus size={16} color={theme.text} />
@@ -755,7 +668,7 @@ export default function Dashboard({ onLogout }) {
         {/* Divider */}
         <div style={{ width: '1px', height: '28px', background: theme.border, flexShrink: 0 }} />
 
-        {/* Action Buttons */}
+        {/* Action Buttons - Emoji Based */}
         <div style={{ display: 'flex', gap: '6px', flexShrink: 0 }}>
           <button
             onClick={handleAddPanel}
@@ -776,8 +689,7 @@ export default function Dashboard({ onLogout }) {
               flexShrink: 0
             }}
           >
-            <BarChart3 size={14} color="white" />
-            Panel
+            📊 Panel
           </button>
 
           <button
@@ -799,8 +711,7 @@ export default function Dashboard({ onLogout }) {
               flexShrink: 0
             }}
           >
-            <Settings size={14} color="white" />
-            SCADA
+            ⚙️ SCADA
           </button>
 
           <div style={{ width: '1px', height: '24px', background: theme.border, flexShrink: 0 }} />
@@ -818,16 +729,17 @@ export default function Dashboard({ onLogout }) {
               alignItems: 'center',
               justifyContent: 'center',
               flexShrink: 0,
-              color: theme.text
+              fontSize: '18px'
             }}
             onMouseEnter={(e) => {
-              e.target.style.background = theme.hover;
+              e.currentTarget.style.background = theme.hover;
             }}
             onMouseLeave={(e) => {
-              e.target.style.background = 'transparent';
+              e.currentTarget.style.background = 'transparent';
             }}
+            title={darkMode ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
           >
-            {darkMode ? <Sun size={18} color={theme.text} /> : <Moon size={18} color={theme.text} />}
+            {darkMode ? '☀️' : '🌙'}
           </button>
 
           <button
@@ -843,16 +755,17 @@ export default function Dashboard({ onLogout }) {
               alignItems: 'center',
               justifyContent: 'center',
               flexShrink: 0,
-              color: theme.danger
+              fontSize: '18px'
             }}
             onMouseEnter={(e) => {
-              e.target.style.background = theme.hover;
+              e.currentTarget.style.background = theme.hover;
             }}
             onMouseLeave={(e) => {
-              e.target.style.background = 'transparent';
+              e.currentTarget.style.background = 'transparent';
             }}
+            title="Logout"
           >
-            <LogOut size={18} color={theme.danger} />
+            🚪
           </button>
         </div>
       </div>
@@ -901,9 +814,10 @@ export default function Dashboard({ onLogout }) {
                 alignItems: 'center',
                 justifyContent: 'center',
                 margin: '0 auto 24px',
-                opacity: 0.9
+                opacity: 0.9,
+                fontSize: '42px'
               }}>
-                <Layers size={36} color="white" />
+                📊
               </div>
               <h2 style={{
                 fontSize: '24px',
@@ -945,20 +859,19 @@ export default function Dashboard({ onLogout }) {
                       : '0 2px 12px rgba(99, 102, 241, 0.3)'
                   }}
                   onMouseEnter={(e) => {
-                    e.target.style.transform = 'translateY(-2px)';
-                    e.target.style.boxShadow = darkMode 
+                    e.currentTarget.style.transform = 'translateY(-2px)';
+                    e.currentTarget.style.boxShadow = darkMode 
                       ? '0 6px 20px rgba(99, 102, 241, 0.5)' 
                       : '0 4px 16px rgba(99, 102, 241, 0.4)';
                   }}
                   onMouseLeave={(e) => {
-                    e.target.style.transform = 'translateY(0)';
-                    e.target.style.boxShadow = darkMode 
+                    e.currentTarget.style.transform = 'translateY(0)';
+                    e.currentTarget.style.boxShadow = darkMode 
                       ? '0 4px 16px rgba(99, 102, 241, 0.4)' 
                       : '0 2px 12px rgba(99, 102, 241, 0.3)';
                   }}
                 >
-                  <Plus size={18} color="white" />
-                  {currentDashboard ? 'Add Data Panel' : 'Create Dashboard'}
+                  ➕ {currentDashboard ? 'Add Data Panel' : 'Create Dashboard'}
                 </button>
                 {currentDashboard && (
                   <button
@@ -981,20 +894,19 @@ export default function Dashboard({ onLogout }) {
                         : '0 2px 12px rgba(16, 185, 129, 0.3)'
                     }}
                     onMouseEnter={(e) => {
-                      e.target.style.transform = 'translateY(-2px)';
-                      e.target.style.boxShadow = darkMode 
+                      e.currentTarget.style.transform = 'translateY(-2px)';
+                      e.currentTarget.style.boxShadow = darkMode 
                         ? '0 6px 20px rgba(16, 185, 129, 0.5)' 
                         : '0 4px 16px rgba(16, 185, 129, 0.4)';
                     }}
                     onMouseLeave={(e) => {
-                      e.target.style.transform = 'translateY(0)';
-                      e.target.style.boxShadow = darkMode 
+                      e.currentTarget.style.transform = 'translateY(0)';
+                      e.currentTarget.style.boxShadow = darkMode 
                         ? '0 4px 16px rgba(16, 185, 129, 0.4)' 
                         : '0 2px 12px rgba(16, 185, 129, 0.3)';
                     }}
                   >
-                    <Settings size={18} color="white" />
-                    Add SCADA Diagram
+                    ⚙️ Add SCADA Diagram
                   </button>
                 )}
               </div>
@@ -1118,14 +1030,14 @@ export default function Dashboard({ onLogout }) {
                         borderTop: `1px solid ${theme.border}`
                       }}
                       onMouseEnter={(e) => {
-                        e.target.style.opacity = '1';
-                        e.target.style.boxShadow = darkMode 
+                        e.currentTarget.style.opacity = '1';
+                        e.currentTarget.style.boxShadow = darkMode 
                           ? '0 4px 12px rgba(99, 102, 241, 0.7)' 
                           : '0 3px 10px rgba(99, 102, 241, 0.6)';
                       }}
                       onMouseLeave={(e) => {
-                        e.target.style.opacity = '0.8';
-                        e.target.style.boxShadow = darkMode 
+                        e.currentTarget.style.opacity = '0.8';
+                        e.currentTarget.style.boxShadow = darkMode 
                           ? '0 2px 8px rgba(99, 102, 241, 0.5)' 
                           : '0 2px 6px rgba(99, 102, 241, 0.4)';
                       }}
@@ -1168,14 +1080,14 @@ export default function Dashboard({ onLogout }) {
                         borderTop: `1px solid ${theme.border}`
                       }}
                       onMouseEnter={(e) => {
-                        e.target.style.opacity = '1';
-                        e.target.style.boxShadow = darkMode 
+                        e.currentTarget.style.opacity = '1';
+                        e.currentTarget.style.boxShadow = darkMode 
                           ? '0 4px 12px rgba(99, 102, 241, 0.7)' 
                           : '0 3px 10px rgba(99, 102, 241, 0.6)';
                       }}
                       onMouseLeave={(e) => {
-                        e.target.style.opacity = '0.8';
-                        e.target.style.boxShadow = darkMode 
+                        e.currentTarget.style.opacity = '0.8';
+                        e.currentTarget.style.boxShadow = darkMode 
                           ? '0 2px 8px rgba(99, 102, 241, 0.5)' 
                           : '0 2px 6px rgba(99, 102, 241, 0.4)';
                       }}
