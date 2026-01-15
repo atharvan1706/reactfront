@@ -201,11 +201,22 @@ function QuestDBPanel({ config, onEdit, onDelete, onDuplicate, onResize, style, 
       );
     }
 
-    // Increased margins to make room for overlays
+    // Responsive margins based on panel width
+    const panelWidth = config.width || 4;
+    const isSmall = panelWidth <= 2;
+    const isMedium = panelWidth > 2 && panelWidth <= 4;
+    
     const chartProps = {
       data,
-      margin: { top: 60, right: 20, left: 10, bottom: 35 }
+      margin: isSmall 
+        ? { top: 55, right: 15, left: 5, bottom: 30 }
+        : isMedium
+        ? { top: 60, right: 18, left: 8, bottom: 33 }
+        : { top: 65, right: 22, left: 12, bottom: 38 }
     };
+    
+    // Responsive font sizes
+    const fontSize = isSmall ? 9 : isMedium ? 10 : 11;
 
     const yFields = (config.yAxes && config.yAxes.length > 0) ? config.yAxes : [config.yAxis].filter(Boolean);
     const filteredYFields = yFields.filter(field => field && field !== 'value');
@@ -217,30 +228,32 @@ function QuestDBPanel({ config, onEdit, onDelete, onDuplicate, onResize, style, 
           <ResponsiveContainer width="100%" height="100%">
             <LineChart {...chartProps}>
               {config.showGrid && <CartesianGrid strokeDasharray="3 3" stroke={theme.chartGrid} />}
-              <XAxis dataKey="_time" tick={{ fill: theme.chartText, fontSize: 11 }} stroke={theme.chartAxis} />
+              <XAxis dataKey="_time" tick={{ fill: theme.chartText, fontSize }} stroke={theme.chartAxis} />
               <YAxis 
-                tick={{ fill: theme.chartText, fontSize: 11 }} 
+                tick={{ fill: theme.chartText, fontSize }} 
                 stroke={theme.chartAxis}
                 domain={yDomain}
                 scale={config.yAxisScale === 'log' ? 'log' : 'auto'}
+                width={isSmall ? 30 : isMedium ? 35 : 40}
               />
               <Tooltip 
                 contentStyle={{ 
                   background: theme.card, 
                   border: `1px solid ${theme.border}`, 
                   borderRadius: '6px',
-                  color: theme.text
+                  color: theme.text,
+                  fontSize: `${fontSize}px`
                 }} 
               />
-              {config.showLegend && <Legend wrapperStyle={{ color: theme.text }} />}
+              {config.showLegend && <Legend wrapperStyle={{ color: theme.text, fontSize: `${fontSize}px` }} />}
               {filteredYFields.map((yField, idx) => (
                 <Line 
                   key={yField}
                   type="monotone" 
                   dataKey={yField} 
                   stroke={getColor(idx)} 
-                  strokeWidth={config.lineWidth} 
-                  dot={config.showDots}
+                  strokeWidth={isSmall ? 1.5 : config.lineWidth} 
+                  dot={config.showDots && !isSmall}
                   name={yField}
                   animationDuration={300}
                   animationEasing="ease-in-out"
@@ -255,22 +268,24 @@ function QuestDBPanel({ config, onEdit, onDelete, onDuplicate, onResize, style, 
           <ResponsiveContainer width="100%" height="100%">
             <AreaChart {...chartProps}>
               {config.showGrid && <CartesianGrid strokeDasharray="3 3" stroke={theme.chartGrid} />}
-              <XAxis dataKey="_time" tick={{ fill: theme.chartText, fontSize: 11 }} stroke={theme.chartAxis} />
+              <XAxis dataKey="_time" tick={{ fill: theme.chartText, fontSize }} stroke={theme.chartAxis} />
               <YAxis 
-                tick={{ fill: theme.chartText, fontSize: 11 }} 
+                tick={{ fill: theme.chartText, fontSize }} 
                 stroke={theme.chartAxis}
                 domain={yDomain}
                 scale={config.yAxisScale === 'log' ? 'log' : 'auto'}
+                width={isSmall ? 30 : isMedium ? 35 : 40}
               />
               <Tooltip 
                 contentStyle={{ 
                   background: theme.card, 
                   border: `1px solid ${theme.border}`, 
                   borderRadius: '6px',
-                  color: theme.text
+                  color: theme.text,
+                  fontSize: `${fontSize}px`
                 }} 
               />
-              {config.showLegend && <Legend wrapperStyle={{ color: theme.text }} />}
+              {config.showLegend && <Legend wrapperStyle={{ color: theme.text, fontSize: `${fontSize}px` }} />}
               {filteredYFields.map((yField, idx) => (
                 <Area 
                   key={yField}
@@ -279,7 +294,7 @@ function QuestDBPanel({ config, onEdit, onDelete, onDuplicate, onResize, style, 
                   stroke={getColor(idx)} 
                   fill={getColor(idx)} 
                   fillOpacity={config.fillOpacity}
-                  strokeWidth={config.lineWidth}
+                  strokeWidth={isSmall ? 1.5 : config.lineWidth}
                   name={yField}
                   animationDuration={300}
                   animationEasing="ease-in-out"
@@ -294,21 +309,23 @@ function QuestDBPanel({ config, onEdit, onDelete, onDuplicate, onResize, style, 
           <ResponsiveContainer width="100%" height="100%">
             <BarChart {...chartProps}>
               {config.showGrid && <CartesianGrid strokeDasharray="3 3" stroke={theme.chartGrid} />}
-              <XAxis dataKey="_time" tick={{ fill: theme.chartText, fontSize: 11 }} stroke={theme.chartAxis} />
+              <XAxis dataKey="_time" tick={{ fill: theme.chartText, fontSize }} stroke={theme.chartAxis} />
               <YAxis 
-                tick={{ fill: theme.chartText, fontSize: 11 }} 
+                tick={{ fill: theme.chartText, fontSize }} 
                 stroke={theme.chartAxis}
                 domain={yDomain}
+                width={isSmall ? 30 : isMedium ? 35 : 40}
               />
               <Tooltip 
                 contentStyle={{ 
                   background: theme.card, 
                   border: `1px solid ${theme.border}`, 
                   borderRadius: '6px',
-                  color: theme.text
+                  color: theme.text,
+                  fontSize: `${fontSize}px`
                 }} 
               />
-              {config.showLegend && <Legend wrapperStyle={{ color: theme.text }} />}
+              {config.showLegend && <Legend wrapperStyle={{ color: theme.text, fontSize: `${fontSize}px` }} />}
               {filteredYFields.map((yField, idx) => (
                 <Bar 
                   key={yField}
@@ -325,6 +342,7 @@ function QuestDBPanel({ config, onEdit, onDelete, onDuplicate, onResize, style, 
 
       case 'pie':
         const pieDataKey = filteredYFields[0] || config.yAxis;
+        const pieRadius = isSmall ? 50 : isMedium ? 65 : 80;
         return (
           <ResponsiveContainer width="100%" height="100%">
             <PieChart>
@@ -334,16 +352,16 @@ function QuestDBPanel({ config, onEdit, onDelete, onDuplicate, onResize, style, 
                 nameKey="_time" 
                 cx="50%" 
                 cy="50%" 
-                outerRadius={80} 
-                label
+                outerRadius={pieRadius} 
+                label={!isSmall}
                 isAnimationActive={true}
               >
                 {data.slice(0, 10).map((entry, index) => (
                   <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                 ))}
               </Pie>
-              <Tooltip contentStyle={{ background: theme.card, border: `1px solid ${theme.border}`, borderRadius: '6px', color: theme.text }} />
-              {config.showLegend && <Legend wrapperStyle={{ color: theme.text }} />}
+              <Tooltip contentStyle={{ background: theme.card, border: `1px solid ${theme.border}`, borderRadius: '6px', color: theme.text, fontSize: `${fontSize}px` }} />
+              {config.showLegend && !isSmall && <Legend wrapperStyle={{ color: theme.text, fontSize: `${fontSize}px` }} />}
             </PieChart>
           </ResponsiveContainer>
         );
@@ -353,15 +371,16 @@ function QuestDBPanel({ config, onEdit, onDelete, onDuplicate, onResize, style, 
           <ResponsiveContainer width="100%" height="100%">
             <ScatterChart {...chartProps}>
               {config.showGrid && <CartesianGrid strokeDasharray="3 3" stroke={theme.chartGrid} />}
-              <XAxis dataKey="_time" tick={{ fill: theme.chartText, fontSize: 11 }} stroke={theme.chartAxis} />
+              <XAxis dataKey="_time" tick={{ fill: theme.chartText, fontSize }} stroke={theme.chartAxis} />
               <YAxis 
-                tick={{ fill: theme.chartText, fontSize: 11 }} 
+                tick={{ fill: theme.chartText, fontSize }} 
                 stroke={theme.chartAxis}
                 domain={yDomain}
                 scale={config.yAxisScale === 'log' ? 'log' : 'auto'}
+                width={isSmall ? 30 : isMedium ? 35 : 40}
               />
-              <Tooltip contentStyle={{ background: theme.card, border: `1px solid ${theme.border}`, borderRadius: '6px', color: theme.text }} />
-              {config.showLegend && <Legend wrapperStyle={{ color: theme.text }} />}
+              <Tooltip contentStyle={{ background: theme.card, border: `1px solid ${theme.border}`, borderRadius: '6px', color: theme.text, fontSize: `${fontSize}px` }} />
+              {config.showLegend && <Legend wrapperStyle={{ color: theme.text, fontSize: `${fontSize}px` }} />}
               {filteredYFields.map((yField, idx) => (
                 <Scatter 
                   key={yField}
@@ -376,12 +395,18 @@ function QuestDBPanel({ config, onEdit, onDelete, onDuplicate, onResize, style, 
         );
 
       case 'radar':
+        const radarMargin = isSmall 
+          ? { top: 45, right: 15, bottom: 35, left: 15 }
+          : isMedium
+          ? { top: 50, right: 18, bottom: 38, left: 18 }
+          : { top: 55, right: 22, bottom: 42, left: 22 };
+        
         return (
           <ResponsiveContainer width="100%" height="100%">
-            <RadarChart data={data.slice(0, 8)} margin={{ top: 50, right: 20, bottom: 40, left: 20 }}>
+            <RadarChart data={data.slice(0, 8)} margin={radarMargin}>
               <PolarGrid stroke={theme.chartGrid} />
-              <PolarAngleAxis dataKey="_time" tick={{ fill: theme.chartText, fontSize: 11 }} />
-              <PolarRadiusAxis tick={{ fill: theme.chartText, fontSize: 11 }} />
+              <PolarAngleAxis dataKey="_time" tick={{ fill: theme.chartText, fontSize }} />
+              <PolarRadiusAxis tick={{ fill: theme.chartText, fontSize }} />
               {filteredYFields.map((yField, idx) => (
                 <Radar 
                   key={yField}
@@ -393,7 +418,7 @@ function QuestDBPanel({ config, onEdit, onDelete, onDuplicate, onResize, style, 
                   isAnimationActive={true}
                 />
               ))}
-              {config.showLegend && <Legend wrapperStyle={{ color: theme.text }} />}
+              {config.showLegend && !isSmall && <Legend wrapperStyle={{ color: theme.text, fontSize: `${fontSize}px` }} />}
             </RadarChart>
           </ResponsiveContainer>
         );
@@ -405,6 +430,10 @@ function QuestDBPanel({ config, onEdit, onDelete, onDuplicate, onResize, style, 
         const previous = values[values.length - 2] || 0;
         const change = latest - previous;
         const avg = values.reduce((a, b) => a + b, 0) / values.length;
+        
+        const statFontSize = isSmall ? '28px' : isMedium ? '38px' : '48px';
+        const changeFontSize = isSmall ? '12px' : isMedium ? '14px' : '16px';
+        const metricFontSize = isSmall ? '10px' : isMedium ? '12px' : '14px';
 
         return (
           <div style={{
@@ -413,21 +442,30 @@ function QuestDBPanel({ config, onEdit, onDelete, onDuplicate, onResize, style, 
             alignItems: 'center',
             justifyContent: 'center',
             height: '100%',
-            paddingTop: '40px',
-            paddingBottom: '30px'
+            paddingTop: isSmall ? '35px' : '40px',
+            paddingBottom: isSmall ? '25px' : '30px',
+            paddingLeft: '8px',
+            paddingRight: '8px'
           }}>
-            <div style={{ fontSize: '48px', fontWeight: 'bold', color: getColor(0), marginBottom: '8px' }}>
+            <div style={{ fontSize: statFontSize, fontWeight: 'bold', color: getColor(0), marginBottom: '8px' }}>
               {latest.toFixed(2)}
             </div>
             <div style={{
-              fontSize: '16px',
+              fontSize: changeFontSize,
               color: change >= 0 ? '#10b981' : '#ef4444',
-              marginBottom: '16px',
+              marginBottom: isSmall ? '12px' : '16px',
               fontWeight: '600'
             }}>
               {change >= 0 ? '↑' : '↓'} {Math.abs(change).toFixed(2)} ({((change / previous) * 100).toFixed(1)}%)
             </div>
-            <div style={{ display: 'flex', gap: '24px', fontSize: '14px', color: theme.textMuted }}>
+            <div style={{ 
+              display: 'flex', 
+              gap: isSmall ? '12px' : '24px', 
+              fontSize: metricFontSize, 
+              color: theme.textMuted,
+              flexWrap: 'wrap',
+              justifyContent: 'center'
+            }}>
               <div>Min: <span style={{ color: theme.text, fontWeight: '600' }}>{Math.min(...values).toFixed(2)}</span></div>
               <div>Max: <span style={{ color: theme.text, fontWeight: '600' }}>{Math.max(...values).toFixed(2)}</span></div>
               <div>Avg: <span style={{ color: theme.text, fontWeight: '600' }}>{avg.toFixed(2)}</span></div>
@@ -437,19 +475,22 @@ function QuestDBPanel({ config, onEdit, onDelete, onDuplicate, onResize, style, 
 
       case 'table':
         const columns = Object.keys(data[0] || {}).filter(key => !key.startsWith('_'));
+        const tableFontSize = isSmall ? '11px' : isMedium ? '12px' : '13px';
+        const headerFontSize = isSmall ? '10px' : isMedium ? '11px' : '12px';
+        
         return (
-          <div style={{ height: '100%', overflow: 'auto', paddingTop: '40px', paddingBottom: '30px' }}>
-            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px' }}>
+          <div style={{ height: '100%', overflow: 'auto', paddingTop: isSmall ? '35px' : '40px', paddingBottom: isSmall ? '25px' : '30px' }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: tableFontSize }}>
               <thead>
                 <tr style={{ background: theme.hover, position: 'sticky', top: 0, zIndex: 1 }}>
                   {columns.map(col => (
                     <th key={col} style={{ 
-                      padding: '10px', 
+                      padding: isSmall ? '6px' : '10px', 
                       textAlign: 'left', 
                       borderBottom: `2px solid ${theme.border}`, 
                       color: theme.textSecondary, 
                       fontWeight: '600',
-                      fontSize: '12px'
+                      fontSize: headerFontSize
                     }}>
                       {col}
                     </th>
@@ -460,7 +501,7 @@ function QuestDBPanel({ config, onEdit, onDelete, onDuplicate, onResize, style, 
                 {data.map((row, i) => (
                   <tr key={i} style={{ borderBottom: `1px solid ${theme.border}` }}>
                     {columns.map(col => (
-                      <td key={col} style={{ padding: '10px', color: theme.text }}>
+                      <td key={col} style={{ padding: isSmall ? '6px' : '10px', color: theme.text }}>
                         {typeof row[col] === 'number' ? row[col].toFixed(2) : row[col]}
                       </td>
                     ))}
