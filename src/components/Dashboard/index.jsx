@@ -47,6 +47,8 @@ export default function Dashboard({ onLogout }) {
   const [editingScadaDiagram, setEditingScadaDiagram] = useState(null);
   const [availableTables, setAvailableTables] = useState([]);
   const [draggingPanel, setDraggingPanel] = useState(null);
+  const [resizingPanel, setResizingPanel] = useState(null);
+  const [resizeStart, setResizeStart] = useState({ x: 0, y: 0, width: 0, height: 0 });
   const [loading, setLoading] = useState(true);
   const [syncError, setSyncError] = useState(null);
   const [darkMode, setDarkMode] = useState(() => {
@@ -343,6 +345,62 @@ export default function Dashboard({ onLogout }) {
     setDraggingPanel(null);
   };
 
+  const handleResizeStart = (e, panel, corner) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setResizingPanel({ id: panel.id, corner });
+    setResizeStart({
+      x: e.clientX,
+      y: e.clientY,
+      width: panel.width,
+      height: panel.height
+    });
+  };
+
+  const handleResizeMove = (e) => {
+    if (!resizingPanel || !currentDashboard) return;
+
+    const deltaX = e.clientX - resizeStart.x;
+    const deltaY = e.clientY - resizeStart.y;
+    
+    // Calculate new dimensions based on grid (approximate)
+    const gridWidth = window.innerWidth / GRID_COLS;
+    const newWidthCols = Math.max(2, Math.round(resizeStart.width + deltaX / gridWidth));
+    const newHeightRows = Math.max(1, Math.round(resizeStart.height + deltaY / ROW_HEIGHT));
+
+    const updatedPanels = currentDashboard.panels.map(p => {
+      if (p.id === resizingPanel.id) {
+        return { ...p, width: newWidthCols, height: newHeightRows };
+      }
+      return p;
+    });
+
+    const updated = {
+      ...currentDashboard,
+      panels: updatedPanels
+    };
+    setCurrentDashboard(updated);
+  };
+
+  const handleResizeEnd = () => {
+    if (resizingPanel && currentDashboard) {
+      updateDashboard(currentDashboard);
+    }
+    setResizingPanel(null);
+  };
+
+  // Add global mouse handlers for resizing
+  React.useEffect(() => {
+    if (resizingPanel) {
+      window.addEventListener('mousemove', handleResizeMove);
+      window.addEventListener('mouseup', handleResizeEnd);
+      return () => {
+        window.removeEventListener('mousemove', handleResizeMove);
+        window.removeEventListener('mouseup', handleResizeEnd);
+      };
+    }
+  }, [resizingPanel, resizeStart, currentDashboard]);
+
   const updateDashboard = async (updatedDashboard) => {
     try {
       const saved = await dashboardService.updateDashboard(updatedDashboard.id, {
@@ -525,14 +583,18 @@ export default function Dashboard({ onLogout }) {
           flex: 1,
           overflowX: 'auto',
           overflowY: 'hidden',
-          alignItems: 'center'
+          alignItems: 'center',
+          scrollbarWidth: 'none',
+          msOverflowStyle: 'none',
+          WebkitOverflowScrolling: 'touch',
+          maskImage: 'linear-gradient(to right, black 95%, transparent 100%)'
         }}>
           {dashboards.map((dashboard) => (
             <button
               key={dashboard.id}
               onClick={() => handleSelectDashboard(dashboard)}
               style={{
-                padding: '6px 14px',
+                padding: '6px 12px',
                 background: currentDashboard?.id === dashboard.id 
                   ? theme.accent 
                   : 'transparent',
@@ -541,14 +603,18 @@ export default function Dashboard({ onLogout }) {
                   : theme.textSecondary,
                 border: 'none',
                 borderRadius: '6px',
-                fontSize: '13px',
+                fontSize: '12px',
                 fontWeight: '600',
                 cursor: 'pointer',
                 whiteSpace: 'nowrap',
                 transition: 'all 0.2s ease',
                 display: 'flex',
                 alignItems: 'center',
-                gap: '6px'
+                gap: '5px',
+                flexShrink: 0,
+                maxWidth: '180px',
+                overflow: 'hidden',
+                textOverflow: 'ellipsis'
               }}
               onMouseEnter={(e) => {
                 if (currentDashboard?.id !== dashboard.id) {
@@ -560,18 +626,26 @@ export default function Dashboard({ onLogout }) {
                   e.target.style.background = 'transparent';
                 }
               }}
+              title={dashboard.name}
             >
-              <Grid size={14} />
-              {dashboard.name}
+              <Grid size={12} style={{ flexShrink: 0 }} />
+              <span style={{
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+                whiteSpace: 'nowrap'
+              }}>
+                {dashboard.name}
+              </span>
               {dashboard.panels?.length > 0 && (
                 <span style={{
-                  fontSize: '10px',
+                  fontSize: '9px',
                   background: currentDashboard?.id === dashboard.id 
                     ? 'rgba(255,255,255,0.2)' 
                     : theme.border,
-                  padding: '2px 6px',
+                  padding: '2px 5px',
                   borderRadius: '10px',
-                  fontWeight: '700'
+                  fontWeight: '700',
+                  flexShrink: 0
                 }}>
                   {dashboard.panels.length}
                 </span>
@@ -587,14 +661,15 @@ export default function Dashboard({ onLogout }) {
               color: theme.textMuted,
               border: `1px dashed ${theme.border}`,
               borderRadius: '6px',
-              fontSize: '13px',
+              fontSize: '12px',
               fontWeight: '600',
               cursor: 'pointer',
               whiteSpace: 'nowrap',
               transition: 'all 0.2s ease',
               display: 'flex',
               alignItems: 'center',
-              gap: '6px'
+              gap: '5px',
+              flexShrink: 0
             }}
             onMouseEnter={(e) => {
               e.target.style.borderColor = theme.accent;
@@ -605,13 +680,13 @@ export default function Dashboard({ onLogout }) {
               e.target.style.color = theme.textMuted;
             }}
           >
-            <Plus size={14} />
+            <Plus size={12} />
             New
           </button>
         </div>
 
-        {/* Action Buttons */}
-        <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
+        {/* Action Buttons - Now always visible */}
+        <div style={{ display: 'flex', gap: '6px', alignItems: 'center', flexShrink: 0 }}>
           <button
             onClick={handleAddPanel}
             disabled={!currentDashboard}
@@ -892,9 +967,10 @@ export default function Dashboard({ onLogout }) {
                 key={panel.id} 
                 style={{
                   ...calculatePanelStyle(panel),
-                  cursor: 'move',
+                  cursor: draggingPanel?.id === panel.id ? 'grabbing' : 'grab',
                   opacity: draggingPanel?.id === panel.id ? 0.5 : 1,
-                  transition: 'opacity 0.2s ease'
+                  transition: 'opacity 0.2s ease',
+                  position: 'relative'
                 }}
                 draggable
                 onDragStart={(e) => handleDragStart(e, panel)}
@@ -972,16 +1048,56 @@ export default function Dashboard({ onLogout }) {
                       </div>
                     </div>
                     <ScadaPanel config={panel} darkMode={darkMode} />
+                    
+                    {/* Resize Handle for SCADA */}
+                    <div
+                      onMouseDown={(e) => handleResizeStart(e, panel, 'se')}
+                      style={{
+                        position: 'absolute',
+                        bottom: '2px',
+                        right: '2px',
+                        width: '12px',
+                        height: '12px',
+                        cursor: 'nwse-resize',
+                        background: theme.accent,
+                        borderRadius: '2px',
+                        opacity: 0.6,
+                        zIndex: 10
+                      }}
+                      onMouseEnter={(e) => e.target.style.opacity = '1'}
+                      onMouseLeave={(e) => e.target.style.opacity = '0.6'}
+                    />
                   </div>
                 ) : (
-                  <QuestDBPanel
-                    config={panel}
-                    onEdit={handleEdit}
-                    onDelete={handleDelete}
-                    onDuplicate={handleDuplicate}
-                    onResize={handleResize}
-                    darkMode={darkMode}
-                  />
+                  <div style={{ position: 'relative', height: '100%' }}>
+                    <QuestDBPanel
+                      config={panel}
+                      onEdit={handleEdit}
+                      onDelete={handleDelete}
+                      onDuplicate={handleDuplicate}
+                      onResize={handleResize}
+                      darkMode={darkMode}
+                    />
+                    
+                    {/* Resize Handle for QuestDB Panel */}
+                    <div
+                      onMouseDown={(e) => handleResizeStart(e, panel, 'se')}
+                      style={{
+                        position: 'absolute',
+                        bottom: '2px',
+                        right: '2px',
+                        width: '12px',
+                        height: '12px',
+                        cursor: 'nwse-resize',
+                        background: theme.accent,
+                        borderRadius: '2px',
+                        opacity: 0.6,
+                        zIndex: 10
+                      }}
+                      onMouseEnter={(e) => e.target.style.opacity = '1'}
+                      onMouseLeave={(e) => e.target.style.opacity = '0.6'}
+                    />
+                  </div>
                 )}
               </div>
             ))}
@@ -1056,6 +1172,11 @@ export default function Dashboard({ onLogout }) {
         
         *::-webkit-scrollbar-thumb:hover {
           background: ${theme.borderLight};
+        }
+
+        /* Hide scrollbar for tabs but keep functionality */
+        div[style*="overflowX: auto"]::-webkit-scrollbar {
+          display: none;
         }
       `}</style>
     </div>
