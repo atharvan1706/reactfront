@@ -645,25 +645,28 @@ export default function Dashboard({ onLogout }) {
         <button
           onClick={() => setShowDashboardModal(true)}
           style={{
-            width: '32px',
-            height: '32px',
+            padding: '10px',
             background: 'transparent',
-            border: `1px solid ${theme.border}`,
-            borderRadius: '6px',
+            border: `2px solid ${theme.border}`,
+            borderRadius: '8px',
+            color: theme.text,
             cursor: 'pointer',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            flexShrink: 0
+            flexShrink: 0,
+            transition: 'all 0.3s ease'
           }}
           onMouseEnter={(e) => {
-            e.currentTarget.style.background = theme.hover;
+            e.currentTarget.style.borderColor = theme.accent;
+            e.currentTarget.style.transform = 'translateY(-2px)';
           }}
           onMouseLeave={(e) => {
-            e.currentTarget.style.background = 'transparent';
+            e.currentTarget.style.borderColor = theme.border;
+            e.currentTarget.style.transform = 'translateY(0)';
           }}
         >
-          <Plus size={16} stroke={theme.text} strokeWidth={2} />
+          <Plus size={16} />
         </button>
 
         {/* Divider */}
@@ -690,7 +693,7 @@ export default function Dashboard({ onLogout }) {
               flexShrink: 0
             }}
           >
-            <BarChart3 size={14} color="white" />
+            <BarChart3 size={14} />
             Panel
           </button>
 
@@ -713,7 +716,7 @@ export default function Dashboard({ onLogout }) {
               flexShrink: 0
             }}
           >
-            <Settings size={14} color="white" />
+            <Settings size={14} />
             SCADA
           </button>
 
@@ -722,51 +725,54 @@ export default function Dashboard({ onLogout }) {
           <button
             onClick={toggleDarkMode}
             style={{
-              width: '36px',
-              height: '36px',
-              background: 'transparent',
-              border: 'none',
+              padding: '10px',
+              background: darkMode ? theme.cardHover : '#f9fafb',
+              border: `2px solid ${theme.border}`,
+              borderRadius: '8px',
+              color: theme.text,
               cursor: 'pointer',
-              borderRadius: '6px',
               display: 'flex',
               alignItems: 'center',
-              justifyContent: 'center',
+              transition: 'all 0.3s ease',
+              boxShadow: darkMode ? '0 2px 8px rgba(0,0,0,0.2)' : 'none',
               flexShrink: 0
             }}
             onMouseEnter={(e) => {
-              e.currentTarget.style.background = theme.hover;
+              e.currentTarget.style.borderColor = theme.accent;
+              e.currentTarget.style.transform = 'translateY(-2px)';
             }}
             onMouseLeave={(e) => {
-              e.currentTarget.style.background = 'transparent';
+              e.currentTarget.style.borderColor = theme.border;
+              e.currentTarget.style.transform = 'translateY(0)';
             }}
             title={darkMode ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
           >
-            {darkMode ? <Sun size={18} stroke={theme.text} strokeWidth={2} /> : <Moon size={18} stroke={theme.text} strokeWidth={2} />}
+            {darkMode ? <Sun size={18} /> : <Moon size={18} />}
           </button>
 
           <button
             onClick={handleLogout}
             style={{
-              width: '36px',
-              height: '36px',
+              padding: '8px',
               background: 'transparent',
               border: 'none',
+              color: theme.textMuted,
               cursor: 'pointer',
               borderRadius: '6px',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
+              transition: 'all 0.3s ease',
               flexShrink: 0
             }}
             onMouseEnter={(e) => {
-              e.currentTarget.style.background = theme.hover;
+              e.currentTarget.style.background = darkMode ? theme.cardHover : '#e5e7eb';
+              e.currentTarget.style.color = theme.danger;
             }}
             onMouseLeave={(e) => {
               e.currentTarget.style.background = 'transparent';
+              e.currentTarget.style.color = theme.textMuted;
             }}
             title="Logout"
           >
-            <LogOut size={18} stroke={theme.danger} strokeWidth={2} />
+            <LogOut size={18} />
           </button>
         </div>
       </div>
