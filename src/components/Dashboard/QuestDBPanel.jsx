@@ -695,52 +695,36 @@ function QuestDBPanel({ config, onEdit, onDelete, onDuplicate, onResize, style, 
         </div>
       </div>
 
-      <div style={{ flex: 1, minHeight: 0, padding: '10px' }}>
+      <div style={{ flex: 1, minHeight: 0, padding: '8px' }}>
         {renderChart()}
       </div>
 
       <div style={{
-        padding: '6px 10px',
+        padding: '4px 8px',
         borderTop: `1px solid ${theme.border}`,
         background: theme.hover,
-        transition: 'all 0.2s ease'
+        transition: 'all 0.2s ease',
+        fontSize: '9px',
+        color: theme.textMuted
       }}>
         <div style={{
           display: 'flex',
           justifyContent: 'space-between',
-          fontSize: '10px',
-          color: theme.textMuted,
-          marginBottom: '3px',
-          transition: 'color 0.2s ease'
+          alignItems: 'center'
         }}>
-          <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
-            <div style={{ display: 'flex', gap: '4px', alignItems: 'center' }}>
-              <Play size={10} />
+          <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+            <div style={{ display: 'flex', gap: '3px', alignItems: 'center' }}>
+              <Play size={8} />
               <span>{config.refreshInterval > 0 ? `${config.refreshInterval / 1000}s` : 'Manual'}</span>
             </div>
             <div>•</div>
             <div style={{ textTransform: 'capitalize' }}>{config.vizType}</div>
+            <div>•</div>
+            <div>{data.length} pts</div>
           </div>
-          <div>{data.length} pts • {config.width}×{config.height}</div>
-        </div>
-        
-        <div style={{
-          display: 'flex',
-          gap: '10px',
-          fontSize: '10px',
-          color: theme.textMuted,
-          paddingTop: '4px',
-          borderTop: `1px solid ${theme.border}`,
-          transition: 'all 0.2s ease'
-        }}>
-          <div style={{ display: 'flex', gap: '4px', alignItems: 'center' }} title="Query executed at">
-            <Clock size={9} />
-            <span>Query: {formatTimestamp(queryTime)}</span>
-          </div>
-          <div>•</div>
-          <div style={{ display: 'flex', gap: '4px', alignItems: 'center' }} title="Latest record timestamp">
-            <Database size={9} />
-            <span>Latest: {formatTimestamp(latestRecordTime)}</span>
+          <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
+            <Clock size={8} />
+            <span>{formatTimestamp(queryTime)}</span>
           </div>
         </div>
       </div>
