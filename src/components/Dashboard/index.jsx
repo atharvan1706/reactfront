@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Plus, LogOut, Database, Zap, Folder, Save, Download, Upload, Moon, Sun, Settings, X,
-  Grid, BarChart3, Activity, TrendingUp, Layers, Maximize2
+  Grid, BarChart3, Activity, TrendingUp, Layers, Maximize2, MoreHorizontal
 } from 'lucide-react';
 import authService from '../../services/auth';
 import questdbService from '../../services/questdb';
@@ -43,6 +43,7 @@ export default function Dashboard({ onLogout }) {
   const [showConfigModal, setShowConfigModal] = useState(false);
   const [showDashboardModal, setShowDashboardModal] = useState(false);
   const [showScadaModal, setShowScadaModal] = useState(false);
+  const [showOverflowMenu, setShowOverflowMenu] = useState(false);
   const [editingPanel, setEditingPanel] = useState(null);
   const [editingScadaDiagram, setEditingScadaDiagram] = useState(null);
   const [availableTables, setAvailableTables] = useState([]);
@@ -53,8 +54,10 @@ export default function Dashboard({ onLogout }) {
   const [syncError, setSyncError] = useState(null);
   const [darkMode, setDarkMode] = useState(() => {
     const saved = localStorage.getItem('miralys_dark_mode');
-    return saved ? JSON.parse(saved) : true; // Default to dark mode for premium feel
+    return saved ? JSON.parse(saved) : true;
   });
+
+  const MAX_VISIBLE_TABS = 6;
 
   useEffect(() => {
     console.log('👤 Current user object:', user);
@@ -363,7 +366,6 @@ export default function Dashboard({ onLogout }) {
     const deltaX = e.clientX - resizeStart.x;
     const deltaY = e.clientY - resizeStart.y;
     
-    // Calculate new dimensions based on grid (approximate)
     const gridWidth = window.innerWidth / GRID_COLS;
     const newWidthCols = Math.max(2, Math.round(resizeStart.width + deltaX / gridWidth));
     const newHeightRows = Math.max(1, Math.round(resizeStart.height + deltaY / ROW_HEIGHT));
@@ -389,7 +391,6 @@ export default function Dashboard({ onLogout }) {
     setResizingPanel(null);
   };
 
-  // Add global mouse handlers for resizing
   React.useEffect(() => {
     if (resizingPanel) {
       window.addEventListener('mousemove', handleResizeMove);
@@ -420,6 +421,7 @@ export default function Dashboard({ onLogout }) {
   const handleSelectDashboard = (dashboard) => {
     setCurrentDashboard(dashboard);
     setShowDashboardModal(false);
+    setShowOverflowMenu(false);
   };
 
   const handleCreateDashboard = async (name) => {
@@ -499,6 +501,10 @@ export default function Dashboard({ onLogout }) {
     };
   };
 
+  // Split dashboards into visible and overflow
+  const visibleTabs = dashboards.slice(0, MAX_VISIBLE_TABS);
+  const overflowTabs = dashboards.slice(MAX_VISIBLE_TABS);
+
   if (loading) {
     return (
       <div style={{
@@ -539,221 +545,317 @@ export default function Dashboard({ onLogout }) {
     }}>
      
       {/* Premium Header */}
-<div style={{
-  background: theme.card,
-  borderBottom: `1px solid ${theme.border}`,
-  display: 'flex',
-  alignItems: 'center',
-  height: '56px',
-  padding: '0 16px',
-  gap: '12px',
-  flexShrink: 0
-}}>
-  {/* Logo */}
-  <div style={{
-    display: 'flex',
-    alignItems: 'center',
-    gap: '8px',
-    flexShrink: 0
-  }}>
-    <div style={{
-      width: '32px',
-      height: '32px',
-      background: `linear-gradient(135deg, ${theme.accent} 0%, ${theme.accentHover} 100%)`,
-      borderRadius: '8px',
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center'
-    }}>
-      <Activity size={18} color="white" />
-    </div>
-    <span style={{
-      fontSize: '16px',
-      fontWeight: '700',
-      letterSpacing: '-0.02em',
-      color: theme.text
-    }}>
-      Miralys
-    </span>
-  </div>
-
-  {/* Tabs - Scrollable */}
-  <div 
-    style={{
-      display: 'flex',
-      gap: '4px',
-      overflowX: 'auto',
-      scrollbarWidth: 'none',
-      flex: 1,
-      minWidth: 0,
-      alignItems: 'flex-end'
-    }}
-    onWheel={(e) => {
-      e.currentTarget.scrollLeft += e.deltaY;
-    }}
-  >
-    {dashboards.map((dashboard) => (
-      <button
-        key={dashboard.id}
-        onClick={() => handleSelectDashboard(dashboard)}
-        style={{
-          padding: '10px 16px',
-          background: currentDashboard?.id === dashboard.id ? theme.card : 'transparent',
-          color: currentDashboard?.id === dashboard.id ? theme.text : theme.textMuted,
-          border: 'none',
-          borderRadius: '6px 6px 0 0',
-          borderBottom: currentDashboard?.id === dashboard.id ? `3px solid ${theme.accent}` : '3px solid transparent',
-          fontSize: '13px',
-          fontWeight: '600',
-          cursor: 'pointer',
-          whiteSpace: 'nowrap',
+      <div style={{
+        background: theme.card,
+        borderBottom: `1px solid ${theme.border}`,
+        display: 'flex',
+        alignItems: 'center',
+        height: '56px',
+        padding: '0 16px',
+        gap: '12px',
+        flexShrink: 0
+      }}>
+        {/* Logo */}
+        <div style={{
           display: 'flex',
           alignItems: 'center',
-          gap: '6px',
-          flexShrink: 0,
-          maxWidth: '180px'
-        }}
-        onMouseEnter={(e) => {
-          if (currentDashboard?.id !== dashboard.id) {
-            e.target.style.background = theme.hover;
-          }
-        }}
-        onMouseLeave={(e) => {
-          if (currentDashboard?.id !== dashboard.id) {
-            e.target.style.background = 'transparent';
-          }
-        }}
-      >
-        <Grid size={14} />
-        <span style={{ overflow: 'hidden', textOverflow: 'ellipsis' }}>
-          {dashboard.name}
-        </span>
-        {dashboard.panels?.length > 0 && (
-          <span style={{
-            fontSize: '10px',
-            background: currentDashboard?.id === dashboard.id ? theme.accent : theme.border,
-            color: currentDashboard?.id === dashboard.id ? 'white' : theme.textMuted,
-            padding: '2px 6px',
-            borderRadius: '10px',
-            fontWeight: '700'
+          gap: '8px',
+          flexShrink: 0
+        }}>
+          <div style={{
+            width: '32px',
+            height: '32px',
+            background: `linear-gradient(135deg, ${theme.accent} 0%, ${theme.accentHover} 100%)`,
+            borderRadius: '8px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center'
           }}>
-            {dashboard.panels.length}
+            <Activity size={18} color="white" />
+          </div>
+          <span style={{
+            fontSize: '16px',
+            fontWeight: '700',
+            letterSpacing: '-0.02em',
+            color: theme.text
+          }}>
+            Miralys
           </span>
-        )}
-      </button>
-    ))}
-  </div>
-  
-  {/* New Tab + Button */}
-  <button
-    onClick={() => setShowDashboardModal(true)}
-    style={{
-      width: '32px',
-      height: '32px',
-      background: 'transparent',
-      border: `1px solid ${theme.border}`,
-      borderRadius: '6px',
-      cursor: 'pointer',
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      flexShrink: 0
-    }}
-  >
-    <Plus size={16} />
-  </button>
+        </div>
 
-  {/* Divider */}
-  <div style={{ width: '1px', height: '28px', background: theme.border, flexShrink: 0 }} />
+        {/* Chrome-style Tabs */}
+        <div style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: '4px',
+          flex: 1,
+          minWidth: 0
+        }}>
+          {visibleTabs.map((dashboard) => (
+            <button
+              key={dashboard.id}
+              onClick={() => handleSelectDashboard(dashboard)}
+              style={{
+                padding: '8px 14px',
+                background: currentDashboard?.id === dashboard.id ? theme.card : 'transparent',
+                color: currentDashboard?.id === dashboard.id ? theme.text : theme.textMuted,
+                border: 'none',
+                borderBottom: currentDashboard?.id === dashboard.id
+                  ? `2px solid ${theme.accent}`
+                  : '2px solid transparent',
+                fontWeight: 600,
+                cursor: 'pointer',
+                whiteSpace: 'nowrap',
+                borderRadius: '6px 6px 0 0',
+                fontSize: '13px',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px'
+              }}
+              onMouseEnter={(e) => {
+                if (currentDashboard?.id !== dashboard.id) {
+                  e.target.style.background = theme.hover;
+                }
+              }}
+              onMouseLeave={(e) => {
+                if (currentDashboard?.id !== dashboard.id) {
+                  e.target.style.background = 'transparent';
+                }
+              }}
+            >
+              <Grid size={14} color={currentDashboard?.id === dashboard.id ? theme.text : theme.textMuted} />
+              <span style={{ overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                {dashboard.name}
+              </span>
+              {dashboard.panels?.length > 0 && (
+                <span style={{
+                  fontSize: '10px',
+                  background: currentDashboard?.id === dashboard.id ? theme.accent : theme.border,
+                  color: currentDashboard?.id === dashboard.id ? 'white' : theme.textMuted,
+                  padding: '2px 6px',
+                  borderRadius: '10px',
+                  fontWeight: '700'
+                }}>
+                  {dashboard.panels.length}
+                </span>
+              )}
+            </button>
+          ))}
 
-  {/* ALL BUTTONS - ALWAYS VISIBLE */}
-  <div style={{ display: 'flex', gap: '6px', flexShrink: 0 }}>
-    <button
-      onClick={handleAddPanel}
-      disabled={!currentDashboard}
-      style={{
-        padding: '8px 14px',
-        background: currentDashboard ? theme.accent : theme.border,
-        color: 'white',
-        border: 'none',
-        borderRadius: '6px',
-        fontSize: '13px',
-        fontWeight: '600',
-        cursor: currentDashboard ? 'pointer' : 'not-allowed',
-        display: 'flex',
-        alignItems: 'center',
-        gap: '6px',
-        opacity: currentDashboard ? 1 : 0.5,
-        flexShrink: 0
-      }}
-    >
-      <BarChart3 size={14} />
-      Panel
-    </button>
+          {/* Overflow Menu */}
+          {overflowTabs.length > 0 && (
+            <div style={{ position: 'relative' }}>
+              <button
+                onClick={() => setShowOverflowMenu(!showOverflowMenu)}
+                style={{
+                  padding: '8px',
+                  background: 'transparent',
+                  border: `1px solid ${theme.border}`,
+                  borderRadius: '6px',
+                  cursor: 'pointer',
+                  color: theme.text,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center'
+                }}
+                onMouseEnter={(e) => {
+                  e.target.style.background = theme.hover;
+                }}
+                onMouseLeave={(e) => {
+                  e.target.style.background = 'transparent';
+                }}
+              >
+                <MoreHorizontal size={16} color={theme.text} />
+              </button>
 
-    <button
-      onClick={handleAddScada}
-      disabled={!currentDashboard}
-      style={{
-        padding: '8px 14px',
-        background: currentDashboard ? theme.success : theme.border,
-        color: 'white',
-        border: 'none',
-        borderRadius: '6px',
-        fontSize: '13px',
-        fontWeight: '600',
-        cursor: currentDashboard ? 'pointer' : 'not-allowed',
-        display: 'flex',
-        alignItems: 'center',
-        gap: '6px',
-        opacity: currentDashboard ? 1 : 0.5,
-        flexShrink: 0
-      }}
-    >
-      <Settings size={14} />
-      SCADA
-    </button>
+              {showOverflowMenu && (
+                <div style={{
+                  position: 'absolute',
+                  top: '100%',
+                  right: 0,
+                  marginTop: '4px',
+                  background: theme.card,
+                  border: `1px solid ${theme.border}`,
+                  borderRadius: '8px',
+                  boxShadow: darkMode 
+                    ? '0 10px 30px rgba(0,0,0,0.5)' 
+                    : '0 4px 20px rgba(0,0,0,0.15)',
+                  minWidth: '200px',
+                  zIndex: 100,
+                  overflow: 'hidden'
+                }}>
+                  {overflowTabs.map(d => (
+                    <div
+                      key={d.id}
+                      onClick={() => handleSelectDashboard(d)}
+                      style={{
+                        padding: '10px 14px',
+                        cursor: 'pointer',
+                        color: theme.text,
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '8px',
+                        transition: 'background 0.15s ease'
+                      }}
+                      onMouseEnter={(e) => {
+                        e.target.style.background = theme.hover;
+                      }}
+                      onMouseLeave={(e) => {
+                        e.target.style.background = 'transparent';
+                      }}
+                    >
+                      <Grid size={14} color={theme.textMuted} />
+                      <span style={{ flex: 1 }}>{d.name}</span>
+                      {d.panels?.length > 0 && (
+                        <span style={{
+                          fontSize: '10px',
+                          background: theme.border,
+                          color: theme.textMuted,
+                          padding: '2px 6px',
+                          borderRadius: '10px',
+                          fontWeight: '700'
+                        }}>
+                          {d.panels.length}
+                        </span>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+        
+        {/* New Tab + Button */}
+        <button
+          onClick={() => setShowDashboardModal(true)}
+          style={{
+            width: '32px',
+            height: '32px',
+            background: 'transparent',
+            border: `1px solid ${theme.border}`,
+            borderRadius: '6px',
+            cursor: 'pointer',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            flexShrink: 0,
+            color: theme.text
+          }}
+          onMouseEnter={(e) => {
+            e.target.style.background = theme.hover;
+          }}
+          onMouseLeave={(e) => {
+            e.target.style.background = 'transparent';
+          }}
+        >
+          <Plus size={16} color={theme.text} />
+        </button>
 
-    <div style={{ width: '1px', height: '24px', background: theme.border, flexShrink: 0 }} />
+        {/* Divider */}
+        <div style={{ width: '1px', height: '28px', background: theme.border, flexShrink: 0 }} />
 
-    <button
-      onClick={toggleDarkMode}
-      style={{
-        width: '36px',
-        height: '36px',
-        background: 'transparent',
-        border: 'none',
-        cursor: 'pointer',
-        borderRadius: '6px',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        flexShrink: 0
-      }}
-    >
-      {darkMode ? <Sun size={18} /> : <Moon size={18} />}
-    </button>
+        {/* Action Buttons */}
+        <div style={{ display: 'flex', gap: '6px', flexShrink: 0 }}>
+          <button
+            onClick={handleAddPanel}
+            disabled={!currentDashboard}
+            style={{
+              padding: '8px 14px',
+              background: currentDashboard ? theme.accent : theme.border,
+              color: 'white',
+              border: 'none',
+              borderRadius: '6px',
+              fontSize: '13px',
+              fontWeight: '600',
+              cursor: currentDashboard ? 'pointer' : 'not-allowed',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px',
+              opacity: currentDashboard ? 1 : 0.5,
+              flexShrink: 0
+            }}
+          >
+            <BarChart3 size={14} color="white" />
+            Panel
+          </button>
 
-    <button
-      onClick={handleLogout}
-      style={{
-        width: '36px',
-        height: '36px',
-        background: 'transparent',
-        border: 'none',
-        color: theme.danger,
-        cursor: 'pointer',
-        borderRadius: '6px',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        flexShrink: 0
-      }}
-    >
-      <LogOut size={18} />
-    </button>
-  </div>
-</div>
+          <button
+            onClick={handleAddScada}
+            disabled={!currentDashboard}
+            style={{
+              padding: '8px 14px',
+              background: currentDashboard ? theme.success : theme.border,
+              color: 'white',
+              border: 'none',
+              borderRadius: '6px',
+              fontSize: '13px',
+              fontWeight: '600',
+              cursor: currentDashboard ? 'pointer' : 'not-allowed',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px',
+              opacity: currentDashboard ? 1 : 0.5,
+              flexShrink: 0
+            }}
+          >
+            <Settings size={14} color="white" />
+            SCADA
+          </button>
+
+          <div style={{ width: '1px', height: '24px', background: theme.border, flexShrink: 0 }} />
+
+          <button
+            onClick={toggleDarkMode}
+            style={{
+              width: '36px',
+              height: '36px',
+              background: 'transparent',
+              border: 'none',
+              cursor: 'pointer',
+              borderRadius: '6px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              flexShrink: 0,
+              color: theme.text
+            }}
+            onMouseEnter={(e) => {
+              e.target.style.background = theme.hover;
+            }}
+            onMouseLeave={(e) => {
+              e.target.style.background = 'transparent';
+            }}
+          >
+            {darkMode ? <Sun size={18} color={theme.text} /> : <Moon size={18} color={theme.text} />}
+          </button>
+
+          <button
+            onClick={handleLogout}
+            style={{
+              width: '36px',
+              height: '36px',
+              background: 'transparent',
+              border: 'none',
+              cursor: 'pointer',
+              borderRadius: '6px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              flexShrink: 0,
+              color: theme.danger
+            }}
+            onMouseEnter={(e) => {
+              e.target.style.background = theme.hover;
+            }}
+            onMouseLeave={(e) => {
+              e.target.style.background = 'transparent';
+            }}
+          >
+            <LogOut size={18} color={theme.danger} />
+          </button>
+        </div>
+      </div>
 
       {/* Sync Error Banner */}
       {syncError && (
@@ -769,7 +871,7 @@ export default function Dashboard({ onLogout }) {
           gap: '8px',
           flexShrink: 0
         }}>
-          <Database size={16} />
+          <Database size={16} color={theme.warning} />
           {syncError}
         </div>
       )}
@@ -855,7 +957,7 @@ export default function Dashboard({ onLogout }) {
                       : '0 2px 12px rgba(99, 102, 241, 0.3)';
                   }}
                 >
-                  <Plus size={18} />
+                  <Plus size={18} color="white" />
                   {currentDashboard ? 'Add Data Panel' : 'Create Dashboard'}
                 </button>
                 {currentDashboard && (
@@ -891,7 +993,7 @@ export default function Dashboard({ onLogout }) {
                         : '0 2px 12px rgba(16, 185, 129, 0.3)';
                     }}
                   >
-                    <Settings size={18} />
+                    <Settings size={18} color="white" />
                     Add SCADA Diagram
                   </button>
                 )}
@@ -960,7 +1062,7 @@ export default function Dashboard({ onLogout }) {
                             borderRadius: '4px'
                           }}
                         >
-                          <Settings size={14} />
+                          <Settings size={14} color={theme.textSecondary} />
                         </button>
                         <button
                           onClick={() => handleDuplicate(panel)}
@@ -973,7 +1075,7 @@ export default function Dashboard({ onLogout }) {
                             borderRadius: '4px'
                           }}
                         >
-                          <Plus size={14} />
+                          <Plus size={14} color={theme.textSecondary} />
                         </button>
                         <button
                           onClick={() => handleDelete(panel.id)}
@@ -986,13 +1088,12 @@ export default function Dashboard({ onLogout }) {
                             borderRadius: '4px'
                           }}
                         >
-                          <X size={14} />
+                          <X size={14} color={theme.danger} />
                         </button>
                       </div>
                     </div>
                     <ScadaPanel config={panel} darkMode={darkMode} />
                     
-                    {/* Premium Resize Handle for SCADA with Clear Icon */}
                     <div
                       onMouseDown={(e) => handleResizeStart(e, panel, 'se')}
                       style={{
@@ -1043,7 +1144,6 @@ export default function Dashboard({ onLogout }) {
                       darkMode={darkMode}
                     />
                     
-                    {/* Premium Resize Handle for QuestDB Panel with Clear Icon */}
                     <div
                       onMouseDown={(e) => handleResizeStart(e, panel, 'se')}
                       style={{
@@ -1157,16 +1257,6 @@ export default function Dashboard({ onLogout }) {
         
         *::-webkit-scrollbar-thumb:hover {
           background: ${theme.borderLight};
-        }
-
-        /* Hide scrollbar for tabs but keep functionality */
-        div[style*="overflowX: auto"]::-webkit-scrollbar {
-          display: none;
-        }
-        
-        div[style*="overflowX: auto"] {
-          scrollbar-width: none;
-          -ms-overflow-style: none;
         }
       `}</style>
     </div>
