@@ -743,7 +743,7 @@ export default function Dashboard({ onLogout }) {
             }}
             title={darkMode ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
           >
-            {darkMode ? <Sun size={18} color=White /> : <Moon size={18} color= White />}
+            {darkMode ? <Sun size={18} color= "white"  /> : <Moon size={18} color="white" />}
           </button>
 
           <button
