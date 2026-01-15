@@ -201,9 +201,10 @@ function QuestDBPanel({ config, onEdit, onDelete, onDuplicate, onResize, style, 
       );
     }
 
+    // Increased margins to make room for overlays
     const chartProps = {
       data,
-      margin: { top: 5, right: 10, left: 0, bottom: 5 }
+      margin: { top: 45, right: 20, left: 10, bottom: 35 }
     };
 
     const yFields = (config.yAxes && config.yAxes.length > 0) ? config.yAxes : [config.yAxis].filter(Boolean);
@@ -377,7 +378,7 @@ function QuestDBPanel({ config, onEdit, onDelete, onDuplicate, onResize, style, 
       case 'radar':
         return (
           <ResponsiveContainer width="100%" height="100%">
-            <RadarChart data={data.slice(0, 8)}>
+            <RadarChart data={data.slice(0, 8)} margin={{ top: 50, right: 20, bottom: 40, left: 20 }}>
               <PolarGrid stroke={theme.chartGrid} />
               <PolarAngleAxis dataKey="_time" tick={{ fill: theme.chartText, fontSize: 11 }} />
               <PolarRadiusAxis tick={{ fill: theme.chartText, fontSize: 11 }} />
@@ -411,7 +412,9 @@ function QuestDBPanel({ config, onEdit, onDelete, onDuplicate, onResize, style, 
             flexDirection: 'column',
             alignItems: 'center',
             justifyContent: 'center',
-            height: '100%'
+            height: '100%',
+            paddingTop: '40px',
+            paddingBottom: '30px'
           }}>
             <div style={{ fontSize: '48px', fontWeight: 'bold', color: getColor(0), marginBottom: '8px' }}>
               {latest.toFixed(2)}
@@ -435,7 +438,7 @@ function QuestDBPanel({ config, onEdit, onDelete, onDuplicate, onResize, style, 
       case 'table':
         const columns = Object.keys(data[0] || {}).filter(key => !key.startsWith('_'));
         return (
-          <div style={{ height: '100%', overflow: 'auto' }}>
+          <div style={{ height: '100%', overflow: 'auto', paddingTop: '40px', paddingBottom: '30px' }}>
             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px' }}>
               <thead>
                 <tr style={{ background: theme.hover, position: 'sticky', top: 0, zIndex: 1 }}>
