@@ -192,9 +192,22 @@ function ComponentTagModal({ component, availableTags, onSave, onClose, darkMode
   );
 }
 
-export default function ScadaDesignerPro({ config, onSave, onClose, darkMode }) {
-  const [components, setComponents] = useState(config?.components || []);
-  const [lines, setLines] = useState(config?.lines || []);
+export default function ScadaDesignerPro({ 
+  initialComponents = [], 
+  initialLines = [], 
+  initialConfig = {},
+  config,  // Keep for backwards compatibility
+  onSave, 
+  onClose, 
+  darkMode 
+}) {
+  // ✅ CHANGED: Initialize with initialComponents/initialLines if provided, otherwise use config or empty arrays
+  const [components, setComponents] = useState(
+    initialComponents.length > 0 ? initialComponents : (config?.components || [])
+  );
+  const [lines, setLines] = useState(
+    initialLines.length > 0 ? initialLines : (config?.lines || [])
+  );
   const [selectedTool, setSelectedTool] = useState('select');
   const [selectedComponent, setSelectedComponent] = useState(null);
   const [selectedLine, setSelectedLine] = useState(null);
@@ -215,7 +228,10 @@ export default function ScadaDesignerPro({ config, onSave, onClose, darkMode }) 
   const [lineWidth, setLineWidth] = useState(3);
   const [lineStyle, setLineStyle] = useState('solid');
   const [saved, setSaved] = useState(false);
-  const [diagramTitle, setDiagramTitle] = useState(config?.title || 'SCADA Diagram');
+  // ✅ CHANGED: Initialize title from initialConfig first, then config, then default
+  const [diagramTitle, setDiagramTitle] = useState(
+    initialConfig?.title || config?.title || 'SCADA Diagram'
+  );
   const [showTagModal, setShowTagModal] = useState(false);
   const [editingComponentTag, setEditingComponentTag] = useState(null);
   const [availableTags, setAvailableTags] = useState([]);
@@ -833,7 +849,7 @@ export default function ScadaDesignerPro({ config, onSave, onClose, darkMode }) 
     >
       <Icon size={18} />
       <span>{label}</span>
-      {shortcut && <span style={{ fontSize: '11px', opacity: 0.6, marginLeft: 'auto' }}>{shortcut}</span>}
+      {shortcut && <span style={{ fontSize: '11px', opacity: 0.6', marginLeft: 'auto' }}>{shortcut}</span>}
     </button>
   );
 
@@ -990,8 +1006,9 @@ export default function ScadaDesignerPro({ config, onSave, onClose, darkMode }) 
               {saved ? 'Saved!' : 'Save'}
             </button>
             
+            {/* ✅ CHANGED: Updated close button to pass data back */}
             <button 
-              onClick={onClose} 
+              onClick={() => onClose(false, components, lines, { title: diagramTitle })} 
               style={{ 
                 padding: '8px', 
                 background: 'transparent', 
