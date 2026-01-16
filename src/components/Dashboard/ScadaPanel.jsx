@@ -1,617 +1,356 @@
 import React, { useState, useEffect } from 'react';
-import questdbService from '../../services/questdb';
+import ScadaDesigner from './ScadaDesigner';
+import dashboardService from '../../services/dashboardService';
 
-// Import React component versions
-import BlowdownValveComponent from '../svg/3D-Blowdown-valve';
-import PressureBalancedDiaphragm from '../svg/3-D Pressure-balanced-diaphragm-actuated';
-import ClassicPump1 from '../svg/Classic_pump_1';
-// Import remaining SVG files (to be converted later)
-import RegulatorExternalPressure from '../svg/RegulatorExternalPressure';
-import RegulatorSelfContained from '../svg/RegulatorSelfContained';
-import RotaryPlugValve from '../svg/RotaryPlugValve';
-import ValveLongShaft from '../svg/ValveLongShaft';
-import ValveFailLocked from '../svg/ValveFailLocked';
-import ControlValveHandActuator from '../svg/ControlValveHandActuator';
-import HandControlValveIcon from '../svg/HandControlValveIcon';
-import Pump3DIcon from '../svg/Pump3DIcon';
-import Valve3DIcon from '../svg/Valve3DIcon';
-import ValveWithActuatorIcon from '../svg/ValveWithActuatorIcon';
-import BallValve1Icon from '../svg/BallValve1Icon';
-import BlueControlValve from '../../renderer/assets/Blue_control_valve_with_no_flange.svg';
-import CentrifugalPump2 from '../../renderer/assets/Centrifugal_pump_2.svg';
-import CentrifugalPump4 from '../../renderer/assets/Centrifugal_pump_4.svg';
+function ScadaPanel({ 
+  panel, 
+  onUpdate, 
+  onDelete, 
+  editMode, 
+  darkMode,
+  dashboardId // Important: need dashboardId to save
+}) {
+  const [isDesigning, setIsDesigning] = useState(false);
+  const [scadaData, setScadaData] = useState({
+    elements: panel.scadaElements || [],
+    connections: panel.scadaConnections || [],
+    config: panel.scadaConfig || {}
+  });
+  const [isSaving, setIsSaving] = useState(false);
 
-import CompactValve from '../../renderer/assets/Compact valve.svg';
-import ControlValve3 from '../../renderer/assets/Control valve 3.svg';
-import ControlValveDiaphragm from '../../renderer/assets/Control valve with diaphragm activator.svg';
-import ControlValveGrayFitting from '../../renderer/assets/Control valve with gray fitting.svg';
-import ControlValue from '../../renderer/assets/Control_value.svg';
-import CoolPump from '../../renderer/assets/Cool_pump.svg';
-import HandValveHorizontal from '../../renderer/assets/Hand valve - horizontal.svg';
-import HandValve1 from '../../renderer/assets/Hand valve 1.svg';
-import HandValve3 from '../../renderer/assets/Hand valve 3.svg';
-import HandValve4 from '../../renderer/assets/Hand valve 4.svg';
-import HorizontalPump3 from '../../renderer/assets/Horizontal pump 3.svg';
-import HorizontalPump4 from '../../renderer/assets/Horizontal pump 4.svg';
-import HorizontalSplitCasePump from '../../renderer/assets/Horizontal split case pump.svg';
-import MagDriveNonMetallic from '../../renderer/assets/Mag drive non-metallic pump.svg';
-import MagDrivePump2 from '../../renderer/assets/Mag drive pump 2.svg';
-import MeteringPump4 from '../../renderer/assets/Metering pump 4.svg';
-import PVCTwoWayBallValve from '../../renderer/assets/PVC two-way ball valve.svg';
-import SafetyShutoffValve from '../../renderer/assets/Safety_shutoff_valve.svg';
-import SeallessPump from '../../renderer/assets/Sealless pump.svg';
-import SelfPrimingCentrifugalPump from '../../renderer/assets/Self-priming centrifugal pump.svg';
-import SRHPump from '../../renderer/assets/SRH_pump.svg';
-import VerticalPump9 from '../../renderer/assets/Vertical pump 9.svg';
-import YellowPump from '../../renderer/assets/Yellow pump.svg';
+  // Load SCADA data when panel loads
+  useEffect(() => {
+    if (panel.scadaElements || panel.scadaConnections) {
+      setScadaData({
+        elements: panel.scadaElements || [],
+        connections: panel.scadaConnections || [],
+        config: panel.scadaConfig || {}
+      });
+    }
+  }, [panel.id]);
 
-const SVG_COMPONENTS = {
-  // React component version with dynamic color support
-  blowdownValve: { 
-    name: 'Blowdown Valve', 
-    width: 60, 
-    height: 80, 
-    component: BlowdownValveComponent,
-    type: 'component',
-    color: '#ef4444' 
-  },
-  pressureBalancedDiaphragm:  { 
-    name: 'Pressure Balanced Diaphragm', 
-    width: 70, 
-    height: 90, 
-    component: PressureBalancedDiaphragm,
-    type: 'component',
-    color: '#06b6d4' 
-  },
-  regulatorExternalPressure:{ 
-    name: 'Regulator (External)', 
-    width: 80, 
-    height: 80, 
-    component: RegulatorExternalPressure,
-    type: 'component',
-    color: '#8b5cf6' 
-  },
-  regulatorSelfContained: { 
-    name: 'Regulator (Self-Contained)', 
-    width: 80, 
-    height: 80, 
-    component: RegulatorSelfContained,
-    type: 'component',
-    color: '#8b5cf6' 
-  },
-  rotaryPlugValve:  { 
-    name: 'Rotary Plug Valve', 
-    width: 70, 
-    height: 70, 
-    component: RotaryPlugValve,
-    type: 'component',
-    color: '#f59e0b' 
-  },
-  valveLongShaft:  { 
-    name: 'Valve (Long Shaft)', 
-    width: 60, 
-    height: 90, 
-    component: ValveLongShaft,
-    type: 'component',
-    color: '#f59e0b' 
-  },
-  valveFailLocked:  { 
-    name: 'Valve (Fail Locked)', 
-    width: 70, 
-    height: 80, 
-    component: ValveFailLocked,
-    type: 'component',
-    color: '#ef4444' 
-  },
-  controlValveHandActuator: { 
-    name: 'Control Valve (Hand)', 
-    width: 70, 
-    height: 80, 
-    component: ControlValveHandActuator,
-    type: 'component',
-    color: '#3b82f6' 
-  },
-  handControlValve: { 
-    name: 'Hand Control Valve', 
-    width: 60, 
-    height: 70, 
-    component: HandControlValveIcon,
-    type: 'component',
-    color: '#f59e0b' 
-  },
-  valve3D:  { 
-    name: '3D Valve', 
-    width: 60, 
-    height: 80, 
-    component: Valve3DIcon,
-    type: 'component',
-    color: '#f59e0b' 
-  },
-  valveWithActuator:  { 
-    name: 'Valve with Actuator', 
-    width: 70, 
-    height: 90, 
-    component: ValveWithActuatorIcon,
-    type: 'component',
-    color: '#10b981' 
-  },
-  ballValve1:{ 
-    name: 'Ball Valve', 
-    width: 70, 
-    height: 70, 
-    component: BallValve1Icon,
-    type: 'component',
-    color: '#64748b' 
-  },
-  pvcTwoWayBallValve: { name: 'PVC Ball Valve', width: 60, height: 70, svg: PVCTwoWayBallValve, type: 'svg', color: '#64748b' },
-  blueControlValve: { name: 'Control Valve (Blue)', width: 70, height: 90, svg: BlueControlValve, type: 'svg', color: '#3b82f6' },
-  compactValve: { name: 'Compact Valve', width: 60, height: 70, svg: CompactValve, type: 'svg', color: '#06b6d4' },
-  controlValve3: { name: 'Control Valve 3', width: 70, height: 80, svg: ControlValve3, type: 'svg', color: '#3b82f6' },
-  controlValveDiaphragm: { name: 'Control Valve (Diaphragm)', width: 70, height: 90, svg: ControlValveDiaphragm, type: 'svg', color: '#3b82f6' },
-  controlValveGrayFitting: { name: 'Control Valve (Gray)', width: 70, height: 90, svg: ControlValveGrayFitting, type: 'svg', color: '#64748b' },
-  controlValue: { name: 'Control Value', width: 70, height: 80, svg: ControlValue, type: 'svg', color: '#3b82f6' },
-  safetyShutoffValve: { name: 'Safety Shutoff Valve', width: 70, height: 90, svg: SafetyShutoffValve, type: 'svg', color: '#ef4444' },
-  handValveHorizontal: { name: 'Hand Valve (H)', width: 80, height: 60, svg: HandValveHorizontal, type: 'svg', color: '#f59e0b' },
-  handValve1: { name: 'Hand Valve 1', width: 60, height: 80, svg: HandValve1, type: 'svg', color: '#f59e0b' },
-  handValve3: { name: 'Hand Valve 3', width: 70, height: 80, svg: HandValve3, type: 'svg', color: '#f59e0b' },
-  handValve4: { name: 'Hand Valve 4', width: 70, height: 80, svg: HandValve4, type: 'svg', color: '#f59e0b' },
-  pump3D: { 
-    name: '3D Pump', 
-    width: 90, 
-    height: 80, 
-    component: Pump3DIcon,
-    type: 'component',
-    color: '#3b82f6' 
-  },
-  centrifugalPump2: { name: 'Centrifugal Pump 2', width: 90, height: 80, svg: CentrifugalPump2, type: 'svg', color: '#3b82f6' },
-  centrifugalPump4: { name: 'Centrifugal Pump 4', width: 80, height: 80, svg: CentrifugalPump4, type: 'svg', color: '#3b82f6' },
-  classicPump1:  { 
-    name: 'Classic Pump', 
-    width: 70, 
-    height: 70, 
-    component: ClassicPump1,
-    type: 'component',
-    color: '#3b82f6' 
-  },
-  coolPump: { name: 'Cool Pump', width: 80, height: 80, svg: CoolPump, type: 'svg', color: '#06b6d4' },
-  horizontalPump3: { name: 'Horizontal Pump 3', width: 100, height: 70, svg: HorizontalPump3, type: 'svg', color: '#3b82f6' },
-  horizontalPump4: { name: 'Horizontal Pump 4', width: 100, height: 70, svg: HorizontalPump4, type: 'svg', color: '#3b82f6' },
-  horizontalSplitCasePump: { name: 'Split Case Pump', width: 100, height: 80, svg: HorizontalSplitCasePump, type: 'svg', color: '#3b82f6' },
-  magDriveNonMetallic: { name: 'Mag Drive (Non-Metal)', width: 80, height: 80, svg: MagDriveNonMetallic, type: 'svg', color: '#06b6d4' },
-  magDrivePump2: { name: 'Mag Drive Pump 2', width: 90, height: 80, svg: MagDrivePump2, type: 'svg', color: '#3b82f6' },
-  meteringPump4: { name: 'Metering Pump', width: 80, height: 80, svg: MeteringPump4, type: 'svg', color: '#8b5cf6' },
-  seallessPump: { name: 'Sealless Pump', width: 80, height: 80, svg: SeallessPump, type: 'svg', color: '#10b981' },
-  selfPrimingCentrifugalPump: { name: 'Self-Priming Pump', width: 90, height: 80, svg: SelfPrimingCentrifugalPump, type: 'svg', color: '#3b82f6' },
-  srhPump: { name: 'SRH Pump', width: 90, height: 90, svg: SRHPump, type: 'svg', color: '#3b82f6' },
-  verticalPump9: { name: 'Vertical Pump', width: 70, height: 100, svg: VerticalPump9, type: 'svg', color: '#3b82f6' },
-  yellowPump: { name: 'Yellow Pump', width: 80, height: 80, svg: YellowPump, type: 'svg', color: '#eab308' }
-};
+  const handleSaveScada = async (components, lines, config) => {
+    try {
+      setIsSaving(true);
+      
+      // Update local state
+      const updatedScadaData = {
+        elements: components,
+        connections: lines,
+        config: config || scadaData.config
+      };
+      
+      setScadaData(updatedScadaData);
 
-export default function ScadaPanel({ config, darkMode }) {
-  const [tagValues, setTagValues] = useState({});
+      // Update panel with SCADA data
+      const updatedPanel = {
+        ...panel,
+        scadaElements: components,
+        scadaConnections: lines,
+        scadaConfig: config || scadaData.config
+      };
+
+      // Save to parent component (which will trigger dashboard save)
+      if (onUpdate) {
+        await onUpdate(updatedPanel);
+      }
+
+      console.log('✅ SCADA design saved successfully:', {
+        elements: components.length,
+        connections: lines.length
+      });
+
+      return true;
+    } catch (error) {
+      console.error('❌ Error saving SCADA design:', error);
+      return false;
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleOpenDesigner = () => {
+    setIsDesigning(true);
+  };
+
+  const handleCloseDesigner = async (saved, components, lines, config) => {
+    if (saved) {
+      await handleSaveScada(components, lines, config);
+    }
+    setIsDesigning(false);
+  };
 
   const theme = darkMode ? {
     bg: '#1a1d29',
+    card: '#0f1117',
     text: '#e5e7eb',
     textSecondary: '#9ca3af',
-    border: '#374151'
+    border: '#374151',
+    accent: '#667eea'
   } : {
     bg: '#ffffff',
+    card: '#f9fafb',
     text: '#111827',
     textSecondary: '#6b7280',
-    border: '#e5e7eb'
+    border: '#e5e7eb',
+    accent: '#667eea'
   };
 
-  // Fetch real-time tag values from scada_wide table
-  useEffect(() => {
-    const fetchTagValues = async () => {
-      try {
-        const tagNames = [...new Set(
-          config.components
-            ?.filter(comp => comp.tagName)
-            .map(comp => comp.tagName)
-        )];
-        
-        if (tagNames.length === 0) return;
-
-        const columnsToSelect = ['timestamp', ...tagNames].join(', ');
-        const sql = `SELECT ${columnsToSelect} FROM scada_wide ORDER BY timestamp DESC LIMIT 1`;
-        
-        const result = await questdbService.query(sql);
-        
-        if (result.length > 0) {
-          const valueMap = {};
-          const latestRow = result[0];
-          
-          tagNames.forEach(tagName => {
-            if (latestRow[tagName] !== undefined && latestRow[tagName] !== null) {
-              valueMap[tagName] = String(latestRow[tagName]);
-            }
-          });
-          
-          setTagValues(valueMap);
-        }
-      } catch (error) {
-        console.error('Error fetching tag values:', error);
-      }
-    };
-
-    fetchTagValues();
-    const interval = setInterval(fetchTagValues, 2000);
-    return () => clearInterval(interval);
-  }, [config.components]);
-
-  // Get color for a component based on its tag value
-  const getComponentColor = (comp) => {
-    if (!comp.tagName || !tagValues[comp.tagName]) {
-      return comp.defaultColor || '#64748b';
-    }
-
-    const tagValue = tagValues[comp.tagName];
-    const mapping = comp.colorMappings?.find(m => String(m.value) === String(tagValue));
-    
-    return mapping ? mapping.color : (comp.defaultColor || '#64748b');
-  };
-
-  // Get status label for a component
-  const getComponentStatus = (comp) => {
-    if (!comp.tagName || !tagValues[comp.tagName]) {
-      return null;
-    }
-
-    const tagValue = tagValues[comp.tagName];
-    const mapping = comp.colorMappings?.find(m => String(m.value) === String(tagValue));
-    
-    return mapping?.label || tagValue;
-  };
-
-  const getLineCoordinates = (line) => {
-    const fromComp = config.components?.find(c => c.id === line.from);
-    const toComp = config.components?.find(c => c.id === line.to);
-    
-    if (!fromComp || !toComp) return null;
-    
-    const fromSvg = SVG_COMPONENTS[fromComp.type];
-    const toSvg = SVG_COMPONENTS[toComp.type];
-    
-    return {
-      x1: fromComp.x + (fromSvg?.width || 60) / 2,
-      y1: fromComp.y + (fromSvg?.height || 60) / 2,
-      x2: toComp.x + (toSvg?.width || 60) / 2,
-      y2: toComp.y + (toSvg?.height || 60) / 2
-    };
-  };
-
-  // Generate SVG path for line with control points
-  const getLinePath = (line) => {
-    const coords = getLineCoordinates(line);
-    if (!coords) return null;
-
-    const { x1, y1, x2, y2 } = coords;
-    const controlPoints = line.controlPoints || [];
-
-    if (controlPoints.length === 0) {
-      // Straight line
-      return `M ${x1} ${y1} L ${x2} ${y2}`;
-    } else if (controlPoints.length === 1) {
-      // Quadratic bezier curve
-      const cp = controlPoints[0];
-      return `M ${x1} ${y1} Q ${cp.x} ${cp.y} ${x2} ${y2}`;
-    } else {
-      // Multiple control points - create smooth curve through all points
-      let path = `M ${x1} ${y1}`;
-      
-      // Add first control point
-      path += ` L ${controlPoints[0].x} ${controlPoints[0].y}`;
-      
-      // Add middle control points
-      for (let i = 1; i < controlPoints.length; i++) {
-        path += ` L ${controlPoints[i].x} ${controlPoints[i].y}`;
-      }
-      
-      // Connect to end
-      path += ` L ${x2} ${y2}`;
-      return path;
-    }
-  };
-
-  // Get the end point and angle for arrow placement
-  const getLineEndPoint = (line) => {
-    const coords = getLineCoordinates(line);
-    if (!coords) return null;
-
-    const { x1, y1, x2, y2 } = coords;
-    const controlPoints = line.controlPoints || [];
-
-    let endX = x2;
-    let endY = y2;
-    let prevX, prevY;
-
-    if (controlPoints.length === 0) {
-      prevX = x1;
-      prevY = y1;
-    } else {
-      const lastCP = controlPoints[controlPoints.length - 1];
-      prevX = lastCP.x;
-      prevY = lastCP.y;
-    }
-
-    const angle = Math.atan2(endY - prevY, endX - prevX);
-    
-    return { x: endX, y: endY, angle };
-  };
-
-  const getViewBox = () => {
-    if (!config.components || config.components.length === 0) {
-      return "0 0 1000 600";
-    }
-
-    let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
-    
-    config.components.forEach(comp => {
-      const svgData = SVG_COMPONENTS[comp.type];
-      const width = svgData?.width || 60;
-      const height = svgData?.height || 60;
-      
-      minX = Math.min(minX, comp.x - 20);
-      minY = Math.min(minY, comp.y - 20);
-      maxX = Math.max(maxX, comp.x + width + 80);
-      maxY = Math.max(maxY, comp.y + height + 80);
-    });
-
-    const padding = 50;
-    const viewBoxWidth = Math.max(1000, maxX - minX + padding * 2);
-    const viewBoxHeight = Math.max(600, maxY - minY + padding * 2);
-    
-    return `${minX - padding} ${minY - padding} ${viewBoxWidth} ${viewBoxHeight}`;
-  };
-
-  // Render component based on type (React component or legacy SVG)
-  const renderComponent = (comp, svgData, componentColor) => {
-    if (svgData.type === 'component') {
-      // Use React component with dynamic color
-      const ComponentToRender = svgData.component;
-      return (
-        <foreignObject
-          width={svgData.width}
-          height={svgData.height}
-        >
-          <div style={{ width: svgData.width, height: svgData.height }}>
-            <ComponentToRender
-              width={svgData.width}
-              height={svgData.height}
-              startColor={componentColor}
-              midColor={lightenColor(componentColor, 60)}
-              endColor={darkenColor(componentColor, 20)}
-            />
-          </div>
-        </foreignObject>
-      );
-    } else {
-      // Legacy SVG with color overlay
-      return (
-        <g>
-          <image
-            href={svgData.svg}
-            width={svgData.width}
-            height={svgData.height}
-          />
-          <rect
-            x={0}
-            y={0}
-            width={svgData.width}
-            height={svgData.height}
-            fill={componentColor}
-            opacity="0.5"
-            style={{ mixBlendMode: 'multiply' }}
-          />
-        </g>
-      );
-    }
-  };
-
-  // Helper function to lighten a color
-  const lightenColor = (hex, percent) => {
-    const num = parseInt(hex.replace('#', ''), 16);
-    const amt = Math.round(2.55 * percent);
-    const R = Math.min(255, (num >> 16) + amt);
-    const G = Math.min(255, ((num >> 8) & 0x00FF) + amt);
-    const B = Math.min(255, (num & 0x0000FF) + amt);
-    return `#${(0x1000000 + R * 0x10000 + G * 0x100 + B).toString(16).slice(1)}`;
-  };
-
-  // Helper function to darken a color
-  const darkenColor = (hex, percent) => {
-    const num = parseInt(hex.replace('#', ''), 16);
-    const amt = Math.round(2.55 * percent);
-    const R = Math.max(0, (num >> 16) - amt);
-    const G = Math.max(0, ((num >> 8) & 0x00FF) - amt);
-    const B = Math.max(0, (num & 0x0000FF) - amt);
-    return `#${(0x1000000 + R * 0x10000 + G * 0x100 + B).toString(16).slice(1)}`;
-  };
+  if (isDesigning) {
+    return (
+      <ScadaDesigner
+        initialComponents={scadaData.elements}
+        initialLines={scadaData.connections}
+        initialConfig={scadaData.config}
+        onClose={handleCloseDesigner}
+        darkMode={darkMode}
+      />
+    );
+  }
 
   return (
     <div style={{
-      width: '100%',
-      height: '100%',
-      minHeight: '400px',  // Ensure minimum height
       background: theme.bg,
-      overflow: 'auto',  // Changed from hidden to auto for scrolling if needed
-      position: 'relative'
+      borderRadius: '12px',
+      padding: '20px',
+      height: '100%',
+      display: 'flex',
+      flexDirection: 'column',
+      border: `1px solid ${theme.border}`
     }}>
-      <svg 
-        width="100%" 
-        height="100%" 
-        viewBox={getViewBox()}
-        preserveAspectRatio="xMidYMid meet"
-        style={{ display: 'block', minHeight: '400px' }}
-      >
-        {/* Grid background */}
-        <defs>
-          <pattern id={`grid-${config.id}`} width="20" height="20" patternUnits="userSpaceOnUse">
-            <circle cx="1" cy="1" r="1" fill={darkMode ? '#374151' : '#e5e7eb'} opacity="0.5" />
-          </pattern>
-        </defs>
-        <rect width="100%" height="100%" fill={`url(#grid-${config.id})`} />
-
-        {/* Lines with control point support */}
-        {config.lines?.map(line => {
-          const coords = getLineCoordinates(line);
-          const path = getLinePath(line);
-          const endPoint = getLineEndPoint(line);
-          if (!coords || !path || !endPoint) return null;
-          
-          return (
-            <g key={line.id}>
-              {/* Actual line path */}
-              <path
-                d={path}
-                stroke={line.color || '#3b82f6'}
-                strokeWidth={line.width || 2}
-                fill="none"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeDasharray={
-                  line.style === 'dashed' ? '8,4' : 
-                  line.style === 'dotted' ? '2,3' : 
-                  '0'
-                }
-              />
-              
-              {/* Arrow */}
-              {(() => {
-                const arrowSize = 10 + (line.width || 2);
-                return (
-                  <polygon
-                    points={`0,-${arrowSize/2} ${arrowSize},0 0,${arrowSize/2}`}
-                    fill={line.color || '#3b82f6'}
-                    transform={`translate(${endPoint.x}, ${endPoint.y}) rotate(${endPoint.angle * 180 / Math.PI})`}
-                  />
-                );
-              })()}
-            </g>
-          );
-        })}
-
-        {/* Components */}
-        {config.components?.map(comp => {
-          const svgData = SVG_COMPONENTS[comp.type];
-          if (!svgData) return null;
-          
-          const componentColor = getComponentColor(comp);
-          const status = getComponentStatus(comp);
-          
-          return (
-            <g
-              key={comp.id}
-              transform={`translate(${comp.x}, ${comp.y})`}
-            >
-              <g transform={`rotate(${comp.rotation || 0}, ${svgData.width/2}, ${svgData.height/2})`}>
-                {renderComponent(comp, svgData, componentColor)}
-              </g>
-              
-              {/* Label */}
-              <text
-                x={svgData.width / 2}
-                y={svgData.height + 18}
-                textAnchor="middle"
-                fill={theme.text}
-                fontSize="11"
-                fontWeight="600"
-              >
-                {comp.label}
-              </text>
-              
-              {/* Status indicator */}
-              {status && (
-                <g>
-                  <rect
-                    x={svgData.width / 2 - 30}
-                    y={svgData.height + 24}
-                    width="60"
-                    height="18"
-                    fill={componentColor}
-                    rx="4"
-                    opacity="0.9"
-                  />
-                  <text
-                    x={svgData.width / 2}
-                    y={svgData.height + 36}
-                    textAnchor="middle"
-                    fill="white"
-                    fontSize="10"
-                    fontWeight="700"
-                  >
-                    {status}
-                  </text>
-                </g>
-              )}
-              
-              {/* Value display */}
-              {comp.tagName && tagValues[comp.tagName] && (
-                <text
-                  x={svgData.width / 2}
-                  y={svgData.height + 50}
-                  textAnchor="middle"
-                  fill={theme.textSecondary}
-                  fontSize="9"
-                  fontWeight="500"
-                >
-                  {comp.tagName}: {tagValues[comp.tagName]}
-                </text>
-              )}
-            </g>
-          );
-        })}
-      </svg>
-
-      {/* Legend */}
-      {config.components?.some(c => c.tagName) && (
-        <div style={{
-          position: 'absolute',
-          bottom: '36px',
-          right: '16px',
-          background: darkMode ? 'rgba(26, 29, 41, 0.95)' : 'rgba(255, 255, 255, 0.95)',
-          border: `1px solid ${theme.border}`,
-          borderRadius: '8px',
-          padding: '12px',
-          fontSize: '11px',
-          color: theme.text,
-          maxWidth: '200px',
-          boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
-          zIndex: 10,
-          pointerEvents: 'auto'
+      <div style={{
+        display: 'flex',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        marginBottom: '16px'
+      }}>
+        <h3 style={{
+          margin: 0,
+          fontSize: '18px',
+          fontWeight: '600',
+          color: theme.text
         }}>
-          <div style={{ fontWeight: '700', marginBottom: '8px', fontSize: '12px' }}>
-            Status Legend
+          {panel.title || 'SCADA Diagram'}
+        </h3>
+        <div style={{ display: 'flex', gap: '8px' }}>
+          {isSaving && (
+            <span style={{
+              fontSize: '12px',
+              color: theme.accent,
+              padding: '4px 8px'
+            }}>
+              Saving...
+            </span>
+          )}
+          {editMode && (
+            <button
+              onClick={handleOpenDesigner}
+              style={{
+                padding: '8px 16px',
+                background: theme.accent,
+                color: 'white',
+                border: 'none',
+                borderRadius: '6px',
+                cursor: 'pointer',
+                fontSize: '14px',
+                fontWeight: '600'
+              }}
+            >
+              {scadaData.elements.length > 0 ? 'Edit Design' : 'Open Designer'}
+            </button>
+          )}
+        </div>
+      </div>
+
+      <div style={{
+        flex: 1,
+        background: theme.card,
+        borderRadius: '8px',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        position: 'relative',
+        overflow: 'hidden'
+      }}>
+        {scadaData.elements.length > 0 ? (
+          // Render SCADA preview
+          <ScadaPreview
+            elements={scadaData.elements}
+            connections={scadaData.connections}
+            config={scadaData.config}
+            darkMode={darkMode}
+            onOpen={handleOpenDesigner}
+          />
+        ) : (
+          // Empty state
+          <div style={{
+            textAlign: 'center',
+            color: theme.textSecondary,
+            padding: '40px'
+          }}>
+            <div style={{ fontSize: '48px', marginBottom: '16px', opacity: 0.3 }}>⚙️</div>
+            <h4 style={{
+              margin: '0 0 8px',
+              fontSize: '16px',
+              color: theme.text
+            }}>
+              No SCADA Design Yet
+            </h4>
+            <p style={{
+              margin: 0,
+              fontSize: '14px'
+            }}>
+              {editMode ? 'Click "Open Designer" to start building' : 'Enable edit mode to create a design'}
+            </p>
           </div>
-          {(() => {
-            const uniqueMappings = new Map();
-            config.components
-              .filter(c => c.colorMappings)
-              .flatMap(c => c.colorMappings)
-              .forEach(m => {
-                const key = `${m.label}-${m.color}`;
-                if (!uniqueMappings.has(key)) {
-                  uniqueMappings.set(key, m);
-                }
-              });
-            
-            return Array.from(uniqueMappings.values()).map((mapping, i) => (
-              <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px' }}>
-                <div style={{
-                  width: '12px',
-                  height: '12px',
-                  background: mapping.color,
-                  borderRadius: '3px',
-                  border: `1px solid ${theme.border}`
-                }} />
-                <span>{mapping.label || mapping.value}</span>
-              </div>
-            ));
-          })()}
+        )}
+      </div>
+
+      {scadaData.elements.length > 0 && (
+        <div style={{
+          marginTop: '12px',
+          fontSize: '12px',
+          color: theme.textSecondary,
+          display: 'flex',
+          gap: '16px'
+        }}>
+          <span>Components: {scadaData.elements.length}</span>
+          <span>Connections: {scadaData.connections.length}</span>
         </div>
       )}
     </div>
   );
 }
+
+// SCADA Preview Component
+function ScadaPreview({ elements, connections, config, darkMode, onOpen }) {
+  const theme = darkMode ? {
+    bg: '#0f1117',
+    text: '#e5e7eb',
+    border: '#374151'
+  } : {
+    bg: '#ffffff',
+    text: '#111827',
+    border: '#e5e7eb'
+  };
+
+  // Calculate bounds of all elements
+  const bounds = elements.reduce((acc, el) => {
+    const right = el.x + (el.width || 100);
+    const bottom = el.y + (el.height || 100);
+    return {
+      minX: Math.min(acc.minX, el.x),
+      minY: Math.min(acc.minY, el.y),
+      maxX: Math.max(acc.maxX, right),
+      maxY: Math.max(acc.maxY, bottom)
+    };
+  }, { minX: Infinity, minY: Infinity, maxX: -Infinity, maxY: -Infinity });
+
+  const padding = 50;
+  const viewBoxWidth = bounds.maxX - bounds.minX + padding * 2;
+  const viewBoxHeight = bounds.maxY - bounds.minY + padding * 2;
+  const viewBoxX = bounds.minX - padding;
+  const viewBoxY = bounds.minY - padding;
+
+  return (
+    <div 
+      onClick={onOpen}
+      style={{
+        width: '100%',
+        height: '100%',
+        cursor: 'pointer',
+        position: 'relative'
+      }}
+    >
+      <svg
+        width="100%"
+        height="100%"
+        viewBox={`${viewBoxX} ${viewBoxY} ${viewBoxWidth} ${viewBoxHeight}`}
+        style={{ background: theme.bg }}
+      >
+        {/* Render connections */}
+        {connections.map((line, idx) => (
+          <g key={`conn-${idx}`}>
+            {line.type === 'straight' ? (
+              <line
+                x1={line.startX}
+                y1={line.startY}
+                x2={line.endX}
+                y2={line.endY}
+                stroke={line.color || '#64748b'}
+                strokeWidth={line.strokeWidth || 2}
+              />
+            ) : (
+              <polyline
+                points={line.points?.map(p => `${p.x},${p.y}`).join(' ') || `${line.startX},${line.startY} ${line.endX},${line.endY}`}
+                fill="none"
+                stroke={line.color || '#64748b'}
+                strokeWidth={line.strokeWidth || 2}
+              />
+            )}
+          </g>
+        ))}
+
+        {/* Render elements */}
+        {elements.map((el) => (
+          <g key={el.id} transform={`translate(${el.x}, ${el.y})`}>
+            {el.svgContent ? (
+              <g dangerouslySetInnerHTML={{ __html: el.svgContent }} />
+            ) : (
+              <rect
+                width={el.width || 100}
+                height={el.height || 100}
+                fill={el.color || '#667eea'}
+                opacity={0.3}
+              />
+            )}
+            {el.label && (
+              <text
+                x={(el.width || 100) / 2}
+                y={(el.height || 100) + 20}
+                textAnchor="middle"
+                fill={theme.text}
+                fontSize="12"
+                fontWeight="600"
+              >
+                {el.label}
+              </text>
+            )}
+          </g>
+        ))}
+      </svg>
+
+      {/* Hover overlay */}
+      <div style={{
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        background: 'rgba(0,0,0,0)',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        opacity: 0,
+        transition: 'opacity 0.2s',
+        pointerEvents: 'none'
+      }}
+      onMouseEnter={(e) => e.currentTarget.style.opacity = '1'}
+      onMouseLeave={(e) => e.currentTarget.style.opacity = '0'}
+      >
+        <div style={{
+          background: 'rgba(102, 126, 234, 0.9)',
+          color: 'white',
+          padding: '12px 24px',
+          borderRadius: '8px',
+          fontSize: '14px',
+          fontWeight: '600'
+        }}>
+          Click to edit
+        </div>
+      </div>
+    </div>
+  );
+}
+
+export default ScadaPanel;
