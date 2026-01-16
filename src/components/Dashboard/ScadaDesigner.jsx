@@ -193,8 +193,8 @@ function ComponentTagModal({ component, availableTags, onSave, onClose, darkMode
 }
 
 export default function ScadaDesignerPro({ config, onSave, onClose, darkMode }) {
-  const [components, setComponents] = useState(config?.components || []);
-  const [lines, setLines] = useState(config?.lines || []);
+  const [components, setComponents] = useState(config?.scadaElements || config?.components || []);  // ✅ Try scadaElements first, fallback to components
+  const [lines, setLines] = useState(config?.scadaConnections || config?.lines || []);  // ✅ Try scadaConnections first, fallback to lines
   const [selectedTool, setSelectedTool] = useState('select');
   const [selectedComponent, setSelectedComponent] = useState(null);
   const [selectedLine, setSelectedLine] = useState(null);
@@ -686,8 +686,8 @@ export default function ScadaDesignerPro({ config, onSave, onClose, darkMode }) 
       id: config?.id || `scada_${Date.now()}`,
       title: diagramTitle,
       type: 'scada',
-      components,
-      lines,
+      scadaElements: components,  // ✅ Changed from 'components' to 'scadaElements'
+      scadaConnections: lines,     // ✅ Changed from 'lines' to 'scadaConnections'
       width: config?.width || 12,  // Full width by default
       height: config?.height || 8,  // Larger height by default
       createdAt: new Date().toISOString()
