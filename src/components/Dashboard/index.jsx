@@ -285,27 +285,6 @@ export default function Dashboard({ onLogout }) {
     updateDashboard(updated);
   };
 
-  // ✅ NEW: Handler for updating individual panels (used by ScadaPanel)
-  const handleUpdatePanel = async (updatedPanel) => {
-    if (!currentDashboard) return;
-
-    console.log('🔍 Updating panel:', updatedPanel);
-    
-    // Update local state
-    const updatedPanels = currentDashboard.panels.map(p => 
-      p.id === updatedPanel.id ? updatedPanel : p
-    );
-
-    const updated = {
-      ...currentDashboard,
-      panels: updatedPanels
-    };
-
-    // Update dashboard (this will save to MongoDB)
-    await updateDashboard(updated);
-    console.log('✅ Panel updated successfully');
-  };
-
   const handleSavePanel = (panelData) => {
     if (!currentDashboard) return;
     
@@ -450,9 +429,8 @@ export default function Dashboard({ onLogout }) {
       
       setDashboards(dashboards.map(d => d.id === saved.id ? saved : d));
       setCurrentDashboard(saved);
-      console.log('✅ Dashboard saved to MongoDB');
     } catch (error) {
-      console.error('❌ Error updating dashboard:', error);
+      console.error('Error updating dashboard:', error);
       setDashboards(dashboards.map(d => d.id === updatedDashboard.id ? updatedDashboard : d));
       setCurrentDashboard(updatedDashboard);
     }
@@ -1009,16 +987,76 @@ export default function Dashboard({ onLogout }) {
                 onDrop={(e) => handleDrop(e, panel)}
               >
                 {panel.type === 'scada' ? (
-                  <div style={{ position: 'relative', height: '100%' }}>
-                    {/* ✅ UPDATED: Use ScadaPanel component with proper props */}
-                    <ScadaPanel
-                      panel={panel}
-                      onUpdate={handleUpdatePanel}
-                      onDelete={() => handleDelete(panel.id)}
-                      editMode={true}
-                      darkMode={darkMode}
-                      dashboardId={currentDashboard?.id}
-                    />
+                  <div style={{
+                    height: '100%',
+                    background: theme.card,
+                    borderRadius: '10px',
+                    border: `1px solid ${theme.border}`,
+                    overflow: 'hidden',
+                    boxShadow: darkMode 
+                      ? '0 2px 8px rgba(0,0,0,0.3)' 
+                      : '0 1px 4px rgba(0,0,0,0.06)',
+                    position: 'relative'
+                  }}>
+                    <div style={{
+                      padding: '10px 12px',
+                      borderBottom: `1px solid ${theme.border}`,
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'center',
+                      background: theme.cardHover
+                    }}>
+                      <h3 style={{ 
+                        margin: 0, 
+                        fontSize: '13px', 
+                        fontWeight: '600', 
+                        color: theme.text 
+                      }}>
+                        {panel.title}
+                      </h3>
+                      <div style={{ display: 'flex', gap: '4px' }}>
+                        <button
+                          onClick={() => handleEdit(panel)}
+                          style={{
+                            padding: '5px',
+                            background: 'transparent',
+                            border: 'none',
+                            color: theme.textSecondary,
+                            cursor: 'pointer',
+                            borderRadius: '4px'
+                          }}
+                        >
+                          <Settings size={14} color={theme.textSecondary} />
+                        </button>
+                        <button
+                          onClick={() => handleDuplicate(panel)}
+                          style={{
+                            padding: '5px',
+                            background: 'transparent',
+                            border: 'none',
+                            color: theme.textSecondary,
+                            cursor: 'pointer',
+                            borderRadius: '4px'
+                          }}
+                        >
+                          <Plus size={14} color={theme.textSecondary} />
+                        </button>
+                        <button
+                          onClick={() => handleDelete(panel.id)}
+                          style={{
+                            padding: '5px',
+                            background: 'transparent',
+                            border: 'none',
+                            color: theme.danger,
+                            cursor: 'pointer',
+                            borderRadius: '4px'
+                          }}
+                        >
+                          <X size={14} color={theme.danger} />
+                        </button>
+                      </div>
+                    </div>
+                    <ScadaPanel config={panel} darkMode={darkMode} />
                     
                     <div
                       onMouseDown={(e) => handleResizeStart(e, panel, 'se')}
@@ -1145,9 +1183,6 @@ export default function Dashboard({ onLogout }) {
 
       {showScadaModal && (
         <ScadaDesigner
-          initialComponents={editingScadaDiagram?.scadaElements || []}
-          initialLines={editingScadaDiagram?.scadaConnections || []}
-          initialConfig={editingScadaDiagram?.scadaConfig || {}}
           config={editingScadaDiagram}
           onSave={handleSavePanel}
           onClose={() => {
