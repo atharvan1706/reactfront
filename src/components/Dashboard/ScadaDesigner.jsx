@@ -208,6 +208,9 @@ export default function ScadaDesignerPro({
   const [lines, setLines] = useState(
     initialLines.length > 0 ? initialLines : (config?.lines || [])
   );
+
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+  const [showCloseConfirmation, setShowCloseConfirmation] = useState(false);
   const [selectedTool, setSelectedTool] = useState('select');
   const [selectedComponent, setSelectedComponent] = useState(null);
   const [selectedLine, setSelectedLine] = useState(null);
@@ -372,6 +375,15 @@ export default function ScadaDesignerPro({
     fetchTags();
   }, []);
 
+useEffect(() => {
+    const hasChanges = 
+      JSON.stringify(components) !== JSON.stringify(initialComponents) ||
+      JSON.stringify(lines) !== JSON.stringify(initialLines) ||
+      diagramTitle !== (initialConfig?.title || config?.title || 'SCADA Diagram');
+    
+    setHasUnsavedChanges(hasChanges);
+  }, [components, lines, diagramTitle, initialComponents, initialLines, initialConfig, config]);
+  
   useEffect(() => {
     const fetchTagValues = async () => {
       try {
@@ -697,20 +709,60 @@ export default function ScadaDesignerPro({
     }
   };
 
-  const handleSave = () => {
+ const handleSave = () => {
     const diagram = {
       id: config?.id || `scada_${Date.now()}`,
-      title: diagramTitle,
       type: 'scada',
-      components,
-      lines,
-      width: config?.width || 12,  // Full width by default
-      height: config?.height || 8,  // Larger height by default
-      createdAt: new Date().toISOString()
+      title: diagramTitle,
+      // ✅ CRITICAL: Store as scadaElements and scadaConnections
+      scadaElements: components,
+      scadaConnections: lines,
+      scadaConfig: { title: diagramTitle },
+      width: config?.width || 12,
+      height: config?.height || 8,
+      createdAt: config?.createdAt || new Date().toISOString(),
+      updatedAt: new Date().toISOString()
     };
+    
+    console.log('💾 Saving SCADA diagram:', {
+      elements: components.length,
+      connections: lines.length,
+      title: diagramTitle
+    });
+    
     if (onSave) onSave(diagram);
     setSaved(true);
+    setHasUnsavedChanges(false);
     setTimeout(() => setSaved(false), 2000);
+  };
+
+   const handleSaveAndClose = () => {
+    handleSave();
+    // Wait a moment for save to complete, then close
+    setTimeout(() => {
+      if (onClose) {
+        onClose(true, components, lines, { title: diagramTitle });
+      }
+    }, 100);
+  };
+
+  // ✅ NEW: Close without saving handler
+  const handleCloseWithoutSaving = () => {
+    if (hasUnsavedChanges) {
+      setShowCloseConfirmation(true);
+    } else {
+      if (onClose) {
+        onClose(false, components, lines, { title: diagramTitle });
+      }
+    }
+  };
+
+  // ✅ NEW: Confirm close without saving
+  const handleConfirmClose = () => {
+    setShowCloseConfirmation(false);
+    if (onClose) {
+      onClose(false, initialComponents, initialLines, initialConfig);
+    }
   };
 
   const handleExport = () => {
@@ -985,7 +1037,7 @@ export default function ScadaDesignerPro({
               <input type="file" accept=".json" onChange={handleImport} style={{ display: 'none' }} />
             </label>
             
-            <button 
+          <button 
               onClick={handleSave} 
               style={{ 
                 padding: '8px 16px', 
@@ -1006,9 +1058,31 @@ export default function ScadaDesignerPro({
               {saved ? 'Saved!' : 'Save'}
             </button>
             
+            {/* ✅ NEW: Save & Close button */}
+            <button 
+              onClick={handleSaveAndClose} 
+              style={{ 
+                padding: '8px 16px', 
+                background: theme.success, 
+                border: 'none', 
+                borderRadius: '6px', 
+                color: 'white', 
+                cursor: 'pointer', 
+                display: 'flex', 
+                alignItems: 'center', 
+                gap: '6px', 
+                fontSize: '13px', 
+                fontWeight: '600',
+                transition: 'all 0.2s ease'
+              }}
+            >
+              <Check size={16} />
+              Save & Close
+            </button>
+            
             {/* ✅ CHANGED: Updated close button to pass data back */}
             <button 
-              onClick={() => onClose(false, components, lines, { title: diagramTitle })} 
+              onClick={handleCloseWithoutSaving} 
               style={{ 
                 padding: '8px', 
                 background: 'transparent', 
@@ -1016,6 +1090,7 @@ export default function ScadaDesignerPro({
                 color: theme.textSecondary, 
                 cursor: 'pointer' 
               }}
+              title={hasUnsavedChanges ? "Close without saving (will ask for confirmation)" : "Close"}
             >
               <X size={18} />
             </button>
