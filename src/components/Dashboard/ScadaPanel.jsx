@@ -191,6 +191,13 @@ const SVG_COMPONENTS = {
 export default function ScadaPanel({ config, darkMode }) {
   const [tagValues, setTagValues] = useState({});
 
+  // ✅ Normalize config to handle both old (components/lines) and new (scadaElements/scadaConnections) field names
+  const normalizedConfig = {
+    ...config,
+    components: config?.scadaElements || config?.components || [],
+    lines: config?.scadaConnections || config?.lines || []
+  };
+
   const theme = darkMode ? {
     bg: '#1a1d29',
     text: '#e5e7eb',
@@ -208,7 +215,7 @@ export default function ScadaPanel({ config, darkMode }) {
     const fetchTagValues = async () => {
       try {
         const tagNames = [...new Set(
-          config.components
+          normalizedConfig.components
             ?.filter(comp => comp.tagName)
             .map(comp => comp.tagName)
         )];
@@ -240,7 +247,7 @@ export default function ScadaPanel({ config, darkMode }) {
     fetchTagValues();
     const interval = setInterval(fetchTagValues, 2000);
     return () => clearInterval(interval);
-  }, [config.components]);
+  }, [normalizedConfig.components]);
 
   // Get color for a component based on its tag value
   const getComponentColor = (comp) => {
@@ -267,8 +274,8 @@ export default function ScadaPanel({ config, darkMode }) {
   };
 
   const getLineCoordinates = (line) => {
-    const fromComp = config.components?.find(c => c.id === line.from);
-    const toComp = config.components?.find(c => c.id === line.to);
+    const fromComp = normalizedConfig.components?.find(c => c.id === line.from);
+    const toComp = normalizedConfig.components?.find(c => c.id === line.to);
     
     if (!fromComp || !toComp) return null;
     
@@ -284,13 +291,13 @@ export default function ScadaPanel({ config, darkMode }) {
   };
 
   const getViewBox = () => {
-    if (!config.components || config.components.length === 0) {
+    if (!normalizedConfig.components || normalizedConfig.components.length === 0) {
       return "0 0 1000 600";
     }
 
     let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
     
-    config.components.forEach(comp => {
+    normalizedConfig.components.forEach(comp => {
       const svgData = SVG_COMPONENTS[comp.type];
       const width = svgData?.width || 60;
       const height = svgData?.height || 60;
@@ -396,7 +403,7 @@ export default function ScadaPanel({ config, darkMode }) {
         <rect width="100%" height="100%" fill={`url(#grid-${config.id})`} />
 
         {/* Lines */}
-        {config.lines?.map(line => {
+        {normalizedConfig.lines?.map(line => {
           const coords = getLineCoordinates(line);
           if (!coords) return null;
           
@@ -428,7 +435,7 @@ export default function ScadaPanel({ config, darkMode }) {
         })}
 
         {/* Components */}
-        {config.components?.map(comp => {
+        {normalizedConfig.components?.map(comp => {
           const svgData = SVG_COMPONENTS[comp.type];
           if (!svgData) return null;
           
@@ -500,7 +507,7 @@ export default function ScadaPanel({ config, darkMode }) {
       </svg>
 
       {/* Legend */}
-      {config.components?.some(c => c.tagName) && (
+      {normalizedConfig.components?.some(c => c.tagName) && (
         <div style={{
           position: 'absolute',
           bottom: '36px',
@@ -521,7 +528,7 @@ export default function ScadaPanel({ config, darkMode }) {
           </div>
           {(() => {
             const uniqueMappings = new Map();
-            config.components
+            normalizedConfig.components
               .filter(c => c.colorMappings)
               .flatMap(c => c.colorMappings)
               .forEach(m => {
