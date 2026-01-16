@@ -849,7 +849,7 @@ export default function ScadaDesignerPro({
     >
       <Icon size={18} />
       <span>{label}</span>
-      {shortcut && <span style={{ fontSize: '11px', opacity: 0.6', marginLeft: 'auto' }}>{shortcut}</span>}
+      {shortcut && <span style={{ fontSize: '11px', opacity: 0.6, marginLeft: 'auto' }}>{shortcut}</span>}
     </button>
   );
 
