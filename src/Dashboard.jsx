@@ -1,1447 +1,604 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
-  LineChart, Line, BarChart, Bar, AreaChart, Area, PieChart, Pie, Cell,
-  ScatterChart, Scatter, RadarChart, Radar, PolarGrid, PolarAngleAxis, PolarRadiusAxis,
-  XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer
-} from 'recharts';
-import {
-  Plus, Database, Activity, TrendingUp, BarChart3, PieChart as PieIcon,
-  Trash2, Copy, Play, RefreshCw, X, Gauge, Radar as RadarIcon,
-  CircleDot, Table as TableIcon, AlertCircle, Settings, Save, Eye, Zap,
-  Sun, Moon, Maximize2, Minimize2
+  Plus, LogOut, Database, Zap, Folder, Save, Download, Upload, Moon, Sun, Settings, X
 } from 'lucide-react';
+import authService from '../../services/auth';
+import questdbService from '../../services/questdb';
+import dashboardService from '../../services/dashboardService';
+import DashboardModal from './DashboardModal';
+import PanelConfigModal from './PanelConfigModal';
+import QuestDBPanel from './QuestDBPanel';
+import ScadaDesigner from './ScadaDesigner';
+import ScadaPanel from './ScadaPanel';
+import { GRID_COLS, ROW_HEIGHT, DARK_COLORS } from './constants';
 
-const COLORS = ['#667eea', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#14b8a6', '#f97316'];
-
-const VIZ_TYPES = [
-  { id: 'line', name: 'Line Chart', icon: Activity, description: 'Time series line chart' },
-  { id: 'area', name: 'Area Chart', icon: TrendingUp, description: 'Filled area chart' },
-  { id: 'bar', name: 'Bar Chart', icon: BarChart3, description: 'Vertical bars' },
-  { id: 'pie', name: 'Pie Chart', icon: PieIcon, description: 'Circular pie chart' },
-  { id: 'scatter', name: 'Scatter Plot', icon: CircleDot, description: 'X-Y scatter plot' },
-  { id: 'radar', name: 'Radar Chart', icon: RadarIcon, description: 'Spider/radar chart' },
-  { id: 'stat', name: 'Stat Panel', icon: Gauge, description: 'Single value display' },
-  { id: 'table', name: 'Table', icon: TableIcon, description: 'Data table' }
-];
-
-// Mock QuestDB Service (since we don't have the actual service)
-const mockQuestDBService = {
-  query: async (query) => {
-    // Simulate API delay
-    await new Promise(resolve => setTimeout(resolve, 500));
-    
-    // Generate mock data
-    const data = [];
-    for (let i = 0; i < 20; i++) {
-      data.push({
-        timestamp: new Date(Date.now() - (20 - i) * 60000).toISOString(),
-        value: Math.random() * 100,
-        temperature: 20 + Math.random() * 10,
-        humidity: 40 + Math.random() * 20,
-        pressure: 1000 + Math.random() * 50
-      });
-    }
-    return data;
-  },
-  
-  formatForChart: (data, timestampField) => {
-    return data.map(item => ({
-      ...item,
-      _time: new Date(item[timestampField]).toLocaleTimeString(),
-      _timestamp: new Date(item[timestampField]).getTime()
-    }));
-  },
-  
-  getTables: async () => {
-    return [
-      { table_name: 'sensor_data' },
-      { table_name: 'metrics' },
-      { table_name: 'logs' }
-    ];
+// ✅ HELPER FUNCTION: Safely extract plantId from user object
+const getPlantId = (user) => {
+  if (!user) {
+    console.error('❌ No user object provided');
+    return null;
   }
+  
+  // Try plantId first (for backward compatibility)
+  if (user.plantId) {
+    console.log('✅ Found plantId:', user.plantId);
+    return user.plantId;
+  }
+  
+  // Try plantAccess array (current structure)
+  if (user.plantAccess && Array.isArray(user.plantAccess) && user.plantAccess.length > 0) {
+    const plantId = user.plantAccess[0].plantId;
+    console.log('✅ Found plantId from plantAccess:', plantId);
+    return plantId;
+  }
+  
+  console.error('❌ No plantId found in user object:', user);
+  return null;
 };
 
-// Theme Context
-const ThemeContext = React.createContext();
-
-function ThemeProvider({ children }) {
-  const [theme, setTheme] = useState(() => {
-    const saved = localStorage.getItem('miralys_theme');
-    return saved || 'light';
-  });
-
-  useEffect(() => {
-    localStorage.setItem('miralys_theme', theme);
-  }, [theme]);
-
-  const toggleTheme = () => {
-    setTheme(prev => prev === 'light' ? 'dark' : 'light');
-  };
-
-  const colors = theme === 'light' ? {
-    bg: '#f3f4f6',
-    cardBg: 'white',
-    border: '#e5e7eb',
-    text: '#111827',
-    textSecondary: '#6b7280',
-    headerBg: 'white',
-    modalBg: 'white',
-    inputBg: 'white',
-    hoverBg: '#f9fafb',
-    chartGrid: 'rgba(0,0,0,0.1)',
-    chartText: '#6b7280',
-    chartStroke: '#e5e7eb'
-  } : {
-    bg: '#0f172a',
-    cardBg: '#1e293b',
-    border: '#334155',
-    text: '#f1f5f9',
-    textSecondary: '#94a3b8',
-    headerBg: '#1e293b',
-    modalBg: '#1e293b',
-    inputBg: '#0f172a',
-    hoverBg: '#334155',
-    chartGrid: 'rgba(255,255,255,0.1)',
-    chartText: '#94a3b8',
-    chartStroke: '#334155'
-  };
-
-  return (
-    <ThemeContext.Provider value={{ theme, toggleTheme, colors }}>
-      {children}
-    </ThemeContext.Provider>
-  );
-}
-
-// Panel Configuration Modal
-function PanelConfigModal({ panel, onSave, onClose, allTables }) {
-  const { colors } = React.useContext(ThemeContext);
-  const [config, setConfig] = useState(panel || {
-    id: `panel_${Date.now()}`,
-    title: 'New Panel',
-    vizType: 'line',
-    dataSource: 'custom',
-    query: '',
-    table: '',
-    timestampField: 'timestamp',
-    xAxis: 'timestamp',
-    yAxis: 'value',
-    limit: 100,
-    refreshInterval: 5000,
-    colors: [COLORS[0]],
-    showLegend: true,
-    showGrid: true,
-    lineWidth: 2,
-    showDots: false,
-    fillOpacity: 0.3,
-    aggregate: 'none'
-  });
-
-  const [previewData, setPreviewData] = useState([]);
-  const [previewLoading, setPreviewLoading] = useState(false);
-  const [previewError, setPreviewError] = useState(null);
-  const [availableFields, setAvailableFields] = useState([]);
-
-  useEffect(() => {
-    if (config.table && config.dataSource === 'table') {
-      fetchTableFields(config.table);
-    }
-  }, [config.table]);
-
-  const fetchTableFields = async (tableName) => {
-    try {
-      const query = `SELECT * FROM ${tableName} LIMIT 1`;
-      const result = await mockQuestDBService.query(query);
-      if (result.length > 0) {
-        const fields = Object.keys(result[0]);
-        setAvailableFields(fields);
-      }
-    } catch (error) {
-      console.error('Error fetching fields:', error);
-    }
-  };
-
-  const handlePreview = async () => {
-    setPreviewLoading(true);
-    setPreviewError(null);
-    
-    try {
-      let query = config.query;
-      
-      if (config.dataSource === 'table' && config.table) {
-        query = `SELECT * FROM ${config.table} ORDER BY ${config.timestampField} DESC LIMIT ${config.limit}`;
-      }
-      
-      if (!query) {
-        setPreviewError('Please enter a query or select a table');
-        setPreviewLoading(false);
-        return;
-      }
-
-      const result = await mockQuestDBService.query(query);
-      const formatted = mockQuestDBService.formatForChart(result, config.timestampField);
-      setPreviewData(formatted);
-      
-      if (formatted.length > 0 && !config.yAxis) {
-        const numericFields = Object.keys(formatted[0]).filter(key => 
-          typeof formatted[0][key] === 'number' && key !== '_timestamp'
-        );
-        if (numericFields.length > 0) {
-          setConfig({ ...config, yAxis: numericFields[0] });
-        }
-      }
-    } catch (error) {
-      setPreviewError(error.message);
-    }
-    
-    setPreviewLoading(false);
-  };
-
-  const renderPreviewChart = () => {
-    if (previewLoading) {
-      return (
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '250px' }}>
-          <RefreshCw size={24} color="#667eea" style={{ animation: 'spin 1s linear infinite' }} />
-        </div>
-      );
-    }
-
-    if (previewError) {
-      return (
-        <div style={{ 
-          display: 'flex', 
-          alignItems: 'center', 
-          justifyContent: 'center', 
-          height: '250px',
-          color: '#ef4444',
-          textAlign: 'center',
-          padding: '20px'
-        }}>
-          <div>
-            <AlertCircle size={32} style={{ marginBottom: '8px' }} />
-            <div>{previewError}</div>
-          </div>
-        </div>
-      );
-    }
-
-    if (previewData.length === 0) {
-      return (
-        <div style={{ 
-          display: 'flex', 
-          alignItems: 'center', 
-          justifyContent: 'center', 
-          height: '250px',
-          color: colors.textSecondary
-        }}>
-          Click "Preview" to test your configuration
-        </div>
-      );
-    }
-
-    const chartProps = { data: previewData, margin: { top: 10, right: 20, left: 10, bottom: 5 } };
-
-    return (
-      <ResponsiveContainer width="100%" height={250}>
-        {config.vizType === 'line' && (
-          <LineChart {...chartProps}>
-            {config.showGrid && <CartesianGrid strokeDasharray="3 3" stroke={colors.chartGrid} />}
-            <XAxis dataKey="_time" tick={{ fill: colors.chartText, fontSize: 10 }} stroke={colors.chartStroke} />
-            <YAxis tick={{ fill: colors.chartText, fontSize: 10 }} stroke={colors.chartStroke} />
-            <Tooltip contentStyle={{ background: colors.cardBg, border: `1px solid ${colors.border}`, borderRadius: '6px', color: colors.text }} />
-            {config.showLegend && <Legend />}
-            <Line type="monotone" dataKey={config.yAxis} stroke={config.colors[0]} strokeWidth={config.lineWidth} dot={config.showDots} />
-          </LineChart>
-        )}
-        {config.vizType === 'bar' && (
-          <BarChart {...chartProps}>
-            {config.showGrid && <CartesianGrid strokeDasharray="3 3" stroke={colors.chartGrid} />}
-            <XAxis dataKey="_time" tick={{ fill: colors.chartText, fontSize: 10 }} stroke={colors.chartStroke} />
-            <YAxis tick={{ fill: colors.chartText, fontSize: 10 }} stroke={colors.chartStroke} />
-            <Tooltip contentStyle={{ background: colors.cardBg, border: `1px solid ${colors.border}`, borderRadius: '6px', color: colors.text }} />
-            {config.showLegend && <Legend />}
-            <Bar dataKey={config.yAxis} fill={config.colors[0]} />
-          </BarChart>
-        )}
-        {config.vizType === 'area' && (
-          <AreaChart {...chartProps}>
-            {config.showGrid && <CartesianGrid strokeDasharray="3 3" stroke={colors.chartGrid} />}
-            <XAxis dataKey="_time" tick={{ fill: colors.chartText, fontSize: 10 }} stroke={colors.chartStroke} />
-            <YAxis tick={{ fill: colors.chartText, fontSize: 10 }} stroke={colors.chartStroke} />
-            <Tooltip contentStyle={{ background: colors.cardBg, border: `1px solid ${colors.border}`, borderRadius: '6px', color: colors.text }} />
-            {config.showLegend && <Legend />}
-            <Area type="monotone" dataKey={config.yAxis} stroke={config.colors[0]} fill={config.colors[0]} fillOpacity={config.fillOpacity} />
-          </AreaChart>
-        )}
-        {config.vizType === 'pie' && (
-          <PieChart>
-            <Pie 
-              data={previewData.slice(0, 10)} 
-              dataKey={config.yAxis} 
-              nameKey="_time" 
-              cx="50%" 
-              cy="50%" 
-              outerRadius={80} 
-              label
-            >
-              {previewData.slice(0, 10).map((entry, index) => (
-                <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-              ))}
-            </Pie>
-            <Tooltip contentStyle={{ background: colors.cardBg, border: `1px solid ${colors.border}`, borderRadius: '6px', color: colors.text }} />
-            {config.showLegend && <Legend />}
-          </PieChart>
-        )}
-        {config.vizType === 'scatter' && (
-          <ScatterChart {...chartProps}>
-            {config.showGrid && <CartesianGrid strokeDasharray="3 3" stroke={colors.chartGrid} />}
-            <XAxis dataKey="_timestamp" tick={{ fill: colors.chartText, fontSize: 10 }} stroke={colors.chartStroke} />
-            <YAxis dataKey={config.yAxis} tick={{ fill: colors.chartText, fontSize: 10 }} stroke={colors.chartStroke} />
-            <Tooltip contentStyle={{ background: colors.cardBg, border: `1px solid ${colors.border}`, borderRadius: '6px', color: colors.text }} />
-            {config.showLegend && <Legend />}
-            <Scatter dataKey={config.yAxis} fill={config.colors[0]} />
-          </ScatterChart>
-        )}
-        {config.vizType === 'radar' && (
-          <RadarChart data={previewData.slice(0, 8)}>
-            <PolarGrid stroke={colors.chartGrid} />
-            <PolarAngleAxis dataKey="_time" tick={{ fill: colors.chartText, fontSize: 10 }} />
-            <PolarRadiusAxis tick={{ fill: colors.chartText, fontSize: 10 }} />
-            <Radar 
-              dataKey={config.yAxis} 
-              stroke={config.colors[0]} 
-              fill={config.colors[0]} 
-              fillOpacity={config.fillOpacity || 0.5} 
-            />
-            {config.showLegend && <Legend />}
-          </RadarChart>
-        )}
-        {config.vizType === 'stat' && (
-          <div style={{
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-            justifyContent: 'center',
-            height: '100%'
-          }}>
-            <div style={{ fontSize: '48px', fontWeight: 'bold', color: config.colors[0], marginBottom: '8px' }}>
-              {previewData.length > 0 ? previewData[previewData.length - 1][config.yAxis]?.toFixed(2) : '0.00'}
-            </div>
-            <div style={{ fontSize: '14px', color: colors.textSecondary }}>
-              {previewData.length} data points
-            </div>
-          </div>
-        )}
-        {config.vizType === 'table' && (
-          <div style={{ height: '250px', overflow: 'auto' }}>
-            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '12px' }}>
-              <thead>
-                <tr style={{ background: colors.hoverBg, position: 'sticky', top: 0 }}>
-                  {Object.keys(previewData[0] || {}).filter(k => !k.startsWith('_')).map(col => (
-                    <th key={col} style={{ 
-                      padding: '8px', 
-                      textAlign: 'left', 
-                      borderBottom: `2px solid ${colors.border}`, 
-                      color: colors.text, 
-                      fontWeight: '600',
-                      fontSize: '11px'
-                    }}>
-                      {col}
-                    </th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {previewData.slice(0, 10).map((row, i) => (
-                  <tr key={i} style={{ borderBottom: `1px solid ${colors.border}` }}>
-                    {Object.keys(row).filter(k => !k.startsWith('_')).map(col => (
-                      <td key={col} style={{ padding: '8px', color: colors.text }}>
-                        {typeof row[col] === 'number' ? row[col].toFixed(2) : row[col]}
-                      </td>
-                    ))}
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </ResponsiveContainer>
-    );
-  };
-
-  return (
-    <div style={{
-      position: 'fixed',
-      top: 0,
-      left: 0,
-      right: 0,
-      bottom: 0,
-      background: 'rgba(0,0,0,0.75)',
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      zIndex: 10000,
-      padding: '20px'
-    }}>
-      <div style={{
-        background: colors.modalBg,
-        borderRadius: '16px',
-        width: '100%',
-        maxWidth: '1000px',
-        maxHeight: '90vh',
-        overflow: 'hidden',
-        display: 'flex',
-        flexDirection: 'column',
-        boxShadow: '0 20px 60px rgba(0,0,0,0.3)'
-      }}>
-        <div style={{
-          padding: '20px 24px',
-          borderBottom: `1px solid ${colors.border}`,
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          background: colors.hoverBg
-        }}>
-          <div>
-            <h2 style={{ margin: 0, fontSize: '20px', color: colors.text, fontWeight: '700' }}>
-              {panel ? 'Edit Panel' : 'Add New Panel'}
-            </h2>
-            <p style={{ margin: '4px 0 0', fontSize: '13px', color: colors.textSecondary }}>
-              Configure your visualization settings
-            </p>
-          </div>
-          <button onClick={onClose} style={{
-            background: 'none',
-            border: 'none',
-            color: colors.textSecondary,
-            cursor: 'pointer',
-            padding: '8px'
-          }}>
-            <X size={20} />
-          </button>
-        </div>
-
-        <div style={{ flex: 1, overflow: 'auto', padding: '24px' }}>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px' }}>
-            
-            <div>
-              <div style={{ marginBottom: '20px' }}>
-                <label style={{ display: 'block', marginBottom: '8px', fontSize: '13px', color: colors.text, fontWeight: '600' }}>
-                  Panel Title
-                </label>
-                <input
-                  type="text"
-                  value={config.title}
-                  onChange={(e) => setConfig({ ...config, title: e.target.value })}
-                  placeholder="My Panel Title"
-                  style={{
-                    width: '100%',
-                    padding: '10px 12px',
-                    background: colors.inputBg,
-                    border: `2px solid ${colors.border}`,
-                    borderRadius: '8px',
-                    color: colors.text,
-                    fontSize: '14px'
-                  }}
-                />
-              </div>
-
-              <div style={{ marginBottom: '20px' }}>
-                <label style={{ display: 'block', marginBottom: '12px', fontSize: '13px', color: colors.text, fontWeight: '600' }}>
-                  Visualization Type
-                </label>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
-                  {VIZ_TYPES.map(type => {
-                    const Icon = type.icon;
-                    const isSelected = config.vizType === type.id;
-                    return (
-                      <button
-                        key={type.id}
-                        onClick={() => setConfig({ ...config, vizType: type.id })}
-                        style={{
-                          padding: '12px',
-                          background: isSelected ? '#667eea' : colors.hoverBg,
-                          border: '2px solid',
-                          borderColor: isSelected ? '#667eea' : colors.border,
-                          borderRadius: '8px',
-                          color: isSelected ? 'white' : colors.text,
-                          cursor: 'pointer',
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: '10px',
-                          fontSize: '13px',
-                          transition: 'all 0.2s',
-                          textAlign: 'left'
-                        }}
-                      >
-                        <Icon size={18} />
-                        <div>
-                          <div style={{ fontWeight: '600' }}>{type.name}</div>
-                          <div style={{ fontSize: '11px', opacity: 0.7 }}>{type.description}</div>
-                        </div>
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-
-              <div style={{ marginBottom: '20px' }}>
-                <label style={{ display: 'block', marginBottom: '8px', fontSize: '13px', color: colors.text, fontWeight: '600' }}>
-                  Data Source
-                </label>
-                <div style={{ display: 'flex', gap: '8px', marginBottom: '12px' }}>
-                  <button
-                    onClick={() => setConfig({ ...config, dataSource: 'table' })}
-                    style={{
-                      flex: 1,
-                      padding: '10px',
-                      background: config.dataSource === 'table' ? '#667eea' : colors.hoverBg,
-                      border: '2px solid',
-                      borderColor: config.dataSource === 'table' ? '#667eea' : colors.border,
-                      borderRadius: '8px',
-                      color: config.dataSource === 'table' ? 'white' : colors.text,
-                      cursor: 'pointer',
-                      fontSize: '13px',
-                      fontWeight: '600'
-                    }}
-                  >
-                    <Database size={16} style={{ display: 'inline', marginRight: '6px' }} />
-                    From Table
-                  </button>
-                  <button
-                    onClick={() => setConfig({ ...config, dataSource: 'custom' })}
-                    style={{
-                      flex: 1,
-                      padding: '10px',
-                      background: config.dataSource === 'custom' ? '#667eea' : colors.hoverBg,
-                      border: '2px solid',
-                      borderColor: config.dataSource === 'custom' ? '#667eea' : colors.border,
-                      borderRadius: '8px',
-                      color: config.dataSource === 'custom' ? 'white' : colors.text,
-                      cursor: 'pointer',
-                      fontSize: '13px',
-                      fontWeight: '600'
-                    }}
-                  >
-                    Custom SQL
-                  </button>
-                </div>
-
-                {config.dataSource === 'table' ? (
-                  <select
-                    value={config.table}
-                    onChange={(e) => setConfig({ ...config, table: e.target.value })}
-                    style={{
-                      width: '100%',
-                      padding: '10px 12px',
-                      background: colors.inputBg,
-                      border: `2px solid ${colors.border}`,
-                      borderRadius: '8px',
-                      color: colors.text,
-                      fontSize: '14px'
-                    }}
-                  >
-                    <option value="">Select a table...</option>
-                    {allTables.map(table => (
-                      <option key={table} value={table}>{table}</option>
-                    ))}
-                  </select>
-                ) : (
-                  <textarea
-                    value={config.query}
-                    onChange={(e) => setConfig({ ...config, query: e.target.value })}
-                    rows={4}
-                    placeholder="SELECT * FROM your_table WHERE condition ORDER BY timestamp DESC LIMIT 100"
-                    style={{
-                      width: '100%',
-                      padding: '10px 12px',
-                      background: colors.inputBg,
-                      border: `2px solid ${colors.border}`,
-                      borderRadius: '8px',
-                      color: colors.text,
-                      fontSize: '13px',
-                      fontFamily: 'monospace',
-                      resize: 'vertical'
-                    }}
-                  />
-                )}
-              </div>
-
-              <div style={{ marginBottom: '20px' }}>
-                <label style={{ display: 'block', marginBottom: '12px', fontSize: '13px', color: colors.text, fontWeight: '600' }}>
-                  Field Configuration
-                </label>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
-                  <div>
-                    <label style={{ display: 'block', marginBottom: '6px', fontSize: '12px', color: colors.textSecondary }}>
-                      Timestamp Field
-                    </label>
-                    {availableFields.length > 0 ? (
-                      <select
-                        value={config.timestampField}
-                        onChange={(e) => setConfig({ ...config, timestampField: e.target.value })}
-                        style={{
-                          width: '100%',
-                          padding: '8px',
-                          background: colors.inputBg,
-                          border: `2px solid ${colors.border}`,
-                          borderRadius: '6px',
-                          color: colors.text,
-                          fontSize: '13px'
-                        }}
-                      >
-                        {availableFields.map(field => (
-                          <option key={field} value={field}>{field}</option>
-                        ))}
-                      </select>
-                    ) : (
-                      <input
-                        type="text"
-                        value={config.timestampField}
-                        onChange={(e) => setConfig({ ...config, timestampField: e.target.value })}
-                        placeholder="timestamp"
-                        style={{
-                          width: '100%',
-                          padding: '8px',
-                          background: colors.inputBg,
-                          border: `2px solid ${colors.border}`,
-                          borderRadius: '6px',
-                          color: colors.text,
-                          fontSize: '13px'
-                        }}
-                      />
-                    )}
-                  </div>
-                  <div>
-                    <label style={{ display: 'block', marginBottom: '6px', fontSize: '12px', color: colors.textSecondary }}>
-                      Value Field (Y-Axis)
-                    </label>
-                    {availableFields.length > 0 ? (
-                      <select
-                        value={config.yAxis}
-                        onChange={(e) => setConfig({ ...config, yAxis: e.target.value })}
-                        style={{
-                          width: '100%',
-                          padding: '8px',
-                          background: colors.inputBg,
-                          border: `2px solid ${colors.border}`,
-                          borderRadius: '6px',
-                          color: colors.text,
-                          fontSize: '13px'
-                        }}
-                      >
-                        <option value="">Select field...</option>
-                        {availableFields.map(field => (
-                          <option key={field} value={field}>{field}</option>
-                        ))}
-                      </select>
-                    ) : (
-                      <input
-                        type="text"
-                        value={config.yAxis}
-                        onChange={(e) => setConfig({ ...config, yAxis: e.target.value })}
-                        placeholder="value"
-                        style={{
-                          width: '100%',
-                          padding: '8px',
-                          background: colors.inputBg,
-                          border: `2px solid ${colors.border}`,
-                          borderRadius: '6px',
-                          color: colors.text,
-                          fontSize: '13px'
-                        }}
-                      />
-                    )}
-                  </div>
-                </div>
-              </div>
-
-              <div style={{ marginBottom: '20px' }}>
-                <label style={{ display: 'block', marginBottom: '8px', fontSize: '13px', color: colors.text, fontWeight: '600' }}>
-                  Data Point Limit
-                </label>
-                <input
-                  type="number"
-                  value={config.limit}
-                  onChange={(e) => setConfig({ ...config, limit: parseInt(e.target.value) })}
-                  min="10"
-                  max="10000"
-                  style={{
-                    width: '100%',
-                    padding: '10px 12px',
-                    background: colors.inputBg,
-                    border: `2px solid ${colors.border}`,
-                    borderRadius: '8px',
-                    color: colors.text,
-                    fontSize: '14px'
-                  }}
-                />
-              </div>
-
-              <div style={{ marginBottom: '20px' }}>
-                <label style={{ display: 'block', marginBottom: '8px', fontSize: '13px', color: colors.text, fontWeight: '600' }}>
-                  Auto Refresh Interval
-                </label>
-                <select
-                  value={config.refreshInterval}
-                  onChange={(e) => setConfig({ ...config, refreshInterval: parseInt(e.target.value) })}
-                  style={{
-                    width: '100%',
-                    padding: '10px 12px',
-                    background: colors.inputBg,
-                    border: `2px solid ${colors.border}`,
-                    borderRadius: '8px',
-                    color: colors.text,
-                    fontSize: '14px'
-                  }}
-                >
-                  <option value={0}>No auto-refresh</option>
-                  <option value={1000}>1 second</option>
-                  <option value={2000}>2 seconds</option>
-                  <option value={5000}>5 seconds</option>
-                  <option value={10000}>10 seconds</option>
-                  <option value={30000}>30 seconds</option>
-                  <option value={60000}>1 minute</option>
-                  <option value={300000}>5 minutes</option>
-                </select>
-              </div>
-            </div>
-
-            <div>
-              <div style={{ marginBottom: '20px' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
-                  <label style={{ fontSize: '13px', color: colors.text, fontWeight: '600' }}>
-                    Preview
-                  </label>
-                  <button
-                    onClick={handlePreview}
-                    disabled={previewLoading}
-                    style={{
-                      padding: '6px 12px',
-                      background: '#667eea',
-                      border: 'none',
-                      borderRadius: '6px',
-                      color: 'white',
-                      cursor: previewLoading ? 'not-allowed' : 'pointer',
-                      fontSize: '12px',
-                      fontWeight: '600',
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '6px'
-                    }}
-                  >
-                    <Eye size={14} />
-                    {previewLoading ? 'Loading...' : 'Preview Data'}
-                  </button>
-                </div>
-                <div style={{
-                  background: colors.hoverBg,
-                  border: `2px solid ${colors.border}`,
-                  borderRadius: '8px',
-                  padding: '16px',
-                  minHeight: '250px'
-                }}>
-                  {renderPreviewChart()}
-                </div>
-                {previewData.length > 0 && (
-                  <div style={{ marginTop: '8px', fontSize: '12px', color: colors.textSecondary }}>
-                    {previewData.length} data points loaded
-                  </div>
-                )}
-              </div>
-
-              <div style={{ marginBottom: '20px' }}>
-                <label style={{ display: 'block', marginBottom: '12px', fontSize: '13px', color: colors.text, fontWeight: '600' }}>
-                  Style Options
-                </label>
-                
-                <div style={{ marginBottom: '12px' }}>
-                  <label style={{ display: 'block', marginBottom: '6px', fontSize: '12px', color: colors.textSecondary }}>
-                    Chart Color
-                  </label>
-                  <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-                    {COLORS.map(color => (
-                      <button
-                        key={color}
-                        onClick={() => setConfig({ ...config, colors: [color] })}
-                        style={{
-                          width: '36px',
-                          height: '36px',
-                          background: color,
-                          border: config.colors[0] === color ? `3px solid ${colors.text}` : `2px solid ${colors.border}`,
-                          borderRadius: '8px',
-                          cursor: 'pointer'
-                        }}
-                      />
-                    ))}
-                  </div>
-                </div>
-
-                {(config.vizType === 'line' || config.vizType === 'area') && (
-                  <div style={{ marginBottom: '12px' }}>
-                    <label style={{ display: 'block', marginBottom: '6px', fontSize: '12px', color: colors.textSecondary }}>
-                      Line Width: {config.lineWidth}px
-                    </label>
-                    <input
-                      type="range"
-                      min="1"
-                      max="5"
-                      value={config.lineWidth}
-                      onChange={(e) => setConfig({ ...config, lineWidth: parseInt(e.target.value) })}
-                      style={{ width: '100%' }}
-                    />
-                  </div>
-                )}
-
-                {config.vizType === 'area' && (
-                  <div style={{ marginBottom: '12px' }}>
-                    <label style={{ display: 'block', marginBottom: '6px', fontSize: '12px', color: colors.textSecondary }}>
-                      Fill Opacity: {Math.round(config.fillOpacity * 100)}%
-                    </label>
-                    <input
-                      type="range"
-                      min="0"
-                      max="1"
-                      step="0.1"
-                      value={config.fillOpacity}
-                      onChange={(e) => setConfig({ ...config, fillOpacity: parseFloat(e.target.value) })}
-                      style={{ width: '100%' }}
-                    />
-                  </div>
-                )}
-
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                  <label style={{ display: 'flex', alignItems: 'center', gap: '8px', color: colors.text, fontSize: '13px', cursor: 'pointer' }}>
-                    <input
-                      type="checkbox"
-                      checked={config.showLegend}
-                      onChange={(e) => setConfig({ ...config, showLegend: e.target.checked })}
-                      style={{ width: '16px', height: '16px' }}
-                    />
-                    Show Legend
-                  </label>
-                  <label style={{ display: 'flex', alignItems: 'center', gap: '8px', color: colors.text, fontSize: '13px', cursor: 'pointer' }}>
-                    <input
-                      type="checkbox"
-                      checked={config.showGrid}
-                      onChange={(e) => setConfig({ ...config, showGrid: e.target.checked })}
-                      style={{ width: '16px', height: '16px' }}
-                    />
-                    Show Grid Lines
-                  </label>
-                  {(config.vizType === 'line' || config.vizType === 'area') && (
-                    <label style={{ display: 'flex', alignItems: 'center', gap: '8px', color: colors.text, fontSize: '13px', cursor: 'pointer' }}>
-                      <input
-                        type="checkbox"
-                        checked={config.showDots}
-                        onChange={(e) => setConfig({ ...config, showDots: e.target.checked })}
-                        style={{ width: '16px', height: '16px' }}
-                      />
-                      Show Data Points
-                    </label>
-                  )}
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div style={{
-          padding: '16px 24px',
-          borderTop: `1px solid ${colors.border}`,
-          display: 'flex',
-          justifyContent: 'flex-end',
-          gap: '12px',
-          background: colors.hoverBg
-        }}>
-          <button
-            onClick={onClose}
-            style={{
-              padding: '10px 20px',
-              background: colors.inputBg,
-              border: `2px solid ${colors.border}`,
-              borderRadius: '8px',
-              color: colors.textSecondary,
-              cursor: 'pointer',
-              fontSize: '14px',
-              fontWeight: '600'
-            }}
-          >
-            Cancel
-          </button>
-          <button
-            onClick={() => onSave(config)}
-            style={{
-              padding: '10px 20px',
-              background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-              border: 'none',
-              borderRadius: '8px',
-              color: 'white',
-              cursor: 'pointer',
-              fontSize: '14px',
-              fontWeight: '600',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '8px'
-            }}
-          >
-            <Save size={16} />
-            {panel ? 'Save Changes' : 'Add Panel'}
-          </button>
-        </div>
-      </div>
-
-      <style>{`
-        @keyframes spin {
-          0% { transform: rotate(0deg); }
-          100% { transform: rotate(360deg); }
-        }
-      `}</style>
-    </div>
-  );
-}
-
-// Panel Component with Real QuestDB Data
-function QuestDBPanel({ config, onEdit, onDelete, onDuplicate }) {
-  const { colors } = React.useContext(ThemeContext);
-  const [data, setData] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-  const [isFullscreen, setIsFullscreen] = useState(false);
-  const timerRef = useRef(null);
-  const panelRef = useRef(null);
-
-  const fetchData = async () => {
-    try {
-      setError(null);
-      let query = config.query;
-      
-      if (config.dataSource === 'table' && config.table) {
-        query = `SELECT * FROM ${config.table} ORDER BY ${config.timestampField} DESC LIMIT ${config.limit}`;
-      }
-
-      if (!query) {
-        throw new Error('No query specified');
-      }
-
-      const result = await mockQuestDBService.query(query);
-      const formatted = mockQuestDBService.formatForChart(result, config.timestampField);
-      setData(formatted);
-      setLoading(false);
-    } catch (err) {
-      console.error('Error fetching data:', err);
-      setError(err.message);
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    fetchData();
-
-    if (config.refreshInterval > 0) {
-      timerRef.current = setInterval(fetchData, config.refreshInterval);
-    }
-
-    return () => {
-      if (timerRef.current) {
-        clearInterval(timerRef.current);
-      }
-    };
-  }, [config]);
-
-  const toggleFullscreen = () => {
-    if (!isFullscreen) {
-      if (panelRef.current.requestFullscreen) {
-        panelRef.current.requestFullscreen();
-      }
-    } else {
-      if (document.exitFullscreen) {
-        document.exitFullscreen();
-      }
-    }
-    setIsFullscreen(!isFullscreen);
-  };
-
-  const renderChart = () => {
-    if (loading) {
-      return (
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%' }}>
-          <div style={{ textAlign: 'center' }}>
-            <RefreshCw size={32} color="#667eea" style={{ animation: 'spin 1s linear infinite' }} />
-            <p style={{ color: colors.textSecondary, marginTop: '12px', fontSize: '13px' }}>Loading data...</p>
-          </div>
-        </div>
-      );
-    }
-
-    if (error) {
-      return (
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', padding: '20px' }}>
-          <div style={{
-            padding: '16px',
-            background: 'rgba(239, 68, 68, 0.1)',
-            border: '1px solid rgba(239, 68, 68, 0.3)',
-            borderRadius: '8px',
-            color: '#ef4444',
-            textAlign: 'center'
-          }}>
-            <AlertCircle size={32} style={{ marginBottom: '8px' }} />
-            <div style={{ fontSize: '14px', fontWeight: '600' }}>Error loading data</div>
-            <div style={{ fontSize: '12px', marginTop: '4px', opacity: 0.8 }}>{error}</div>
-          </div>
-        </div>
-      );
-    }
-
-    if (data.length === 0) {
-      return (
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%' }}>
-          <div style={{ textAlign: 'center', color: colors.textSecondary }}>
-            <Database size={32} style={{ marginBottom: '8px', opacity: 0.5 }} />
-            <p style={{ fontSize: '13px' }}>No data available</p>
-          </div>
-        </div>
-      );
-    }
-
-    const chartProps = {
-      data,
-      margin: { top: 10, right: 20, left: 10, bottom: 5 }
-    };
-
-    switch (config.vizType) {
-      case 'line':
-        return (
-          <ResponsiveContainer width="100%" height="100%">
-            <LineChart {...chartProps}>
-              {config.showGrid && <CartesianGrid strokeDasharray="3 3" stroke={colors.chartGrid} />}
-              <XAxis dataKey="_time" tick={{ fill: colors.chartText, fontSize: 11 }} stroke={colors.chartStroke} />
-              <YAxis tick={{ fill: colors.chartText, fontSize: 11 }} stroke={colors.chartStroke} />
-              <Tooltip contentStyle={{ background: colors.cardBg, border: `1px solid ${colors.border}`, borderRadius: '6px', color: colors.text }} />
-              {config.showLegend && <Legend />}
-              <Line 
-                type="monotone" 
-                dataKey={config.yAxis} 
-                stroke={config.colors[0]} 
-                strokeWidth={config.lineWidth} 
-                dot={config.showDots} 
-              />
-            </LineChart>
-          </ResponsiveContainer>
-        );
-
-      case 'area':
-        return (
-          <ResponsiveContainer width="100%" height="100%">
-            <AreaChart {...chartProps}>
-              {config.showGrid && <CartesianGrid strokeDasharray="3 3" stroke={colors.chartGrid} />}
-              <XAxis dataKey="_time" tick={{ fill: colors.chartText, fontSize: 11 }} stroke={colors.chartStroke} />
-              <YAxis tick={{ fill: colors.chartText, fontSize: 11 }} stroke={colors.chartStroke} />
-              <Tooltip contentStyle={{ background: colors.cardBg, border: `1px solid ${colors.border}`, borderRadius: '6px', color: colors.text }} />
-              {config.showLegend && <Legend />}
-              <Area 
-                type="monotone" 
-                dataKey={config.yAxis} 
-                stroke={config.colors[0]} 
-                fill={config.colors[0]} 
-                fillOpacity={config.fillOpacity}
-                strokeWidth={config.lineWidth}
-              />
-            </AreaChart>
-          </ResponsiveContainer>
-        );
-
-      case 'bar':
-        return (
-          <ResponsiveContainer width="100%" height="100%">
-            <BarChart {...chartProps}>
-              {config.showGrid && <CartesianGrid strokeDasharray="3 3" stroke={colors.chartGrid} />}
-              <XAxis dataKey="_time" tick={{ fill: colors.chartText, fontSize: 11 }} stroke={colors.chartStroke} />
-              <YAxis tick={{ fill: colors.chartText, fontSize: 11 }} stroke={colors.chartStroke} />
-              <Tooltip contentStyle={{ background: colors.cardBg, border: `1px solid ${colors.border}`, borderRadius: '6px', color: colors.text }} />
-              {config.showLegend && <Legend />}
-              <Bar dataKey={config.yAxis} fill={config.colors[0]} />
-            </BarChart>
-          </ResponsiveContainer>
-        );
-
-      case 'pie':
-        return (
-          <ResponsiveContainer width="100%" height="100%">
-            <PieChart>
-              <Pie 
-                data={data.slice(0, 10)} 
-                dataKey={config.yAxis} 
-                nameKey="_time" 
-                cx="50%" 
-                cy="50%" 
-                outerRadius={80} 
-                label
-              >
-                {data.slice(0, 10).map((entry, index) => (
-                  <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                ))}
-              </Pie>
-              <Tooltip contentStyle={{ background: colors.cardBg, border: `1px solid ${colors.border}`, borderRadius: '6px', color: colors.text }} />
-              {config.showLegend && <Legend />}
-            </PieChart>
-          </ResponsiveContainer>
-        );
-
-      case 'scatter':
-        return (
-          <ResponsiveContainer width="100%" height="100%">
-            <ScatterChart {...chartProps}>
-              {config.showGrid && <CartesianGrid strokeDasharray="3 3" stroke={colors.chartGrid} />}
-              <XAxis dataKey="_timestamp" tick={{ fill: colors.chartText, fontSize: 11 }} stroke={colors.chartStroke} />
-              <YAxis dataKey={config.yAxis} tick={{ fill: colors.chartText, fontSize: 11 }} stroke={colors.chartStroke} />
-              <Tooltip contentStyle={{ background: colors.cardBg, border: `1px solid ${colors.border}`, borderRadius: '6px', color: colors.text }} />
-              {config.showLegend && <Legend />}
-              <Scatter dataKey={config.yAxis} fill={config.colors[0]} />
-            </ScatterChart>
-          </ResponsiveContainer>
-        );
-
-      case 'radar':
-        return (
-          <ResponsiveContainer width="100%" height="100%">
-            <RadarChart data={data.slice(0, 8)}>
-              <PolarGrid stroke={colors.chartGrid} />
-              <PolarAngleAxis dataKey="_time" tick={{ fill: colors.chartText, fontSize: 11 }} />
-              <PolarRadiusAxis tick={{ fill: colors.chartText, fontSize: 11 }} />
-              <Radar 
-                dataKey={config.yAxis} 
-                stroke={config.colors[0]} 
-                fill={config.colors[0]} 
-                fillOpacity={config.fillOpacity || 0.5} 
-              />
-              {config.showLegend && <Legend />}
-            </RadarChart>
-          </ResponsiveContainer>
-        );
-
-      case 'stat':
-        const values = data.map(d => d[config.yAxis] || 0);
-        const latest = values[values.length - 1] || 0;
-        const previous = values[values.length - 2] || 0;
-        const change = latest - previous;
-        const avg = values.reduce((a, b) => a + b, 0) / values.length;
-
-        return (
-          <div style={{
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-            justifyContent: 'center',
-            height: '100%'
-          }}>
-            <div style={{ fontSize: isFullscreen ? '72px' : '48px', fontWeight: 'bold', color: config.colors[0], marginBottom: '8px' }}>
-              {latest.toFixed(2)}
-            </div>
-            <div style={{
-              fontSize: isFullscreen ? '24px' : '16px',
-              color: change >= 0 ? '#10b981' : '#ef4444',
-              marginBottom: '16px',
-              fontWeight: '600'
-            }}>
-              {change >= 0 ? '↑' : '↓'} {Math.abs(change).toFixed(2)} ({((change / previous) * 100).toFixed(1)}%)
-            </div>
-            <div style={{ display: 'flex', gap: '24px', fontSize: isFullscreen ? '18px' : '14px', color: colors.textSecondary }}>
-              <div>Min: <span style={{ color: colors.text, fontWeight: '600' }}>{Math.min(...values).toFixed(2)}</span></div>
-              <div>Max: <span style={{ color: colors.text, fontWeight: '600' }}>{Math.max(...values).toFixed(2)}</span></div>
-              <div>Avg: <span style={{ color: colors.text, fontWeight: '600' }}>{avg.toFixed(2)}</span></div>
-            </div>
-          </div>
-        );
-
-      case 'table':
-        const columns = Object.keys(data[0] || {}).filter(key => !key.startsWith('_'));
-        return (
-          <div style={{ height: '100%', overflow: 'auto' }}>
-            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: isFullscreen ? '16px' : '13px' }}>
-              <thead>
-                <tr style={{ background: colors.hoverBg, position: 'sticky', top: 0, zIndex: 1 }}>
-                  {columns.map(col => (
-                    <th key={col} style={{ 
-                      padding: isFullscreen ? '14px' : '10px', 
-                      textAlign: 'left', 
-                      borderBottom: `2px solid ${colors.border}`, 
-                      color: colors.text, 
-                      fontWeight: '600',
-                      fontSize: isFullscreen ? '14px' : '12px'
-                    }}>
-                      {col}
-                    </th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {data.map((row, i) => (
-                  <tr key={i} style={{ borderBottom: `1px solid ${colors.border}` }}>
-                    {columns.map(col => (
-                      <td key={col} style={{ padding: isFullscreen ? '14px' : '10px', color: colors.text }}>
-                        {typeof row[col] === 'number' ? row[col].toFixed(2) : row[col]}
-                      </td>
-                    ))}
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        );
-
-      default:
-        return <div style={{ textAlign: 'center', color: colors.textSecondary }}>Unsupported chart type</div>;
-    }
-  };
-
-  return (
-    <div 
-      ref={panelRef}
-      style={{
-        height: '100%',
-        display: 'flex',
-        flexDirection: 'column',
-        background: colors.cardBg,
-        border: `2px solid ${colors.border}`,
-        borderRadius: '12px',
-        overflow: 'hidden',
-        boxShadow: '0 4px 6px rgba(0,0,0,0.05)',
-        transition: 'box-shadow 0.2s',
-        position: isFullscreen ? 'fixed' : 'relative',
-        top: isFullscreen ? 0 : 'auto',
-        left: isFullscreen ? 0 : 'auto',
-        right: isFullscreen ? 0 : 'auto',
-        bottom: isFullscreen ? 0 : 'auto',
-        zIndex: isFullscreen ? 9999 : 1
-      }}
-      onMouseEnter={(e) => !isFullscreen && (e.currentTarget.style.boxShadow = '0 8px 12px rgba(0,0,0,0.1)')}
-      onMouseLeave={(e) => !isFullscreen && (e.currentTarget.style.boxShadow = '0 4px 6px rgba(0,0,0,0.05)')}
-    >
-      <div style={{
-        padding: '12px 16px',
-        background: colors.hoverBg,
-        borderBottom: `2px solid ${colors.border}`,
-        display: 'flex',
-        justifyContent: 'space-between',
-        alignItems: 'center'
-      }}>
-        <div style={{
-          fontWeight: '600',
-          color: colors.text,
-          fontSize: '14px',
-          flex: 1,
-          display: 'flex',
-          alignItems: 'center',
-          gap: '8px'
-        }}>
-          <div style={{
-            width: '8px',
-            height: '8px',
-            borderRadius: '50%',
-            background: config.colors[0]
-          }} />
-          {config.title}
-        </div>
-        <div style={{ display: 'flex', gap: '4px' }}>
-          <button onClick={toggleFullscreen} style={{
-            padding: '6px',
-            background: 'transparent',
-            border: 'none',
-            color: colors.textSecondary,
-            cursor: 'pointer',
-            borderRadius: '4px',
-            transition: 'background 0.2s'
-          }} 
-          onMouseEnter={(e) => e.target.style.background = colors.border}
-          onMouseLeave={(e) => e.target.style.background = 'transparent'}
-          title={isFullscreen ? "Exit Fullscreen" : "Fullscreen"}>
-            {isFullscreen ? <Minimize2 size={14} /> : <Maximize2 size={14} />}
-          </button>
-          <button onClick={() => fetchData()} style={{
-            padding: '6px',
-            background: 'transparent',
-            border: 'none',
-            color: colors.textSecondary,
-            cursor: 'pointer',
-            borderRadius: '4px',
-            transition: 'background 0.2s'
-          }} 
-          onMouseEnter={(e) => e.target.style.background = colors.border}
-          onMouseLeave={(e) => e.target.style.background = 'transparent'}
-          title="Refresh">
-            <RefreshCw size={14} />
-          </button>
-          <button onClick={() => onDuplicate(config)} style={{
-            padding: '6px',
-            background: 'transparent',
-            border: 'none',
-            color: colors.textSecondary,
-            cursor: 'pointer',
-            borderRadius: '4px',
-            transition: 'background 0.2s'
-          }}
-          onMouseEnter={(e) => e.target.style.background = colors.border}
-          onMouseLeave={(e) => e.target.style.background = 'transparent'}
-          title="Duplicate">
-            <Copy size={14} />
-          </button>
-          <button onClick={() => onEdit(config)} style={{
-            padding: '6px',
-            background: 'transparent',
-            border: 'none',
-            color: colors.textSecondary,
-            cursor: 'pointer',
-            borderRadius: '4px',
-            transition: 'background 0.2s'
-          }}
-          onMouseEnter={(e) => e.target.style.background = colors.border}
-          onMouseLeave={(e) => e.target.style.background = 'transparent'}
-          title="Edit">
-            <Settings size={14} />
-          </button>
-          <button onClick={() => onDelete(config.id)} style={{
-            padding: '6px',
-            background: 'transparent',
-            border: 'none',
-            color: '#ef4444',
-            cursor: 'pointer',
-            borderRadius: '4px',
-            transition: 'background 0.2s'
-          }}
-          onMouseEnter={(e) => e.target.style.background = 'rgba(239, 68, 68, 0.1)'}
-          onMouseLeave={(e) => e.target.style.background = 'transparent'}
-          title="Delete">
-            <Trash2 size={14} />
-          </button>
-        </div>
-      </div>
-
-      <div style={{ flex: 1, minHeight: 0, padding: '16px' }}>
-        {renderChart()}
-      </div>
-
-      <div style={{
-        padding: '8px 12px',
-        borderTop: `1px solid ${colors.border}`,
-        display: 'flex',
-        justifyContent: 'space-between',
-        fontSize: '11px',
-        color: colors.textSecondary,
-        background: colors.hoverBg
-      }}>
-        <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
-          <div style={{ display: 'flex', gap: '4px', alignItems: 'center' }}>
-            <Play size={10} />
-            <span>{config.refreshInterval > 0 ? `${config.refreshInterval / 1000}s` : 'Manual'}</span>
-          </div>
-          <div>•</div>
-          <div style={{ textTransform: 'capitalize' }}>{config.vizType}</div>
-        </div>
-        <div>{data.length} pts</div>
-      </div>
-
-      <style>{`
-        @keyframes spin {
-          0% { transform: rotate(0deg); }
-          100% { transform: rotate(360deg); }
-        }
-      `}</style>
-    </div>
-  );
-}
-
-// Main Dashboard Component
-function DashboardApp() {
-  const { theme, toggleTheme, colors } = React.useContext(ThemeContext);
-  const [panels, setPanels] = useState([]);
+export default function Dashboard({ onLogout }) {
+  const navigate = useNavigate();
+  const user = authService.getUser();
+  const [dashboards, setDashboards] = useState([]);
+  const [currentDashboard, setCurrentDashboard] = useState(null);
   const [showConfigModal, setShowConfigModal] = useState(false);
+  const [showDashboardModal, setShowDashboardModal] = useState(false);
+  const [showScadaModal, setShowScadaModal] = useState(false);
   const [editingPanel, setEditingPanel] = useState(null);
+  const [editingScadaDiagram, setEditingScadaDiagram] = useState(null);
   const [availableTables, setAvailableTables] = useState([]);
-  const [user] = useState({ name: 'Admin', email: 'admin@example.com' });
+  const [draggingPanel, setDraggingPanel] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [syncError, setSyncError] = useState(null);
+  const [darkMode, setDarkMode] = useState(() => {
+    const saved = localStorage.getItem('miralys_dark_mode');
+    return saved ? JSON.parse(saved) : false;
+  });
 
+  // Debug: Log user object on mount
+  useEffect(() => {
+    console.log('👤 Current user object:', user);
+    console.log('🏭 Extracted plantId:', getPlantId(user));
+  }, []);
+
+  // Fetch tables
   useEffect(() => {
     const fetchTables = async () => {
       try {
-        const result = await mockQuestDBService.getTables();
+        const result = await questdbService.getTables();
         const tableNames = result.map(row => row.table_name);
         setAvailableTables(tableNames);
+        console.log('Loaded tables:', tableNames);
       } catch (error) {
         console.error('Error fetching tables:', error);
+        setAvailableTables([]);
       }
     };
     fetchTables();
   }, []);
 
+  // Load dashboards from MongoDB on mount
   useEffect(() => {
-    const saved = localStorage.getItem('miralys_dashboard_panels');
-    if (saved) {
-      try {
-        const parsed = JSON.parse(saved);
-        setPanels(parsed || []);
-      } catch (e) {
-        console.error('Error loading dashboard:', e);
-      }
-    }
+    loadDashboards();
   }, []);
 
-  useEffect(() => {
-    if (panels.length > 0) {
-      localStorage.setItem('miralys_dashboard_panels', JSON.stringify(panels));
+  const loadDashboards = async () => {
+    setLoading(true);
+    setSyncError(null);
+    
+    try {
+      // Sync dashboards between localStorage and MongoDB
+      const remoteDashboards = await dashboardService.syncDashboards();
+      
+      if (remoteDashboards && remoteDashboards.length > 0) {
+        setDashboards(remoteDashboards);
+        
+        // Set current dashboard (prefer default, or first one)
+        const defaultDashboard = remoteDashboards.find(d => d.isDefault);
+        const activeDashboardId = localStorage.getItem('miralys_active_dashboard');
+        const activeDashboard = remoteDashboards.find(d => d.id === activeDashboardId);
+        
+        setCurrentDashboard(activeDashboard || defaultDashboard || remoteDashboards[0]);
+      } else {
+        // Create default dashboard if none exist
+        await createDefaultDashboard();
+      }
+    } catch (error) {
+      console.error('Error loading dashboards:', error);
+      setSyncError('Failed to load dashboards. Using offline mode.');
+      
+      // Fallback to localStorage
+      const saved = localStorage.getItem('miralys_dashboards');
+      if (saved) {
+        try {
+          const parsed = JSON.parse(saved);
+          if (parsed && parsed.length > 0) {
+            setDashboards(parsed);
+            setCurrentDashboard(parsed[0]);
+          } else {
+            createDefaultDashboardOffline();
+          }
+        } catch (e) {
+          console.error('Error parsing localStorage dashboards:', e);
+          createDefaultDashboardOffline();
+        }
+      } else {
+        createDefaultDashboardOffline();
+      }
+    } finally {
+      setLoading(false);
     }
-  }, [panels]);
+  };
+
+  const createDefaultDashboard = async () => {
+    try {
+      const plantId = getPlantId(user);
+      
+      if (!plantId) {
+        console.error('❌ No plantId found for user - creating offline dashboard');
+        createDefaultDashboardOffline();
+        return;
+      }
+
+      console.log('📝 Creating default dashboard for plant:', plantId);
+      const newDashboard = await dashboardService.createDashboard(
+        'Default Dashboard',
+        plantId,
+        [],
+        true
+      );
+
+      setDashboards([newDashboard]);
+      setCurrentDashboard(newDashboard);
+      console.log('✅ Default dashboard created successfully');
+    } catch (error) {
+      console.error('❌ Error creating default dashboard:', error);
+      createDefaultDashboardOffline();
+    }
+  };
+
+  const createDefaultDashboardOffline = () => {
+    console.log('📝 Creating offline default dashboard');
+    const defaultDashboard = {
+      id: `dashboard_${Date.now()}`,
+      name: 'Default Dashboard',
+      panels: []
+    };
+    setDashboards([defaultDashboard]);
+    setCurrentDashboard(defaultDashboard);
+    localStorage.setItem('miralys_dashboards', JSON.stringify([defaultDashboard]));
+  };
+
+  // Save to localStorage as backup (keep existing behavior)
+  useEffect(() => {
+    if (dashboards.length > 0) {
+      localStorage.setItem('miralys_dashboards', JSON.stringify(dashboards));
+    }
+    if (currentDashboard) {
+      localStorage.setItem('miralys_active_dashboard', currentDashboard.id);
+    }
+  }, [dashboards, currentDashboard]);
+
+  useEffect(() => {
+    localStorage.setItem('miralys_dark_mode', JSON.stringify(darkMode));
+  }, [darkMode]);
+
+  const toggleDarkMode = () => {
+    setDarkMode(!darkMode);
+  };
+
+  const theme = darkMode ? {
+    bg: DARK_COLORS.bg.main,
+    card: DARK_COLORS.bg.card,
+    hover: DARK_COLORS.bg.hover,
+    text: DARK_COLORS.text.primary,
+    textSecondary: DARK_COLORS.text.secondary,
+    textMuted: DARK_COLORS.text.muted,
+    border: DARK_COLORS.border.main,
+    borderLight: DARK_COLORS.border.light,
+    accent: DARK_COLORS.primary
+  } : {
+    bg: '#f3f4f6',
+    card: 'white',
+    hover: '#f9fafb',
+    text: '#111827',
+    textSecondary: '#374151',
+    textMuted: '#6b7280',
+    border: '#e5e7eb',
+    borderLight: '#d1d5db',
+    accent: '#667eea'
+  };
+
+  const handleLogout = () => {
+    authService.logout();
+    onLogout();
+  };
 
   const handleAddPanel = () => {
     setEditingPanel(null);
     setShowConfigModal(true);
   };
 
-  const handleSavePanel = (config) => {
-    const exists = panels.some(p => p.id === config.id);
-    
-    if (exists) {
-      setPanels(panels.map(p => p.id === config.id ? config : p));
-    } else {
-      setPanels([...panels, config]);
+  const handleAddScada = () => {
+    setEditingScadaDiagram(null);
+    setShowScadaModal(true);
+  };
+
+  const handleSavePanel = async (config) => {
+    try {
+      if (!config || !config.id) {
+        console.error('Invalid panel config:', config);
+        return;
+      }
+
+      const updatedDashboard = {
+        ...currentDashboard,
+        panels: [...(currentDashboard.panels || [])],
+      };
+
+      const panelExists = updatedDashboard.panels.some(p => p.id === config.id);
+
+      if (panelExists) {
+        updatedDashboard.panels = updatedDashboard.panels.map(p =>
+          p.id === config.id ? config : p
+        );
+      } else {
+        const newPanel = {
+          ...config,
+          x: 0,
+          y: getNextAvailableY(),
+          width: config.width || 12,
+          height: config.height || 6
+        };
+        updatedDashboard.panels.push(newPanel);
+      }
+
+      // Update in MongoDB
+      try {
+        await dashboardService.updateDashboard(updatedDashboard.id, {
+          panels: updatedDashboard.panels
+        });
+        console.log('✅ Panel saved to MongoDB');
+      } catch (error) {
+        console.error('❌ Failed to save to MongoDB:', error);
+      }
+
+      setDashboards(prevDashboards =>
+        prevDashboards.map(d =>
+          d.id === updatedDashboard.id ? updatedDashboard : d
+        )
+      );
+      
+      setCurrentDashboard(updatedDashboard);
+      
+      setTimeout(() => {
+        setShowConfigModal(false);
+        setShowScadaModal(false);
+        setEditingPanel(null);
+        setEditingScadaDiagram(null);
+      }, 0);
+    } catch (error) {
+      console.error('Error saving panel:', error);
+      alert('Failed to save panel. Please try again.');
     }
-    
-    setShowConfigModal(false);
-    setEditingPanel(null);
+  };
+
+  const getNextAvailableY = () => {
+    if (!currentDashboard?.panels || currentDashboard.panels.length === 0) return 0;
+    const maxY = Math.max(...currentDashboard.panels.map(p => (p.y || 0) + (p.height || 1)));
+    return maxY;
   };
 
   const handleEdit = (panel) => {
-    setEditingPanel(panel);
-    setShowConfigModal(true);
-  };
-
-  const handleDelete = (panelId) => {
-    if (window.confirm('Are you sure you want to delete this panel?')) {
-      setPanels(panels.filter(p => p.id !== panelId));
+    if (panel.type === 'scada') {
+      setEditingScadaDiagram(panel);
+      setShowScadaModal(true);
+    } else {
+      setEditingPanel(panel);
+      setShowConfigModal(true);
     }
   };
 
-  const handleDuplicate = (panel) => {
+  const handleDelete = async (panelId) => {
+    if (window.confirm('Are you sure you want to delete this panel?')) {
+      const updatedDashboard = {
+        ...currentDashboard,
+        panels: currentDashboard.panels.filter(p => p.id !== panelId)
+      };
+
+      try {
+        await dashboardService.updateDashboard(updatedDashboard.id, {
+          panels: updatedDashboard.panels
+        });
+        console.log('✅ Panel deleted from MongoDB');
+      } catch (error) {
+        console.error('❌ Failed to delete from MongoDB:', error);
+      }
+
+      setCurrentDashboard(updatedDashboard);
+      setDashboards(dashboards.map(d => 
+        d.id === updatedDashboard.id ? updatedDashboard : d
+      ));
+    }
+  };
+
+  const handleDuplicate = async (panel) => {
     const newPanel = {
       ...panel,
       id: `panel_${Date.now()}`,
-      title: `${panel.title} (Copy)`
+      title: `${panel.title} (Copy)`,
+      y: getNextAvailableY()
     };
-    setPanels([...panels, newPanel]);
+    const updatedDashboard = {
+      ...currentDashboard,
+      panels: [...(currentDashboard.panels || []), newPanel]
+    };
+
+    try {
+      await dashboardService.updateDashboard(updatedDashboard.id, {
+        panels: updatedDashboard.panels
+      });
+      console.log('✅ Panel duplicated in MongoDB');
+    } catch (error) {
+      console.error('❌ Failed to duplicate in MongoDB:', error);
+    }
+
+    setCurrentDashboard(updatedDashboard);
+    setDashboards(dashboards.map(d => 
+      d.id === updatedDashboard.id ? updatedDashboard : d
+    ));
   };
 
+  const handleResize = async (panelId, newWidth, newHeight) => {
+    const updatedDashboard = {
+      ...currentDashboard,
+      panels: currentDashboard.panels.map(p =>
+        p.id === panelId ? { ...p, width: newWidth, height: newHeight } : p
+      )
+    };
+
+    try {
+      await dashboardService.updateDashboard(updatedDashboard.id, {
+        panels: updatedDashboard.panels
+      });
+      console.log('✅ Panel resized in MongoDB');
+    } catch (error) {
+      console.error('❌ Failed to resize in MongoDB:', error);
+    }
+
+    setCurrentDashboard(updatedDashboard);
+    setDashboards(dashboards.map(d =>
+      d.id === updatedDashboard.id ? updatedDashboard : d
+    ));
+  };
+
+  const handleCreateDashboard = async (name) => {
+    try {
+      const plantId = getPlantId(user);
+      
+      if (!plantId) {
+        alert('No plant access found. Please contact your administrator.');
+        return;
+      }
+
+      console.log('📝 Creating new dashboard:', name, 'for plant:', plantId);
+      const newDashboard = await dashboardService.createDashboard(name, plantId);
+      setDashboards([...dashboards, newDashboard]);
+      setCurrentDashboard(newDashboard);
+      console.log('✅ Dashboard created successfully');
+    } catch (error) {
+      console.error('❌ Error creating dashboard:', error);
+      alert('Failed to create dashboard. Please try again.');
+    }
+  };
+
+  const handleSelectDashboard = (dashboardId) => {
+    const dashboard = dashboards.find(d => d.id === dashboardId);
+    if (dashboard) {
+      setCurrentDashboard(dashboard);
+      setShowDashboardModal(false);
+    }
+  };
+
+  const handleRenameDashboard = async (dashboardId, newName) => {
+    try {
+      await dashboardService.updateDashboard(dashboardId, { name: newName });
+      console.log('✅ Dashboard renamed in MongoDB');
+      
+      const updatedDashboards = dashboards.map(d =>
+        d.id === dashboardId ? { ...d, name: newName } : d
+      );
+      setDashboards(updatedDashboards);
+      
+      if (currentDashboard?.id === dashboardId) {
+        setCurrentDashboard({ ...currentDashboard, name: newName });
+      }
+    } catch (error) {
+      console.error('❌ Error renaming dashboard:', error);
+      alert('Failed to rename dashboard. Please try again.');
+    }
+  };
+
+  const handleDeleteDashboard = async (dashboardId) => {
+    try {
+      await dashboardService.deleteDashboard(dashboardId);
+      console.log('✅ Dashboard deleted from MongoDB');
+      
+      const updatedDashboards = dashboards.filter(d => d.id !== dashboardId);
+      setDashboards(updatedDashboards);
+      
+      if (currentDashboard?.id === dashboardId) {
+        setCurrentDashboard(updatedDashboards[0] || null);
+      }
+    } catch (error) {
+      console.error('❌ Error deleting dashboard:', error);
+      alert('Failed to delete dashboard. Please try again.');
+    }
+  };
+
+  const handleExportDashboard = () => {
+    if (!currentDashboard) return;
+    
+    const dataStr = JSON.stringify(currentDashboard, null, 2);
+    const dataBlob = new Blob([dataStr], { type: 'application/json' });
+    const url = URL.createObjectURL(dataBlob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `${currentDashboard.name.replace(/\s+/g, '_')}_${Date.now()}.json`;
+    link.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const handleImportDashboard = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = async (event) => {
+      try {
+        const imported = JSON.parse(event.target.result);
+        const plantId = getPlantId(user);
+        
+        if (!plantId) {
+          alert('No plant access found. Please contact your administrator.');
+          return;
+        }
+
+        console.log('📥 Importing dashboard for plant:', plantId);
+        const newDashboard = await dashboardService.createDashboard(
+          `${imported.name} (Imported)`,
+          plantId,
+          imported.panels || []
+        );
+        
+        setDashboards([...dashboards, newDashboard]);
+        setCurrentDashboard(newDashboard);
+        console.log('✅ Dashboard imported successfully');
+      } catch (error) {
+        alert('Failed to import dashboard. Please check the file format.');
+        console.error('Import error:', error);
+      }
+    };
+    reader.readAsText(file);
+    e.target.value = '';
+  };
+
+  // Drag and drop handlers
+  const handleDragStart = (e, panel) => {
+    setDraggingPanel(panel);
+    e.dataTransfer.effectAllowed = 'move';
+  };
+
+  const handleDragOver = (e) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+  };
+
+  const handleDrop = async (e, targetPanel) => {
+    e.preventDefault();
+    if (!draggingPanel || draggingPanel.id === targetPanel.id) {
+      setDraggingPanel(null);
+      return;
+    }
+
+    const updatedPanels = [...currentDashboard.panels];
+    const dragIndex = updatedPanels.findIndex(p => p.id === draggingPanel.id);
+    const targetIndex = updatedPanels.findIndex(p => p.id === targetPanel.id);
+
+    if (dragIndex !== -1 && targetIndex !== -1) {
+      [updatedPanels[dragIndex], updatedPanels[targetIndex]] = 
+      [updatedPanels[targetIndex], updatedPanels[dragIndex]];
+
+      const updatedDashboard = {
+        ...currentDashboard,
+        panels: updatedPanels
+      };
+
+      try {
+        await dashboardService.updateDashboard(updatedDashboard.id, {
+          panels: updatedPanels
+        });
+        console.log('✅ Panel order updated in MongoDB');
+      } catch (error) {
+        console.error('❌ Failed to update panel order in MongoDB:', error);
+      }
+
+      setCurrentDashboard(updatedDashboard);
+      setDashboards(dashboards.map(d => 
+        d.id === updatedDashboard.id ? updatedDashboard : d
+      ));
+    }
+    setDraggingPanel(null);
+  };
+
+  const calculatePanelStyle = (panel) => {
+    const width = panel.width || 1;
+    const height = panel.height || 1;
+    
+    return {
+      gridColumn: `span ${Math.min(width, GRID_COLS)}`,
+      gridRow: `span ${height}`,
+      minHeight: `${height * ROW_HEIGHT}px`
+    };
+  };
+
+  // Loading state
+  if (loading) {
+    return (
+      <div style={{ 
+        minHeight: '100vh', 
+        background: theme.bg,
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        transition: 'background 0.3s ease'
+      }}>
+        <div style={{ textAlign: 'center' }}>
+          <Zap size={48} color="#667eea" style={{ animation: 'pulse 2s infinite' }} />
+          <p style={{ marginTop: '16px', color: theme.textMuted, fontSize: '16px' }}>
+            Loading dashboards...
+          </p>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div style={{ minHeight: '100vh', background: colors.bg }}>
+    <div style={{ 
+      minHeight: '100vh', 
+      background: theme.bg,
+      transition: 'background 0.3s ease'
+    }}>
+      {/* Sync Error Banner */}
+      {syncError && (
+        <div style={{
+          background: '#fef3c7',
+          border: '1px solid #fbbf24',
+          padding: '12px 24px',
+          textAlign: 'center',
+          fontSize: '14px',
+          color: '#92400e',
+          fontWeight: '600'
+        }}>
+          ⚠️ {syncError}
+        </div>
+      )}
+
+      {/* Header */}
       <div style={{
-        background: colors.headerBg,
-        borderBottom: `2px solid ${colors.border}`,
-        padding: '16px 24px',
+        background: theme.card,
+        borderBottom: `2px solid ${theme.border}`,
+        padding: '12px 24px',
         display: 'flex',
         justifyContent: 'space-between',
         alignItems: 'center',
         position: 'sticky',
         top: 0,
         zIndex: 100,
-        boxShadow: '0 2px 4px rgba(0,0,0,0.05)'
+        boxShadow: darkMode ? '0 2px 8px rgba(0,0,0,0.3)' : '0 2px 4px rgba(0,0,0,0.05)',
+        backdropFilter: 'blur(10px)',
+        transition: 'all 0.3s ease'
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
           <div style={{
@@ -1451,39 +608,174 @@ function DashboardApp() {
             borderRadius: '10px',
             display: 'flex',
             alignItems: 'center',
-            justifyContent: 'center'
+            justifyContent: 'center',
+            boxShadow: darkMode ? '0 4px 12px rgba(102, 126, 234, 0.4)' : '0 2px 8px rgba(102, 126, 234, 0.3)',
+            transition: 'all 0.3s ease'
           }}>
             <Zap size={24} color="white" />
           </div>
           <div>
-            <h1 style={{ margin: 0, fontSize: '18px', fontWeight: '700', color: colors.text }}>
+            <h1 style={{ 
+              margin: 0, 
+              fontSize: '18px', 
+              fontWeight: '700', 
+              color: theme.text,
+              transition: 'color 0.3s ease'
+            }}>
               Miralys
             </h1>
-            <p style={{ margin: 0, fontSize: '12px', color: colors.textSecondary }}>
-              Real-Time Data Intelligence
+            <p style={{ 
+              margin: 0, 
+              fontSize: '12px', 
+              color: theme.textMuted,
+              transition: 'color 0.3s ease'
+            }}>
+              {currentDashboard?.name || 'Real-Time Data Intelligence'}
             </p>
           </div>
         </div>
         
-        <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
           <button
-            onClick={toggleTheme}
+            onClick={toggleDarkMode}
             style={{
               padding: '10px',
-              background: colors.inputBg,
-              border: `2px solid ${colors.border}`,
+              background: darkMode ? DARK_COLORS.bg.hover : '#f9fafb',
+              border: `2px solid ${theme.border}`,
               borderRadius: '8px',
-              color: colors.text,
+              color: theme.text,
               cursor: 'pointer',
               display: 'flex',
               alignItems: 'center',
-              transition: 'all 0.2s'
+              transition: 'all 0.3s ease',
+              boxShadow: darkMode ? '0 2px 8px rgba(0,0,0,0.2)' : 'none'
             }}
-            title={`Switch to ${theme === 'light' ? 'dark' : 'light'} mode`}
+            onMouseEnter={(e) => {
+              e.target.style.borderColor = theme.accent;
+              e.target.style.transform = 'translateY(-2px)';
+            }}
+            onMouseLeave={(e) => {
+              e.target.style.borderColor = theme.border;
+              e.target.style.transform = 'translateY(0)';
+            }}
+            title={darkMode ? 'Light Mode' : 'Dark Mode'}
           >
-            {theme === 'light' ? <Moon size={18} /> : <Sun size={18} />}
+            {darkMode ? <Sun size={18} /> : <Moon size={18} />}
           </button>
+
+          <button
+            onClick={() => setShowDashboardModal(true)}
+            style={{
+              padding: '10px 16px',
+              background: theme.card,
+              border: `2px solid ${theme.border}`,
+              borderRadius: '8px',
+              color: theme.textSecondary,
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px',
+              fontSize: '14px',
+              fontWeight: '600',
+              transition: 'all 0.3s ease',
+              boxShadow: darkMode ? '0 2px 8px rgba(0,0,0,0.2)' : 'none'
+            }}
+            onMouseEnter={(e) => {
+              e.target.style.borderColor = theme.accent;
+              e.target.style.transform = 'translateY(-2px)';
+            }}
+            onMouseLeave={(e) => {
+              e.target.style.borderColor = theme.border;
+              e.target.style.transform = 'translateY(0)';
+            }}
+          >
+            <Folder size={16} />
+            Dashboards ({dashboards.length})
+          </button>
+
+          <button
+            onClick={handleExportDashboard}
+            disabled={!currentDashboard}
+            style={{
+              padding: '10px 16px',
+              background: theme.card,
+              border: `2px solid ${theme.border}`,
+              borderRadius: '8px',
+              color: theme.textSecondary,
+              cursor: currentDashboard ? 'pointer' : 'not-allowed',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px',
+              fontSize: '14px',
+              fontWeight: '600',
+              opacity: currentDashboard ? 1 : 0.5,
+              transition: 'all 0.3s ease',
+              boxShadow: darkMode ? '0 2px 8px rgba(0,0,0,0.2)' : 'none'
+            }}
+            title="Export Dashboard"
+            onMouseEnter={(e) => currentDashboard && (e.target.style.transform = 'translateY(-2px)')}
+            onMouseLeave={(e) => (e.target.style.transform = 'translateY(0)')}
+          >
+            <Download size={16} />
+          </button>
+
+          <label style={{
+            padding: '10px 16px',
+            background: theme.card,
+            border: `2px solid ${theme.border}`,
+            borderRadius: '8px',
+            color: theme.textSecondary,
+            cursor: 'pointer',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px',
+            fontSize: '14px',
+            fontWeight: '600',
+            transition: 'all 0.3s ease',
+            boxShadow: darkMode ? '0 2px 8px rgba(0,0,0,0.2)' : 'none'
+          }}
+          onMouseEnter={(e) => e.currentTarget.style.transform = 'translateY(-2px)'}
+          onMouseLeave={(e) => e.currentTarget.style.transform = 'translateY(0)'}
+          >
+            <Upload size={16} />
+            <input
+              type="file"
+              accept=".json"
+              onChange={handleImportDashboard}
+              style={{ display: 'none' }}
+            />
+          </label>
           
+          <button
+            onClick={handleAddScada}
+            style={{
+              padding: '10px 16px',
+              background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
+              border: 'none',
+              borderRadius: '8px',
+              color: 'white',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px',
+              fontSize: '14px',
+              fontWeight: '600',
+              transition: 'all 0.3s ease',
+              boxShadow: darkMode ? '0 4px 12px rgba(16, 185, 129, 0.4)' : '0 2px 8px rgba(16, 185, 129, 0.3)'
+            }}
+            onMouseEnter={(e) => {
+              e.target.style.transform = 'translateY(-2px)';
+              e.target.style.boxShadow = darkMode ? '0 6px 16px rgba(16, 185, 129, 0.5)' : '0 4px 12px rgba(16, 185, 129, 0.4)';
+            }}
+            onMouseLeave={(e) => {
+              e.target.style.transform = 'translateY(0)';
+              e.target.style.boxShadow = darkMode ? '0 4px 12px rgba(16, 185, 129, 0.4)' : '0 2px 8px rgba(16, 185, 129, 0.3)';
+            }}
+          >
+            <Settings size={16} />
+            SCADA Designer
+          </button>
+
           <button
             onClick={handleAddPanel}
             style={{
@@ -1498,10 +790,17 @@ function DashboardApp() {
               gap: '8px',
               fontSize: '14px',
               fontWeight: '600',
-              transition: 'transform 0.2s'
+              transition: 'all 0.3s ease',
+              boxShadow: darkMode ? '0 4px 12px rgba(102, 126, 234, 0.4)' : '0 2px 8px rgba(102, 126, 234, 0.3)'
             }}
-            onMouseEnter={(e) => e.target.style.transform = 'translateY(-1px)'}
-            onMouseLeave={(e) => e.target.style.transform = 'translateY(0)'}
+            onMouseEnter={(e) => {
+              e.target.style.transform = 'translateY(-2px)';
+              e.target.style.boxShadow = darkMode ? '0 6px 16px rgba(102, 126, 234, 0.5)' : '0 4px 12px rgba(102, 126, 234, 0.4)';
+            }}
+            onMouseLeave={(e) => {
+              e.target.style.transform = 'translateY(0)';
+              e.target.style.boxShadow = darkMode ? '0 4px 12px rgba(102, 126, 234, 0.4)' : '0 2px 8px rgba(102, 126, 234, 0.3)';
+            }}
           >
             <Plus size={16} />
             Add Panel
@@ -1509,31 +808,72 @@ function DashboardApp() {
           
           <div style={{
             padding: '8px 16px',
-            background: colors.hoverBg,
-            border: `2px solid ${colors.border}`,
+            background: theme.hover,
+            border: `2px solid ${theme.border}`,
             borderRadius: '8px',
             display: 'flex',
             alignItems: 'center',
-            gap: '12px'
+            gap: '12px',
+            transition: 'all 0.3s ease',
+            boxShadow: darkMode ? '0 2px 8px rgba(0,0,0,0.2)' : 'none'
           }}>
             <div style={{ textAlign: 'right' }}>
-              <div style={{ fontSize: '13px', fontWeight: '600', color: colors.text }}>{user?.name}</div>
-              <div style={{ fontSize: '11px', color: colors.textSecondary }}>{user?.email}</div>
+              <div style={{ 
+                fontSize: '13px', 
+                fontWeight: '600', 
+                color: theme.text,
+                transition: 'color 0.3s ease'
+              }}>
+                {user?.name}
+              </div>
+              <div style={{ 
+                fontSize: '11px', 
+                color: theme.textMuted,
+                transition: 'color 0.3s ease'
+              }}>
+                {user?.email}
+              </div>
             </div>
+            <button
+              onClick={handleLogout}
+              style={{
+                padding: '8px',
+                background: 'transparent',
+                border: 'none',
+                color: theme.textMuted,
+                cursor: 'pointer',
+                borderRadius: '6px',
+                transition: 'all 0.3s ease'
+              }}
+              onMouseEnter={(e) => {
+                e.target.style.background = darkMode ? DARK_COLORS.bg.hover : '#e5e7eb';
+                e.target.style.color = DARK_COLORS.danger;
+              }}
+              onMouseLeave={(e) => {
+                e.target.style.background = 'transparent';
+                e.target.style.color = theme.textMuted;
+              }}
+              title="Logout"
+            >
+              <LogOut size={18} />
+            </button>
           </div>
         </div>
       </div>
 
+      {/* Main Content */}
       <div style={{ padding: '24px' }}>
-        {panels.length === 0 ? (
+        {!currentDashboard || currentDashboard.panels?.length === 0 ? (
           <div style={{
-            background: colors.cardBg,
-            border: `2px dashed ${colors.border}`,
+            background: theme.card,
+            border: `2px dashed ${theme.borderLight}`,
             borderRadius: '16px',
             padding: '60px 40px',
             textAlign: 'center',
             maxWidth: '600px',
-            margin: '60px auto'
+            margin: '60px auto',
+            transition: 'all 0.3s ease',
+            boxShadow: darkMode ? '0 8px 24px rgba(0,0,0,0.3)' : '0 2px 8px rgba(0,0,0,0.05)'
           }}>
             <div style={{
               width: '80px',
@@ -1543,61 +883,201 @@ function DashboardApp() {
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              margin: '0 auto 24px'
+              margin: '0 auto 24px',
+              boxShadow: darkMode ? '0 8px 24px rgba(102, 126, 234, 0.5)' : '0 4px 16px rgba(102, 126, 234, 0.3)',
+              animation: 'pulse 2s infinite'
             }}>
               <Database size={40} color="white" />
             </div>
-            <h3 style={{ margin: '0 0 12px', color: colors.text, fontSize: '24px', fontWeight: '700' }}>
-              Create Your First Dashboard
+            <h3 style={{ 
+              margin: '0 0 12px', 
+              color: theme.text, 
+              fontSize: '24px', 
+              fontWeight: '700',
+              transition: 'color 0.3s ease'
+            }}>
+              {currentDashboard ? 'Add Your First Panel' : 'Create Your First Dashboard'}
             </h3>
-            <p style={{ margin: '0 0 32px', color: colors.textSecondary, fontSize: '15px', lineHeight: '1.6' }}>
-              Build powerful visualizations from your QuestDB data. Click the button below to add your first panel and start monitoring in real-time.
+            <p style={{ 
+              margin: '0 0 32px', 
+              color: theme.textMuted, 
+              fontSize: '15px', 
+              lineHeight: '1.6',
+              transition: 'color 0.3s ease'
+            }}>
+              {currentDashboard
+                ? 'Build powerful visualizations from your QuestDB data or create SCADA diagrams. Drag panels to reorder them.'
+                : 'Create a dashboard to organize your data visualizations and start monitoring in real-time.'}
             </p>
-            <button
-              onClick={handleAddPanel}
-              style={{
-                padding: '14px 28px',
-                background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-                border: 'none',
-                borderRadius: '10px',
-                color: 'white',
-                cursor: 'pointer',
-                fontSize: '15px',
-                fontWeight: '600',
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: '10px',
-                transition: 'transform 0.2s'
-              }}
-              onMouseEnter={(e) => e.target.style.transform = 'translateY(-2px)'}
-              onMouseLeave={(e) => e.target.style.transform = 'translateY(0)'}
-            >
-              <Plus size={20} />
-              Add Your First Panel
-            </button>
+            <div style={{ display: 'flex', gap: '12px', justifyContent: 'center' }}>
+              <button
+                onClick={currentDashboard ? handleAddPanel : () => setShowDashboardModal(true)}
+                style={{
+                  padding: '14px 28px',
+                  background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                  border: 'none',
+                  borderRadius: '10px',
+                  color: 'white',
+                  cursor: 'pointer',
+                  fontSize: '15px',
+                  fontWeight: '600',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '10px',
+                  transition: 'all 0.3s ease',
+                  boxShadow: darkMode ? '0 8px 24px rgba(102, 126, 234, 0.5)' : '0 4px 16px rgba(102, 126, 234, 0.3)'
+                }}
+                onMouseEnter={(e) => {
+                  e.target.style.transform = 'translateY(-3px)';
+                  e.target.style.boxShadow = darkMode ? '0 12px 32px rgba(102, 126, 234, 0.6)' : '0 6px 20px rgba(102, 126, 234, 0.4)';
+                }}
+                onMouseLeave={(e) => {
+                  e.target.style.transform = 'translateY(0)';
+                  e.target.style.boxShadow = darkMode ? '0 8px 24px rgba(102, 126, 234, 0.5)' : '0 4px 16px rgba(102, 126, 234, 0.3)';
+                }}
+              >
+                <Plus size={20} />
+                {currentDashboard ? 'Add Data Panel' : 'Create Dashboard'}
+              </button>
+              {currentDashboard && (
+                <button
+                  onClick={handleAddScada}
+                  style={{
+                    padding: '14px 28px',
+                    background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
+                    border: 'none',
+                    borderRadius: '10px',
+                    color: 'white',
+                    cursor: 'pointer',
+                    fontSize: '15px',
+                    fontWeight: '600',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '10px',
+                    transition: 'all 0.3s ease',
+                    boxShadow: darkMode ? '0 8px 24px rgba(16, 185, 129, 0.5)' : '0 4px 16px rgba(16, 185, 129, 0.3)'
+                  }}
+                  onMouseEnter={(e) => {
+                    e.target.style.transform = 'translateY(-3px)';
+                    e.target.style.boxShadow = darkMode ? '0 12px 32px rgba(16, 185, 129, 0.6)' : '0 6px 20px rgba(16, 185, 129, 0.4)';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.target.style.transform = 'translateY(0)';
+                    e.target.style.boxShadow = darkMode ? '0 8px 24px rgba(16, 185, 129, 0.5)' : '0 4px 16px rgba(16, 185, 129, 0.3)';
+                  }}
+                >
+                  <Settings size={20} />
+                  Add SCADA Diagram
+                </button>
+              )}
+            </div>
           </div>
         ) : (
           <div style={{
             display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fit, minmax(450px, 1fr))',
+            gridTemplateColumns: `repeat(${GRID_COLS}, 1fr)`,
             gap: '20px',
             maxWidth: '1600px',
-            margin: '0 auto'
+            margin: '0 auto',
+            gridAutoRows: `${ROW_HEIGHT}px`
           }}>
-            {panels.map(panel => (
-              <div key={panel.id} style={{ height: '350px' }}>
-                <QuestDBPanel
-                  config={panel}
-                  onEdit={handleEdit}
-                  onDelete={handleDelete}
-                  onDuplicate={handleDuplicate}
-                />
+            {currentDashboard.panels.map((panel) => (
+              <div 
+                key={panel.id} 
+                style={{
+                  ...calculatePanelStyle(panel),
+                  cursor: 'move',
+                  opacity: draggingPanel?.id === panel.id ? 0.5 : 1,
+                  transition: 'opacity 0.3s ease, transform 0.3s ease',
+                  animation: 'fadeIn 0.5s ease'
+                }}
+                draggable
+                onDragStart={(e) => handleDragStart(e, panel)}
+                onDragOver={handleDragOver}
+                onDrop={(e) => handleDrop(e, panel)}
+              >
+                {panel.type === 'scada' ? (
+                  <div style={{
+                    height: '100%',
+                    background: theme.card,
+                    borderRadius: '12px',
+                    border: `2px solid ${theme.border}`,
+                    overflow: 'hidden',
+                    boxShadow: darkMode ? '0 4px 12px rgba(0,0,0,0.3)' : '0 2px 8px rgba(0,0,0,0.08)',
+                    position: 'relative'
+                  }}>
+                    <div style={{
+                      padding: '2px 2px',
+                      borderBottom: `1px solid ${theme.border}`,
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'center',
+                      background: theme.hover
+                    }}>
+                      <h3 style={{ margin: 0, fontSize: '14px', fontWeight: '600', color: theme.text }}>
+                        {panel.title}
+                      </h3>
+                      <div style={{ display: 'flex', gap: '8px' }}>
+                        <button
+                          onClick={() => handleEdit(panel)}
+                          style={{
+                            padding: '6px',
+                            background: 'transparent',
+                            border: 'none',
+                            color: theme.textSecondary,
+                            cursor: 'pointer',
+                            borderRadius: '4px'
+                          }}
+                        >
+                          <Settings size={16} />
+                        </button>
+                        <button
+                          onClick={() => handleDuplicate(panel)}
+                          style={{
+                            padding: '6px',
+                            background: 'transparent',
+                            border: 'none',
+                            color: theme.textSecondary,
+                            cursor: 'pointer',
+                            borderRadius: '4px'
+                          }}
+                        >
+                          <Plus size={16} />
+                        </button>
+                        <button
+                          onClick={() => handleDelete(panel.id)}
+                          style={{
+                            padding: '6px',
+                            background: 'transparent',
+                            border: 'none',
+                            color: '#ef4444',
+                            cursor: 'pointer',
+                            borderRadius: '4px'
+                          }}
+                        >
+                          <X size={16} />
+                        </button>
+                      </div>
+                    </div>
+                    <ScadaPanel config={panel} darkMode={darkMode} />
+                  </div>
+                ) : (
+                  <QuestDBPanel
+                    config={panel}
+                    onEdit={handleEdit}
+                    onDelete={handleDelete}
+                    onDuplicate={handleDuplicate}
+                    onResize={handleResize}
+                    darkMode={darkMode}
+                  />
+                )}
               </div>
             ))}
           </div>
         )}
       </div>
 
+      {/* Modals */}
       {showConfigModal && (
         <PanelConfigModal
           panel={editingPanel}
@@ -1607,16 +1087,46 @@ function DashboardApp() {
             setEditingPanel(null);
           }}
           allTables={availableTables}
+          darkMode={darkMode}
         />
       )}
-    </div>
-  );
-}
 
-export default function MiralysDashboard() {
-  return (
-    <ThemeProvider>
-      <DashboardApp />
-    </ThemeProvider>
+      {showDashboardModal && (
+        <DashboardModal
+          currentDashboard={currentDashboard}
+          dashboards={dashboards}
+          onSelect={handleSelectDashboard}
+          onCreate={handleCreateDashboard}
+          onRename={handleRenameDashboard}
+          onDelete={handleDeleteDashboard}
+          onClose={() => setShowDashboardModal(false)}
+          darkMode={darkMode}
+        />
+      )}
+
+      {showScadaModal && (
+        <ScadaDesigner
+          config={editingScadaDiagram}
+          onSave={handleSavePanel}
+          onClose={() => {
+            setShowScadaModal(false);
+            setEditingScadaDiagram(null);
+          }}
+          darkMode={darkMode}
+        />
+      )}
+
+      <style>{`
+        @keyframes pulse {
+          0%, 100% { transform: scale(1); }
+          50% { transform: scale(1.05); }
+        }
+        
+        @keyframes fadeIn {
+          from { opacity: 0; transform: translateY(10px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
+      `}</style>
+    </div>
   );
 }
