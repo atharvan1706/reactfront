@@ -44,20 +44,23 @@ export const DEFAULT_PANEL_CONFIG = {
   height: 4,
   transformations: [],
   
-  // NEW: Axis scaling features
+  // Axis scaling features
   yAxisScale: 'auto', // 'auto', 'linear', 'log', 'custom'
   yAxisMin: '',
   yAxisMax: '',
   xAxisScale: 'auto',
   
-  // NEW: Time range features
+  // Time range features
   timeRange: 'all', // 'all', 'last', 'custom'
   timeRangeLast: '1h', // '5m', '15m', '1h', '6h', '24h', '7d', '30d'
   timeRangeStart: '',
   timeRangeEnd: '',
   
-  // NEW: Filters feature
-  filters: [] // [{field: '', operator: '', value: ''}]
+  // Filters feature
+  filters: [], // [{field: '', operator: '', value: ''}]
+  
+  // ✅ NEW: Timezone feature
+  timezone: 'UTC' // 'UTC', 'local', or IANA timezone name
 };
 
 export const FILTER_OPERATORS = [
