@@ -33,6 +33,17 @@ export default function AuthPage({ onAuth }) {
   const [showPassword, setShowPassword] = useState(false);
   const [invitationStatus, setInvitationStatus] = useState(null);
   const [verifyingCode, setVerifyingCode] = useState(false);
+  const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
+
+  // Handle window resize
+  useEffect(() => {
+    const handleResize = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
+
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   // Check for invitation code in URL on mount
   useEffect(() => {
@@ -185,44 +196,77 @@ export default function AuthPage({ onAuth }) {
       {/* GLOBAL ANIMATIONS */}
       <style>{globalStyles}</style>
 
-      <div style={styles.container}>
-        {/* LEFT BRAND PANEL */}
-        <div style={styles.leftPanel}>
+      <div style={{
+        ...styles.container,
+        flexDirection: isMobile ? 'column' : 'row'
+      }}>
+        {/* BRAND PANEL - Simplified for mobile */}
+        <div style={{
+          ...styles.leftPanel,
+          padding: isMobile ? '40px 20px' : '80px',
+          minHeight: isMobile ? 'auto' : '100vh',
+          flex: isMobile ? '0 0 auto' : 1
+        }}>
           <div style={styles.glowOrb1} />
           <div style={styles.glowOrb2} />
 
-          <div style={styles.brandContent}>
-            <div style={styles.logo}>
-              <Sparkles size={32} />
+          <div style={{
+            ...styles.brandContent,
+            textAlign: isMobile ? 'center' : 'left'
+          }}>
+            <div style={{
+              ...styles.logo,
+              justifyContent: isMobile ? 'center' : 'flex-start'
+            }}>
+              <Sparkles size={isMobile ? 24 : 32} />
               <span>Miralys</span>
             </div>
 
-            <h1 style={styles.heroTitle}>
+            <h1 style={{
+              ...styles.heroTitle,
+              fontSize: isMobile ? 32 : 52
+            }}>
               Smart Manufacturing
               <span style={styles.gradientText}> Reimagined</span>
             </h1>
 
-            <p style={styles.heroDesc}>
+            <p style={{
+              ...styles.heroDesc,
+              fontSize: isMobile ? 16 : 18
+            }}>
               Real-time plant intelligence, AI-powered analytics, and seamless
               operations — all in one platform.
             </p>
 
-            <div style={styles.feature}>
-              <Zap /> Ultra-fast real-time dashboards
-            </div>
-            <div style={styles.feature}>
-              <Shield /> Enterprise-grade security
-            </div>
-            <div style={styles.feature}>
-              <Sparkles /> AI-driven insights
-            </div>
+            {!isMobile && (
+              <>
+                <div style={styles.feature}>
+                  <Zap /> Ultra-fast real-time dashboards
+                </div>
+                <div style={styles.feature}>
+                  <Shield /> Enterprise-grade security
+                </div>
+                <div style={styles.feature}>
+                  <Sparkles /> AI-driven insights
+                </div>
+              </>
+            )}
           </div>
         </div>
 
-        {/* RIGHT AUTH PANEL */}
-        <div style={styles.rightPanel}>
-          <div style={styles.card}>
-            <h2 style={styles.cardTitle}>
+        {/* AUTH PANEL */}
+        <div style={{
+          ...styles.rightPanel,
+          padding: isMobile ? '20px' : '40px'
+        }}>
+          <div style={{
+            ...styles.card,
+            padding: isMobile ? 24 : 40
+          }}>
+            <h2 style={{
+              ...styles.cardTitle,
+              fontSize: isMobile ? 24 : 32
+            }}>
               {mode === 'login' ? 'Welcome Back' : 'Create Account'}
             </h2>
             <p style={styles.cardSubtitle}>
@@ -236,10 +280,10 @@ export default function AuthPage({ onAuth }) {
             {mode === 'register' && (
               <>
                 <div style={styles.inputGroup}>
-                  <Ticket />
+                  <Ticket size={isMobile ? 18 : 20} />
                   <input
                     name="invitationCode"
-                    placeholder="Invitation Code (e.g. PLANTA-ABC123)"
+                    placeholder="Invitation Code"
                     value={form.invitationCode}
                     onChange={handleCodeChange}
                     style={{ textTransform: 'uppercase' }}
@@ -248,7 +292,7 @@ export default function AuthPage({ onAuth }) {
                 {renderInvitationStatus()}
 
                 <div style={styles.inputGroup}>
-                  <User />
+                  <User size={isMobile ? 18 : 20} />
                   <input
                     name="name"
                     placeholder="Full Name"
@@ -260,9 +304,10 @@ export default function AuthPage({ onAuth }) {
             )}
 
             <div style={styles.inputGroup}>
-              <Mail />
+              <Mail size={isMobile ? 18 : 20} />
               <input
                 name="email"
+                type="email"
                 placeholder="Email"
                 value={form.email}
                 onChange={handleChange}
@@ -270,7 +315,7 @@ export default function AuthPage({ onAuth }) {
             </div>
 
             <div style={styles.inputGroup}>
-              <Lock />
+              <Lock size={isMobile ? 18 : 20} />
               <input
                 type={showPassword ? 'text' : 'password'}
                 name="password"
@@ -282,7 +327,7 @@ export default function AuthPage({ onAuth }) {
                 onClick={() => setShowPassword(!showPassword)}
                 style={styles.eyeBtn}
               >
-                {showPassword ? <EyeOff /> : <Eye />}
+                {showPassword ? <EyeOff size={isMobile ? 18 : 20} /> : <Eye size={isMobile ? 18 : 20} />}
               </button>
             </div>
 
@@ -291,12 +336,14 @@ export default function AuthPage({ onAuth }) {
               disabled={loading || (mode === 'register' && (!invitationStatus?.valid))}
               style={{
                 ...styles.primaryBtn,
+                padding: isMobile ? 14 : 16,
+                fontSize: isMobile ? 15 : 16,
                 opacity: loading || (mode === 'register' && !invitationStatus?.valid) ? 0.5 : 1,
                 cursor: loading || (mode === 'register' && !invitationStatus?.valid) ? 'not-allowed' : 'pointer'
               }}
             >
               {loading ? 'Processing…' : mode === 'login' ? 'Sign In' : 'Register'}
-              <ArrowRight />
+              <ArrowRight size={isMobile ? 18 : 20} />
             </button>
 
             <button
@@ -305,7 +352,10 @@ export default function AuthPage({ onAuth }) {
                 setError('');
                 setInvitationStatus(null);
               }}
-              style={styles.switchBtn}
+              style={{
+                ...styles.switchBtn,
+                fontSize: isMobile ? 14 : 15
+              }}
             >
               {mode === 'login'
                 ? 'Create new account'
@@ -339,10 +389,10 @@ const styles = {
   leftPanel: {
     flex: 1,
     position: 'relative',
-    padding: '80px',
     overflow: 'hidden',
     display: 'flex',
     alignItems: 'center',
+    justifyContent: 'center',
     animation: 'slideLeft 1s ease'
   },
 
@@ -353,7 +403,8 @@ const styles = {
     background: 'radial-gradient(circle, #7c3aed, transparent)',
     top: '-10%',
     left: '-10%',
-    filter: 'blur(80px)'
+    filter: 'blur(80px)',
+    pointerEvents: 'none'
   },
 
   glowOrb2: {
@@ -363,12 +414,14 @@ const styles = {
     background: 'radial-gradient(circle, #22d3ee, transparent)',
     bottom: '-10%',
     right: '-10%',
-    filter: 'blur(80px)'
+    filter: 'blur(80px)',
+    pointerEvents: 'none'
   },
 
   brandContent: {
     maxWidth: 520,
-    zIndex: 2
+    zIndex: 2,
+    width: '100%'
   },
 
   logo: {
@@ -381,21 +434,23 @@ const styles = {
   },
 
   heroTitle: {
-    fontSize: 52,
     fontWeight: 800,
-    lineHeight: 1.1
+    lineHeight: 1.1,
+    marginBottom: 16
   },
 
   gradientText: {
     background: 'linear-gradient(90deg,#a78bfa,#22d3ee)',
     WebkitBackgroundClip: 'text',
-    WebkitTextFillColor: 'transparent'
+    WebkitTextFillColor: 'transparent',
+    display: 'inline-block'
   },
 
   heroDesc: {
     marginTop: 24,
     color: '#9ca3af',
-    fontSize: 18
+    lineHeight: 1.6,
+    marginBottom: 24
   },
 
   feature: {
@@ -420,19 +475,19 @@ const styles = {
     background: 'rgba(15,23,42,0.85)',
     backdropFilter: 'blur(20px)',
     borderRadius: 20,
-    padding: 40,
     boxShadow: '0 0 60px rgba(124,58,237,0.25)'
   },
 
   cardTitle: {
-    fontSize: 32,
-    fontWeight: 700
+    fontWeight: 700,
+    marginBottom: 4
   },
 
   cardSubtitle: {
     marginTop: 8,
     marginBottom: 24,
-    color: '#9ca3af'
+    color: '#9ca3af',
+    fontSize: 14
   },
 
   error: {
@@ -490,21 +545,24 @@ const styles = {
     background: 'none',
     border: 'none',
     color: '#9ca3af',
-    cursor: 'pointer'
+    cursor: 'pointer',
+    padding: 4,
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center'
   },
 
   primaryBtn: {
     marginTop: 24,
     width: '100%',
-    padding: 16,
     borderRadius: 14,
     background: 'linear-gradient(90deg,#7c3aed,#22d3ee)',
     color: '#fff',
-    fontSize: 16,
     fontWeight: 700,
     border: 'none',
     display: 'flex',
     justifyContent: 'center',
+    alignItems: 'center',
     gap: 10,
     cursor: 'pointer',
     transition: 'transform 0.2s'
@@ -516,7 +574,8 @@ const styles = {
     background: 'none',
     border: 'none',
     color: '#a78bfa',
-    cursor: 'pointer'
+    cursor: 'pointer',
+    padding: '8px 0'
   },
 
   helpText: {
@@ -552,6 +611,10 @@ input {
   font-size: 15px;
 }
 
+input::placeholder {
+  color: #64748b;
+}
+
 /* Select dropdown */
 select {
   background-color: #020617;
@@ -569,5 +632,12 @@ select {
 option {
   background-color: #020617;
   color: #e5e7eb;
+}
+
+/* Touch device hover fix */
+@media (hover: none) {
+  button:hover {
+    transform: none !important;
+  }
 }
 `;
