@@ -43,59 +43,70 @@ function QuestDBPanel({ config, onEdit, onDelete, onDuplicate, onResize, style, 
     chartText: '#64748b'
   };
 
+  const buildQueryWithFiltersAndTimeRange = () => {
+    let query = config.query;
+    
+    if (config.dataSource === 'table' && config.table) {
+      query = `SELECT * FROM ${config.table}`;
+      
+      // Add WHERE clauses for filters and time range
+      const whereClauses = [];
+      
+      // Time range filter - FIXED: Use proper QuestDB date functions
+      if (config.timeRange === 'last' && config.timeRangeLast) {
+        const intervals = {
+          '5m': '5 minutes',
+          '15m': '15 minutes',
+          '1h': '1 hour',
+          '6h': '6 hours',
+          '24h': '24 hours',
+          '7d': '7 days',
+          '30d': '30 days'
+        };
+        // QuestDB dateadd syntax: dateadd('interval', count, timestamp)
+        whereClauses.push(`${config.timestampField} >= dateadd('${intervals[config.timeRangeLast]}', -1, now())`);
+      } else if (config.timeRange === 'custom' && config.timeRangeStart && config.timeRangeEnd) {
+        // Convert datetime-local format to QuestDB timestamp
+        whereClauses.push(`${config.timestampField} BETWEEN timestamp('${config.timeRangeStart}:00') AND timestamp('${config.timeRangeEnd}:00')`);
+      }
+      
+      // Data filters - FIXED: Proper escaping and type handling
+      if (config.filters && config.filters.length > 0) {
+        config.filters.forEach(filter => {
+          if (filter.field && filter.operator && filter.value !== '') {
+            // Check if value is a number
+            const isNumber = !isNaN(parseFloat(filter.value)) && isFinite(filter.value);
+            const value = isNumber ? filter.value : `'${filter.value.replace(/'/g, "''")}'`; // Escape single quotes
+            whereClauses.push(`${filter.field} ${filter.operator} ${value}`);
+          }
+        });
+      }
+      
+      if (whereClauses.length > 0) {
+        query += ` WHERE ${whereClauses.join(' AND ')}`;
+      }
+      
+      query += ` ORDER BY ${config.timestampField} DESC LIMIT ${config.limit}`;
+    }
+    
+    return query;
+  };
+
   const fetchData = async () => {
     try {
       setError(null);
       setLoading(true);
       const startTime = Date.now();
-      let query = config.query;
       
-      if (config.dataSource === 'table' && config.table) {
-        query = `SELECT * FROM ${config.table}`;
-        
-        const whereClauses = [];
-        
-        if (config.timeRange === 'last' && config.timeRangeLast) {
-          const intervals = {
-            '5m': '5 minutes',
-            '15m': '15 minutes',
-            '1h': '1 hour',
-            '6h': '6 hours',
-            '24h': '24 hours',
-            '7d': '7 days',
-            '30d': '30 days'
-          };
-          whereClauses.push(
-            `${config.timestampField} >= dateadd('${intervals[config.timeRangeLast]}', -1, now())`
-          );
-        } else if (config.timeRange === 'custom' && config.timeRangeStart && config.timeRangeEnd) {
-          whereClauses.push(
-            `${config.timestampField} BETWEEN '${config.timeRangeStart}' AND '${config.timeRangeEnd}'`
-          );
-        }
-        
-        if (config.filters && config.filters.length > 0) {
-          config.filters.forEach(filter => {
-            if (filter.field && filter.operator && filter.value !== '') {
-              const value = isNaN(filter.value) ? `'${filter.value}'` : filter.value;
-              whereClauses.push(`${filter.field} ${filter.operator} ${value}`);
-            }
-          });
-        }
-        
-        if (whereClauses.length > 0) {
-          query += ` WHERE ${whereClauses.join(' AND ')}`;
-        }
-        
-        query += ` ORDER BY ${config.timestampField} DESC LIMIT ${config.limit}`;
-      }
+      const query = buildQueryWithFiltersAndTimeRange();
 
       if (!query) {
         throw new Error('No query specified');
       }
 
+      console.log('Executing query:', query); // Debug log
       const result = await questdbService.query(query);
-      const formatted = questdbService.formatForChart(result, config.timestampField);
+      const formatted = questdbService.formatForChart(result, config.timestampField, config.timezone || 'UTC');
       
       let finalData = formatted;
       if (config.transformations && config.transformations.length > 0) {
@@ -159,10 +170,9 @@ function QuestDBPanel({ config, onEdit, onDelete, onDuplicate, onResize, style, 
 
   const getYAxisDomain = () => {
     if (config.yAxisScale === 'custom') {
-      return [
-        config.yAxisMin !== '' ? parseFloat(config.yAxisMin) : 'auto',
-        config.yAxisMax !== '' ? parseFloat(config.yAxisMax) : 'auto'
-      ];
+      const min = config.yAxisMin !== '' ? parseFloat(config.yAxisMin) : 'auto';
+      const max = config.yAxisMax !== '' ? parseFloat(config.yAxisMax) : 'auto';
+      return [min, max];
     }
     return ['auto', 'auto'];
   };
@@ -230,6 +240,9 @@ function QuestDBPanel({ config, onEdit, onDelete, onDuplicate, onResize, style, 
     const yFields = (config.yAxes && config.yAxes.length > 0) ? config.yAxes : [config.yAxis].filter(Boolean);
     const filteredYFields = yFields.filter(field => field && field !== 'value');
     const yDomain = getYAxisDomain();
+    
+    // Determine Y-axis scale type
+    const yAxisScaleType = config.yAxisScale === 'log' ? 'log' : config.yAxisScale === 'linear' ? 'linear' : 'auto';
 
     switch (config.vizType) {
       case 'line':
@@ -242,7 +255,7 @@ function QuestDBPanel({ config, onEdit, onDelete, onDuplicate, onResize, style, 
                 tick={{ fill: theme.chartText, fontSize }} 
                 stroke={theme.chartAxis}
                 domain={yDomain}
-                scale={config.yAxisScale === 'log' ? 'log' : 'auto'}
+                scale={yAxisScaleType}
                 width={isSmall ? 30 : isMedium ? 35 : 40}
               />
               <Tooltip 
@@ -282,7 +295,7 @@ function QuestDBPanel({ config, onEdit, onDelete, onDuplicate, onResize, style, 
                 tick={{ fill: theme.chartText, fontSize }} 
                 stroke={theme.chartAxis}
                 domain={yDomain}
-                scale={config.yAxisScale === 'log' ? 'log' : 'auto'}
+                scale={yAxisScaleType}
                 width={isSmall ? 30 : isMedium ? 35 : 40}
               />
               <Tooltip 
@@ -323,6 +336,7 @@ function QuestDBPanel({ config, onEdit, onDelete, onDuplicate, onResize, style, 
                 tick={{ fill: theme.chartText, fontSize }} 
                 stroke={theme.chartAxis}
                 domain={yDomain}
+                scale={yAxisScaleType}
                 width={isSmall ? 30 : isMedium ? 35 : 40}
               />
               <Tooltip 
@@ -385,7 +399,7 @@ function QuestDBPanel({ config, onEdit, onDelete, onDuplicate, onResize, style, 
                 tick={{ fill: theme.chartText, fontSize }} 
                 stroke={theme.chartAxis}
                 domain={yDomain}
-                scale={config.yAxisScale === 'log' ? 'log' : 'auto'}
+                scale={yAxisScaleType}
                 width={isSmall ? 30 : isMedium ? 35 : 40}
               />
               <Tooltip contentStyle={{ background: theme.card, border: `1px solid ${theme.border}`, borderRadius: '6px', color: theme.text, fontSize: `${fontSize}px` }} />
@@ -757,7 +771,7 @@ function QuestDBPanel({ config, onEdit, onDelete, onDuplicate, onResize, style, 
           padding: isSmall ? '5px' : '6px',
           background: 'transparent',
           border: 'none',
-          color: theme.danger,
+          color: '#ef4444',
           cursor: 'pointer',
           borderRadius: '6px',
           transition: 'all 0.2s ease',
