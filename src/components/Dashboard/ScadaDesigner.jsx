@@ -193,21 +193,21 @@ function ComponentTagModal({ component, availableTags, onSave, onClose, darkMode
 }
 
 export default function ScadaDesignerPro({ config, onSave, onClose, darkMode }) {
-  const [components, setComponents] = useState(config?.scadaElements || config?.components || []);  // ✅ Try scadaElements first, fallback to components
-  const [lines, setLines] = useState(config?.scadaConnections || config?.lines || []);  // ✅ Try scadaConnections first, fallback to lines
+  const [components, setComponents] = useState(config?.scadaElements || config?.components || []);
+  const [lines, setLines] = useState(config?.scadaConnections || config?.lines || []);
   const [selectedTool, setSelectedTool] = useState('select');
   const [selectedComponent, setSelectedComponent] = useState(null);
   const [selectedLine, setSelectedLine] = useState(null);
-  const [selectedItems, setSelectedItems] = useState([]); // Multiple selection
+  const [selectedItems, setSelectedItems] = useState([]);
   const [draggingComponent, setDraggingComponent] = useState(null);
   const [drawingLine, setDrawingLine] = useState(null);
-  const [editingLine, setEditingLine] = useState(null); // Which line is being edited
-  const [draggingLinePoint, setDraggingLinePoint] = useState(null); // Which point is being dragged
+  const [editingLine, setEditingLine] = useState(null);
+  const [draggingLinePoint, setDraggingLinePoint] = useState(null);
   const [zoom, setZoom] = useState(1);
   const [pan, setPan] = useState({ x: 0, y: 0 });
   const [isPanning, setIsPanning] = useState(false);
   const [panStart, setPanStart] = useState({ x: 0, y: 0 });
-  const [showGrid, setShowGrid] = useState(true);
+  const [showGrid, setShowGrid] = useState(false); // ✅ Changed default to false
   const [snapToGrid, setSnapToGrid] = useState(true);
   const [gridSize] = useState(10);
   const [componentToAdd, setComponentToAdd] = useState(null);
@@ -247,6 +247,38 @@ export default function ScadaDesignerPro({ config, onSave, onClose, darkMode }) 
     danger: '#ef4444'
   };
 
+  // ✅ NEW: Get connection point on component edge based on relative position
+  const getConnectionPoint = (comp, targetComp) => {
+    const svgData = SVG_COMPONENTS[comp.type];
+    const targetSvgData = SVG_COMPONENTS[targetComp.type];
+    
+    const compCenterX = comp.x + svgData.width / 2;
+    const compCenterY = comp.y + svgData.height / 2;
+    const targetCenterX = targetComp.x + targetSvgData.width / 2;
+    const targetCenterY = targetComp.y + targetSvgData.height / 2;
+    
+    const dx = targetCenterX - compCenterX;
+    const dy = targetCenterY - compCenterY;
+    
+    // Determine which edge to connect from based on angle
+    const angle = Math.atan2(dy, dx);
+    const absAngle = Math.abs(angle);
+    
+    if (absAngle < Math.PI / 4) {
+      // Right edge
+      return { x: comp.x + svgData.width, y: comp.y + svgData.height / 2 };
+    } else if (absAngle > 3 * Math.PI / 4) {
+      // Left edge
+      return { x: comp.x, y: comp.y + svgData.height / 2 };
+    } else if (angle > 0) {
+      // Bottom edge
+      return { x: comp.x + svgData.width / 2, y: comp.y + svgData.height };
+    } else {
+      // Top edge
+      return { x: comp.x + svgData.width / 2, y: comp.y };
+    }
+  };
+
   // Snap to grid function
   const snapToGridFn = (value) => {
     if (!snapToGrid) return value;
@@ -284,7 +316,6 @@ export default function ScadaDesignerPro({ config, onSave, onClose, darkMode }) 
   // Keyboard shortcuts
   useEffect(() => {
     const handleKeyDown = (e) => {
-      // Delete
       if (e.key === 'Delete' || e.key === 'Backspace') {
         if (selectedComponent) {
           handleDeleteComponent();
@@ -292,7 +323,6 @@ export default function ScadaDesignerPro({ config, onSave, onClose, darkMode }) 
           handleDeleteLine();
         }
       }
-      // Undo/Redo
       if (e.ctrlKey || e.metaKey) {
         if (e.key === 'z' && !e.shiftKey) {
           e.preventDefault();
@@ -301,18 +331,15 @@ export default function ScadaDesignerPro({ config, onSave, onClose, darkMode }) 
           e.preventDefault();
           handleRedo();
         }
-        // Copy
         if (e.key === 'c' && selectedComponent) {
           e.preventDefault();
           handleCopyComponent();
         }
-        // Select All
         if (e.key === 'a') {
           e.preventDefault();
           setSelectedItems(components.map(c => c.id));
         }
       }
-      // Escape - deselect
       if (e.key === 'Escape') {
         setSelectedComponent(null);
         setSelectedLine(null);
@@ -320,7 +347,6 @@ export default function ScadaDesignerPro({ config, onSave, onClose, darkMode }) 
         setDrawingLine(null);
         setSelectedTool('select');
       }
-      // Tool shortcuts
       if (e.key === 'v' || e.key === 'V') {
         setSelectedTool('select');
         setComponentToAdd(null);
@@ -432,13 +458,12 @@ export default function ScadaDesignerPro({ config, onSave, onClose, darkMode }) 
   };
 
   const handleCanvasMouseDown = (e) => {
-    if (e.button === 2) return; // Ignore right click
+    if (e.button === 2) return;
     
     const rect = canvasRef.current.getBoundingClientRect();
     const x = (e.clientX - rect.left - pan.x) / zoom;
     const y = (e.clientY - rect.top - pan.y) / zoom;
 
-    // Pan tool or space key
     if (selectedTool === 'pan' || e.spaceKey || e.button === 1) {
       setIsPanning(true);
       setPanStart({ x: e.clientX - pan.x, y: e.clientY - pan.y });
@@ -466,13 +491,11 @@ export default function ScadaDesignerPro({ config, onSave, onClose, darkMode }) 
       setComponentToAdd(null);
       setSelectedTool('select');
     } else if (selectedTool === 'select' && !e.target.closest('[data-component]') && !e.target.closest('[data-line]')) {
-      // Start selection box
       setSelectionBox({ startX: x, startY: y, endX: x, endY: y });
       setSelectedComponent(null);
       setSelectedLine(null);
       setSelectedItems([]);
     } else if (selectedTool === 'line' && drawingLine) {
-      // Cancel line drawing
       setDrawingLine(null);
     }
   };
@@ -504,7 +527,6 @@ export default function ScadaDesignerPro({ config, onSave, onClose, darkMode }) 
           : c
       ));
     } else if (draggingLinePoint) {
-      // Dragging a line control point
       const line = lines.find(l => l.id === draggingLinePoint.lineId);
       if (line) {
         const newControlPoints = [...(line.controlPoints || [])];
@@ -536,7 +558,6 @@ export default function ScadaDesignerPro({ config, onSave, onClose, darkMode }) 
     }
     
     if (selectionBox) {
-      // Select components within box
       const minX = Math.min(selectionBox.startX, selectionBox.endX);
       const maxX = Math.max(selectionBox.startX, selectionBox.endX);
       const minY = Math.min(selectionBox.startY, selectionBox.endY);
@@ -569,11 +590,12 @@ export default function ScadaDesignerPro({ config, onSave, onClose, darkMode }) 
         initialY: comp.y
       });
     } else if (selectedTool === 'line') {
-      const svgData = SVG_COMPONENTS[comp.type];
-      const centerX = comp.x + svgData.width / 2;
-      const centerY = comp.y + svgData.height / 2;
-      
       if (!drawingLine) {
+        // ✅ Start line from edge instead of center
+        const svgData = SVG_COMPONENTS[comp.type];
+        const centerX = comp.x + svgData.width / 2;
+        const centerY = comp.y + svgData.height / 2;
+        
         setDrawingLine({ 
           from: comp.id, 
           startX: centerX, 
@@ -589,7 +611,7 @@ export default function ScadaDesignerPro({ config, onSave, onClose, darkMode }) 
           color: lineColor, 
           width: lineWidth, 
           style: lineStyle,
-          controlPoints: [] // Array of {x, y} for bezier curves and bending
+          controlPoints: []
         };
         setLines([...lines, newLine]);
         saveToHistory();
@@ -686,10 +708,10 @@ export default function ScadaDesignerPro({ config, onSave, onClose, darkMode }) 
       id: config?.id || `scada_${Date.now()}`,
       title: diagramTitle,
       type: 'scada',
-      scadaElements: components,  // ✅ Changed from 'components' to 'scadaElements'
-      scadaConnections: lines,     // ✅ Changed from 'lines' to 'scadaConnections'
-      width: config?.width || 12,  // Full width by default
-      height: config?.height || 8,  // Larger height by default
+      scadaElements: components,
+      scadaConnections: lines,
+      width: config?.width || 12,
+      height: config?.height || 8,
       createdAt: new Date().toISOString()
     };
     if (onSave) onSave(diagram);
@@ -732,23 +754,24 @@ export default function ScadaDesignerPro({ config, onSave, onClose, darkMode }) 
     e.target.value = '';
   };
 
+  // ✅ UPDATED: Get line coordinates with edge connections and orthogonal routing
   const getLineCoordinates = (line) => {
     const fromComp = components.find(c => c.id === line.from);
     const toComp = components.find(c => c.id === line.to);
     if (!fromComp || !toComp) return null;
     
-    const fromSvg = SVG_COMPONENTS[fromComp.type];
-    const toSvg = SVG_COMPONENTS[toComp.type];
+    const fromPoint = getConnectionPoint(fromComp, toComp);
+    const toPoint = getConnectionPoint(toComp, fromComp);
     
     return {
-      x1: fromComp.x + fromSvg.width / 2,
-      y1: fromComp.y + fromSvg.height / 2,
-      x2: toComp.x + toSvg.width / 2,
-      y2: toComp.y + toSvg.height / 2
+      x1: fromPoint.x,
+      y1: fromPoint.y,
+      x2: toPoint.x,
+      y2: toPoint.y
     };
   };
 
-  // Generate SVG path for line with control points
+  // ✅ UPDATED: Generate orthogonal path
   const getLinePath = (line) => {
     const coords = getLineCoordinates(line);
     if (!coords) return null;
@@ -757,54 +780,27 @@ export default function ScadaDesignerPro({ config, onSave, onClose, darkMode }) 
     const controlPoints = line.controlPoints || [];
 
     if (controlPoints.length === 0) {
-      // Straight line
-      return `M ${x1} ${y1} L ${x2} ${y2}`;
-    } else if (controlPoints.length === 1) {
-      // Quadratic bezier curve
-      const cp = controlPoints[0];
-      return `M ${x1} ${y1} Q ${cp.x} ${cp.y} ${x2} ${y2}`;
-    } else {
-      // Multiple control points - create smooth curve through all points
-      let path = `M ${x1} ${y1}`;
+      // Check if line should be straight or orthogonal
+      const isHorizontallyAligned = Math.abs(y1 - y2) < 20;
+      const isVerticallyAligned = Math.abs(x1 - x2) < 20;
       
-      // Add first control point
-      path += ` L ${controlPoints[0].x} ${controlPoints[0].y}`;
-      
-      // Add middle control points
-      for (let i = 1; i < controlPoints.length; i++) {
-        path += ` L ${controlPoints[i].x} ${controlPoints[i].y}`;
+      if (isHorizontallyAligned || isVerticallyAligned) {
+        // Simple straight line
+        return `M ${x1} ${y1} L ${x2} ${y2}`;
+      } else {
+        // Orthogonal with corner
+        const midX = (x1 + x2) / 2;
+        return `M ${x1} ${y1} L ${midX} ${y1} L ${midX} ${y2} L ${x2} ${y2}`;
       }
-      
-      // Connect to end
+    } else {
+      // Path with control points
+      let path = `M ${x1} ${y1}`;
+      controlPoints.forEach(cp => {
+        path += ` L ${cp.x} ${cp.y}`;
+      });
       path += ` L ${x2} ${y2}`;
       return path;
     }
-  };
-
-  // Get the end point and angle for arrow placement
-  const getLineEndPoint = (line) => {
-    const coords = getLineCoordinates(line);
-    if (!coords) return null;
-
-    const { x1, y1, x2, y2 } = coords;
-    const controlPoints = line.controlPoints || [];
-
-    let endX = x2;
-    let endY = y2;
-    let prevX, prevY;
-
-    if (controlPoints.length === 0) {
-      prevX = x1;
-      prevY = y1;
-    } else {
-      const lastCP = controlPoints[controlPoints.length - 1];
-      prevX = lastCP.x;
-      prevY = lastCP.y;
-    }
-
-    const angle = Math.atan2(endY - prevY, endX - prevX);
-    
-    return { x: endX, y: endY, angle };
   };
 
   // Tool button component
@@ -1271,7 +1267,6 @@ export default function ScadaDesignerPro({ config, onSave, onClose, darkMode }) 
                     if (line) {
                       const coords = getLineCoordinates(line);
                       if (coords) {
-                        // Add control point at midpoint
                         const midX = (coords.x1 + coords.x2) / 2;
                         const midY = (coords.y1 + coords.y2) / 2;
                         handleAddControlPoint(selectedLine, midX, midY);
@@ -1515,12 +1510,10 @@ export default function ScadaDesignerPro({ config, onSave, onClose, darkMode }) 
               {showGrid && <rect width="100%" height="100%" fill="url(#grid)" />}
 
               <g transform={`translate(${pan.x}, ${pan.y}) scale(${zoom})`}>
-                {/* Lines */}
+                {/* Lines - Now with clean edge connections */}
                 {lines.map(line => {
-                  const coords = getLineCoordinates(line);
                   const path = getLinePath(line);
-                  const endPoint = getLineEndPoint(line);
-                  if (!coords || !path || !endPoint) return null;
+                  if (!path) return null;
                   
                   const isSelected = selectedLine === line.id;
                   const isEditing = editingLine === line.id;
@@ -1537,7 +1530,6 @@ export default function ScadaDesignerPro({ config, onSave, onClose, darkMode }) 
                         onClick={(e) => handleLineClick(e, line)}
                         onDoubleClick={(e) => {
                           e.stopPropagation();
-                          // Add control point at click location
                           const rect = canvasRef.current.getBoundingClientRect();
                           const x = (e.clientX - rect.left - pan.x) / zoom;
                           const y = (e.clientY - rect.top - pan.y) / zoom;
@@ -1554,31 +1546,12 @@ export default function ScadaDesignerPro({ config, onSave, onClose, darkMode }) 
                         fill="none"
                         strokeLinecap="round" 
                         strokeLinejoin="round"
-                        strokeDasharray={
-                          line.style === 'dashed' ? '8,4' : 
-                          line.style === 'dotted' ? '2,3' : 
-                          '0'
-                        }
                         style={{ pointerEvents: 'none' }} 
                       />
-                      
-                      {/* Arrow */}
-                      {(() => {
-                        const arrowSize = 10 + line.width;
-                        return (
-                          <polygon
-                            points={`0,-${arrowSize/2} ${arrowSize},0 0,${arrowSize/2}`}
-                            fill={isSelected ? theme.accent : line.color}
-                            transform={`translate(${endPoint.x}, ${endPoint.y}) rotate(${endPoint.angle * 180 / Math.PI})`}
-                            style={{ pointerEvents: 'none' }}
-                          />
-                        );
-                      })()}
                       
                       {/* Control points (when selected) */}
                       {isEditing && (line.controlPoints || []).map((cp, index) => (
                         <g key={`cp-${index}`}>
-                          {/* Control point handle */}
                           <circle 
                             cx={cp.x} 
                             cy={cp.y} 
@@ -1592,7 +1565,6 @@ export default function ScadaDesignerPro({ config, onSave, onClose, darkMode }) 
                               handleLinePointMouseDown(e, line.id, index);
                             }}
                           />
-                          {/* Delete button for control point */}
                           <g
                             style={{ cursor: 'pointer' }}
                             onClick={(e) => {
@@ -1622,14 +1594,6 @@ export default function ScadaDesignerPro({ config, onSave, onClose, darkMode }) 
                           </g>
                         </g>
                       ))}
-                      
-                      {/* Start and end point indicators (when selected) */}
-                      {isEditing && (
-                        <>
-                          <circle cx={coords.x1} cy={coords.y1} r="6" fill={theme.success} />
-                          <circle cx={coords.x2} cy={coords.y2} r="6" fill={theme.danger} />
-                        </>
-                      )}
                     </g>
                   );
                 })}
@@ -1666,7 +1630,6 @@ export default function ScadaDesignerPro({ config, onSave, onClose, darkMode }) 
                       data-component="true"
                     >
                       <g transform={`rotate(${comp.rotation || 0}, ${svgData.width/2}, ${svgData.height/2})`}>
-                        {/* Selection highlight */}
                         {isSelected && (
                           <rect 
                             x={-4} 
@@ -1683,7 +1646,6 @@ export default function ScadaDesignerPro({ config, onSave, onClose, darkMode }) 
                           />
                         )}
                         
-                        {/* Interactive area */}
                         <rect 
                           x={0} 
                           y={0} 
@@ -1698,7 +1660,6 @@ export default function ScadaDesignerPro({ config, onSave, onClose, darkMode }) 
                           onMouseDown={(e) => handleComponentMouseDown(e, comp)} 
                         />
                         
-                        {/* Component SVG */}
                         <g>
                           <image 
                             href={svgData.svg} 
@@ -1718,7 +1679,6 @@ export default function ScadaDesignerPro({ config, onSave, onClose, darkMode }) 
                         </g>
                       </g>
                       
-                      {/* Label */}
                       <text 
                         x={svgData.width / 2} 
                         y={svgData.height + 18} 
@@ -1731,7 +1691,6 @@ export default function ScadaDesignerPro({ config, onSave, onClose, darkMode }) 
                         {comp.label}
                       </text>
                       
-                      {/* Status badge */}
                       {status && (
                         <g>
                           <rect
@@ -1757,7 +1716,6 @@ export default function ScadaDesignerPro({ config, onSave, onClose, darkMode }) 
                         </g>
                       )}
                       
-                      {/* Tag value */}
                       {comp.tagName && (
                         <text 
                           x={svgData.width / 2} 
