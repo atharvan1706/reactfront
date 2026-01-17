@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Plus, LogOut, Database, Zap, Folder, Save, Download, Upload, Moon, Sun, Settings, X,
-  Grid, BarChart3, Activity, TrendingUp, Layers, Maximize2, MoreHorizontal, ChevronLeft, ChevronRight
+  Grid, BarChart3, Activity, TrendingUp, Layers, Maximize2, MoreHorizontal
 } from 'lucide-react';
 import authService from '../../services/auth';
 import questdbService from '../../services/questdb';
@@ -56,7 +56,6 @@ export default function Dashboard({ onLogout }) {
     return saved ? JSON.parse(saved) : true;
   });
   const [windowWidth, setWindowWidth] = useState(window.innerWidth);
-  const [tabScrollPosition, setTabScrollPosition] = useState(0);
 
   // Responsive grid columns based on window width
   const getResponsiveGridCols = () => {
@@ -523,17 +522,6 @@ export default function Dashboard({ onLogout }) {
     };
   };
 
-  const scrollTabs = (direction) => {
-    const container = document.getElementById('tabs-container');
-    if (container) {
-      const scrollAmount = 200;
-      container.scrollBy({
-        left: direction === 'left' ? -scrollAmount : scrollAmount,
-        behavior: 'smooth'
-      });
-    }
-  };
-
   if (loading) {
     return (
       <div style={{
@@ -577,184 +565,61 @@ export default function Dashboard({ onLogout }) {
       <div style={{
         background: theme.card,
         borderBottom: `1px solid ${theme.border}`,
-        flexShrink: 0
+        display: 'flex',
+        alignItems: 'center',
+        minHeight: windowWidth < 640 ? '48px' : '56px',
+        padding: windowWidth < 640 ? '0 8px' : '0 16px',
+        gap: windowWidth < 640 ? '6px' : '12px',
+        flexShrink: 0,
+        flexWrap: windowWidth < 1024 ? 'wrap' : 'nowrap'
       }}>
-        {/* Top Row - Logo and Actions */}
+        {/* Logo */}
         <div style={{
           display: 'flex',
           alignItems: 'center',
-          minHeight: windowWidth < 640 ? '56px' : '56px',
-          padding: windowWidth < 640 ? '0 12px' : '0 16px',
-          gap: windowWidth < 640 ? '8px' : '12px',
-          justifyContent: 'space-between'
+          gap: windowWidth < 640 ? '6px' : '8px',
+          flexShrink: 0
         }}>
-          {/* Logo - Always visible with text */}
           <div style={{
+            width: windowWidth < 640 ? '28px' : '32px',
+            height: windowWidth < 640 ? '28px' : '32px',
+            background: `linear-gradient(135deg, ${theme.accent} 0%, ${theme.accentHover} 100%)`,
+            borderRadius: windowWidth < 640 ? '6px' : '8px',
             display: 'flex',
             alignItems: 'center',
-            gap: '8px',
-            flexShrink: 0
+            justifyContent: 'center'
           }}>
-            <div style={{
-              width: '32px',
-              height: '32px',
-              background: `linear-gradient(135deg, ${theme.accent} 0%, ${theme.accentHover} 100%)`,
-              borderRadius: '8px',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center'
-            }}>
-              <Activity size={18} color="white" />
-            </div>
+            <Activity size={windowWidth < 640 ? 16 : 18} color="white" />
+          </div>
+          {windowWidth >= 640 && (
             <span style={{
-              fontSize: windowWidth < 640 ? '18px' : '16px',
+              fontSize: '16px',
               fontWeight: '700',
               letterSpacing: '-0.02em',
               color: theme.text
             }}>
               Miralys
             </span>
-          </div>
-
-          {/* Action Buttons */}
-          <div style={{ display: 'flex', gap: windowWidth < 640 ? '6px' : '8px', flexShrink: 0 }}>
-            <button
-              onClick={handleAddPanel}
-              disabled={!currentDashboard}
-              style={{
-                padding: windowWidth < 640 ? '8px 12px' : '8px 14px',
-                background: currentDashboard ? theme.accent : theme.border,
-                color: 'white',
-                border: 'none',
-                borderRadius: '6px',
-                fontSize: '12px',
-                fontWeight: '600',
-                cursor: currentDashboard ? 'pointer' : 'not-allowed',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '6px',
-                opacity: currentDashboard ? 1 : 0.5,
-                flexShrink: 0,
-                whiteSpace: 'nowrap'
-              }}
-            >
-              <BarChart3 size={14} />
-              {windowWidth >= 400 && 'Panel'}
-            </button>
-
-            <button
-              onClick={handleAddScada}
-              disabled={!currentDashboard}
-              style={{
-                padding: windowWidth < 640 ? '8px 12px' : '8px 14px',
-                background: currentDashboard ? theme.success : theme.border,
-                color: 'white',
-                border: 'none',
-                borderRadius: '6px',
-                fontSize: '12px',
-                fontWeight: '600',
-                cursor: currentDashboard ? 'pointer' : 'not-allowed',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '6px',
-                opacity: currentDashboard ? 1 : 0.5,
-                flexShrink: 0,
-                whiteSpace: 'nowrap'
-              }}
-            >
-              <Settings size={14} />
-              {windowWidth >= 400 && 'SCADA'}
-            </button>
-
-            <button
-              onClick={toggleDarkMode}
-              style={{
-                padding: '8px',
-                background: darkMode ? theme.cardHover : '#f9fafb',
-                border: `2px solid ${theme.border}`,
-                borderRadius: '6px',
-                color: theme.text,
-                cursor: 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                transition: 'all 0.3s ease',
-                boxShadow: darkMode ? '0 2px 8px rgba(0,0,0,0.2)' : 'none',
-                flexShrink: 0
-              }}
-              title={darkMode ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
-            >
-              {darkMode ? <Sun size={16} /> : <Moon size={16} />}
-            </button>
-
-            <button
-              onClick={handleLogout}
-              style={{
-                padding: '8px',
-                background: 'transparent',
-                border: 'none',
-                color: theme.textMuted,
-                cursor: 'pointer',
-                borderRadius: '6px',
-                transition: 'all 0.3s ease',
-                flexShrink: 0
-              }}
-              title="Logout"
-            >
-              <LogOut size={16} />
-            </button>
-          </div>
+          )}
         </div>
 
-        {/* Tabs Row - Scrollable on mobile */}
-        <div style={{
-          position: 'relative',
-          borderTop: `1px solid ${theme.border}`
-        }}>
-          {/* Left Scroll Button */}
-          {windowWidth < 1024 && dashboards.length > 2 && (
-            <button
-              onClick={() => scrollTabs('left')}
-              style={{
-                position: 'absolute',
-                left: 0,
-                top: 0,
-                bottom: 0,
-                width: '32px',
-                background: `linear-gradient(to right, ${theme.card}, transparent)`,
-                border: 'none',
-                cursor: 'pointer',
-                zIndex: 10,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                color: theme.text
-              }}
-            >
-              <ChevronLeft size={18} />
-            </button>
-          )}
-
-          {/* Tabs Container */}
-          <div
-            id="tabs-container"
-            style={{
-              display: 'flex',
-              gap: '4px',
-              overflowX: 'auto',
-              overflowY: 'hidden',
-              padding: windowWidth < 640 ? '8px 12px' : '8px 16px',
-              scrollbarWidth: 'none',
-              msOverflowStyle: 'none',
-              WebkitOverflowScrolling: 'touch'
-            }}
-          >
-            {dashboards.map((dashboard) => (
+        {/* Chrome-style Auto-shrinking Tabs - Hide on mobile */}
+        {windowWidth >= 640 && (
+          <div style={{
+            display: 'flex',
+            gap: '4px',
+            flex: '1 1 auto',
+            minWidth: 0,
+            alignItems: 'flex-end',
+            overflow: 'hidden'
+          }}>
+            {dashboards.slice(0, windowWidth < 1024 ? 2 : dashboards.length).map((dashboard) => (
               <button
                 key={dashboard.id}
                 onClick={() => handleSelectDashboard(dashboard)}
                 style={{
-                  padding: windowWidth < 640 ? '8px 14px' : '8px 16px',
-                  background: currentDashboard?.id === dashboard.id ? theme.cardHover : 'transparent',
+                  padding: windowWidth < 1024 ? '6px 10px' : '8px 14px',
+                  background: currentDashboard?.id === dashboard.id ? theme.card : 'transparent',
                   color: currentDashboard?.id === dashboard.id ? theme.text : theme.textMuted,
                   border: 'none',
                   borderBottom: currentDashboard?.id === dashboard.id
@@ -764,17 +629,31 @@ export default function Dashboard({ onLogout }) {
                   cursor: 'pointer',
                   whiteSpace: 'nowrap',
                   borderRadius: '6px 6px 0 0',
-                  fontSize: '13px',
+                  fontSize: windowWidth < 1024 ? '12px' : '13px',
                   display: 'flex',
                   alignItems: 'center',
-                  gap: '8px',
-                  flexShrink: 0,
-                  transition: 'all 0.2s ease'
+                  gap: '6px',
+                  flex: '1 1 auto',
+                  minWidth: windowWidth < 1024 ? '80px' : '120px',
+                  maxWidth: windowWidth < 1024 ? '140px' : '200px',
+                  overflow: 'hidden'
+                }}
+                onMouseEnter={(e) => {
+                  if (currentDashboard?.id !== dashboard.id) {
+                    e.currentTarget.style.background = theme.hover;
+                  }
+                }}
+                onMouseLeave={(e) => {
+                  if (currentDashboard?.id !== dashboard.id) {
+                    e.currentTarget.style.background = 'transparent';
+                  }
                 }}
               >
-                <Grid size={14} color={currentDashboard?.id === dashboard.id ? theme.text : theme.textMuted} />
-                <span>{dashboard.name}</span>
-                {dashboard.panels?.length > 0 && (
+                <Grid size={windowWidth < 1024 ? 12 : 14} color={currentDashboard?.id === dashboard.id ? theme.text : theme.textMuted} />
+                <span style={{ overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                  {dashboard.name}
+                </span>
+                {dashboard.panels?.length > 0 && windowWidth >= 1024 && (
                   <span style={{
                     fontSize: '10px',
                     background: currentDashboard?.id === dashboard.id ? theme.accent : theme.border,
@@ -782,62 +661,153 @@ export default function Dashboard({ onLogout }) {
                     padding: '2px 6px',
                     borderRadius: '10px',
                     fontWeight: '700',
-                    minWidth: '20px',
-                    textAlign: 'center'
+                    flexShrink: 0
                   }}>
                     {dashboard.panels.length}
                   </span>
                 )}
               </button>
             ))}
-
-            {/* Add Dashboard Button */}
-            <button
-              onClick={() => setShowDashboardModal(true)}
-              style={{
-                padding: windowWidth < 640 ? '8px 14px' : '8px 16px',
-                background: 'transparent',
-                border: `2px dashed ${theme.border}`,
-                borderRadius: '6px',
-                color: theme.textMuted,
-                cursor: 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '6px',
-                flexShrink: 0,
-                fontSize: '13px',
-                fontWeight: '600',
-                transition: 'all 0.2s ease'
-              }}
-            >
-              <Plus size={14} />
-              New
-            </button>
           </div>
+        )}
+        
+        {/* New Tab + Button */}
+        <button
+          onClick={() => setShowDashboardModal(true)}
+          style={{
+            padding: windowWidth < 640 ? '8px' : '10px',
+            background: 'transparent',
+            border: `2px solid ${theme.border}`,
+            borderRadius: windowWidth < 640 ? '6px' : '8px',
+            color: theme.text,
+            cursor: 'pointer',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            flexShrink: 0,
+            transition: 'all 0.3s ease'
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.borderColor = theme.accent;
+            e.currentTarget.style.transform = 'translateY(-2px)';
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.borderColor = theme.border;
+            e.currentTarget.style.transform = 'translateY(0)';
+          }}
+        >
+          <Plus size={windowWidth < 640 ? 14 : 16} />
+        </button>
 
-          {/* Right Scroll Button */}
-          {windowWidth < 1024 && dashboards.length > 2 && (
-            <button
-              onClick={() => scrollTabs('right')}
-              style={{
-                position: 'absolute',
-                right: 0,
-                top: 0,
-                bottom: 0,
-                width: '32px',
-                background: `linear-gradient(to left, ${theme.card}, transparent)`,
-                border: 'none',
-                cursor: 'pointer',
-                zIndex: 10,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                color: theme.text
-              }}
-            >
-              <ChevronRight size={18} />
-            </button>
+        {/* Divider - Hide on mobile */}
+        {windowWidth >= 640 && (
+          <div style={{ width: '1px', height: '28px', background: theme.border, flexShrink: 0 }} />
+        )}
+
+        {/* Action Buttons */}
+        <div style={{ display: 'flex', gap: windowWidth < 640 ? '4px' : '6px', flexShrink: 0 }}>
+          <button
+            onClick={handleAddPanel}
+            disabled={!currentDashboard}
+            style={{
+              padding: windowWidth < 640 ? '6px 10px' : '8px 14px',
+              background: currentDashboard ? theme.accent : theme.border,
+              color: 'white',
+              border: 'none',
+              borderRadius: '6px',
+              fontSize: windowWidth < 640 ? '11px' : '13px',
+              fontWeight: '600',
+              cursor: currentDashboard ? 'pointer' : 'not-allowed',
+              display: 'flex',
+              alignItems: 'center',
+              gap: windowWidth < 640 ? '4px' : '6px',
+              opacity: currentDashboard ? 1 : 0.5,
+              flexShrink: 0
+            }}
+          >
+            <BarChart3 size={windowWidth < 640 ? 12 : 14} />
+            {windowWidth >= 1024 && 'Panel'}
+          </button>
+
+          <button
+            onClick={handleAddScada}
+            disabled={!currentDashboard}
+            style={{
+              padding: windowWidth < 640 ? '6px 10px' : '8px 14px',
+              background: currentDashboard ? theme.success : theme.border,
+              color: 'white',
+              border: 'none',
+              borderRadius: '6px',
+              fontSize: windowWidth < 640 ? '11px' : '13px',
+              fontWeight: '600',
+              cursor: currentDashboard ? 'pointer' : 'not-allowed',
+              display: 'flex',
+              alignItems: 'center',
+              gap: windowWidth < 640 ? '4px' : '6px',
+              opacity: currentDashboard ? 1 : 0.5,
+              flexShrink: 0
+            }}
+          >
+            <Settings size={windowWidth < 640 ? 12 : 14} />
+            {windowWidth >= 1024 && 'SCADA'}
+          </button>
+
+          {windowWidth >= 640 && (
+            <div style={{ width: '1px', height: '24px', background: theme.border, flexShrink: 0 }} />
           )}
+
+          <button
+            onClick={toggleDarkMode}
+            style={{
+              padding: windowWidth < 640 ? '8px' : '10px',
+              background: darkMode ? theme.cardHover : '#f9fafb',
+              border: `2px solid ${theme.border}`,
+              borderRadius: windowWidth < 640 ? '6px' : '8px',
+              color: theme.text,
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              transition: 'all 0.3s ease',
+              boxShadow: darkMode ? '0 2px 8px rgba(0,0,0,0.2)' : 'none',
+              flexShrink: 0
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.borderColor = theme.accent;
+              e.currentTarget.style.transform = 'translateY(-2px)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.borderColor = theme.border;
+              e.currentTarget.style.transform = 'translateY(0)';
+            }}
+            title={darkMode ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
+          >
+            {darkMode ? <Sun size={windowWidth < 640 ? 16 : 18} /> : <Moon size={windowWidth < 640 ? 16 : 18} />}
+          </button>
+
+          <button
+            onClick={handleLogout}
+            style={{
+              padding: windowWidth < 640 ? '6px' : '8px',
+              background: 'transparent',
+              border: 'none',
+              color: theme.textMuted,
+              cursor: 'pointer',
+              borderRadius: '6px',
+              transition: 'all 0.3s ease',
+              flexShrink: 0
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.background = darkMode ? theme.cardHover : '#e5e7eb';
+              e.currentTarget.style.color = theme.danger;
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.background = 'transparent';
+              e.currentTarget.style.color = theme.textMuted;
+            }}
+            title="Logout"
+          >
+            <LogOut size={windowWidth < 640 ? 16 : 18} />
+          </button>
         </div>
       </div>
 
@@ -864,7 +834,7 @@ export default function Dashboard({ onLogout }) {
       <div style={{
         flex: 1,
         overflow: 'auto',
-        padding: windowWidth < 640 ? '12px' : windowWidth < 1024 ? '12px' : '16px',
+        padding: windowWidth < 640 ? '8px' : windowWidth < 1024 ? '10px' : '12px',
         background: theme.bg
       }}>
         {!currentDashboard || currentDashboard.panels.length === 0 ? (
@@ -874,24 +844,24 @@ export default function Dashboard({ onLogout }) {
             justifyContent: 'center',
             height: '100%',
             textAlign: 'center',
-            padding: '20px'
+            padding: windowWidth < 640 ? '16px' : '0'
           }}>
-            <div style={{ maxWidth: '400px' }}>
+            <div style={{ maxWidth: windowWidth < 640 ? '320px' : '480px' }}>
               <div style={{
-                width: windowWidth < 640 ? '64px' : '80px',
-                height: windowWidth < 640 ? '64px' : '80px',
+                width: windowWidth < 640 ? '60px' : '80px',
+                height: windowWidth < 640 ? '60px' : '80px',
                 background: `linear-gradient(135deg, ${theme.accent} 0%, ${theme.accentHover} 100%)`,
-                borderRadius: '20px',
+                borderRadius: windowWidth < 640 ? '16px' : '20px',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
                 margin: '0 auto 24px',
                 opacity: 0.9
               }}>
-                <Layers size={windowWidth < 640 ? 32 : 36} color="white" />
+                <Layers size={windowWidth < 640 ? 28 : 36} color="white" />
               </div>
               <h2 style={{
-                fontSize: windowWidth < 640 ? '22px' : '24px',
+                fontSize: windowWidth < 640 ? '20px' : '24px',
                 fontWeight: '700',
                 marginBottom: '12px',
                 color: theme.text,
@@ -900,7 +870,7 @@ export default function Dashboard({ onLogout }) {
                 {currentDashboard ? 'Start Building Your Dashboard' : 'Welcome to Miralys'}
               </h2>
               <p style={{
-                fontSize: '14px',
+                fontSize: windowWidth < 640 ? '13px' : '14px',
                 color: theme.textMuted,
                 marginBottom: '28px',
                 lineHeight: '1.6'
@@ -911,20 +881,20 @@ export default function Dashboard({ onLogout }) {
               </p>
               <div style={{ 
                 display: 'flex', 
-                gap: '10px', 
+                gap: windowWidth < 640 ? '8px' : '10px', 
                 justifyContent: 'center',
                 flexDirection: windowWidth < 640 ? 'column' : 'row'
               }}>
                 <button
                   onClick={currentDashboard ? handleAddPanel : () => setShowDashboardModal(true)}
                   style={{
-                    padding: '12px 24px',
+                    padding: windowWidth < 640 ? '10px 20px' : '12px 24px',
                     background: `linear-gradient(135deg, ${theme.accent} 0%, ${theme.accentHover} 100%)`,
                     border: 'none',
                     borderRadius: '8px',
                     color: 'white',
                     cursor: 'pointer',
-                    fontSize: '14px',
+                    fontSize: windowWidth < 640 ? '13px' : '14px',
                     fontWeight: '600',
                     display: 'inline-flex',
                     alignItems: 'center',
@@ -936,21 +906,33 @@ export default function Dashboard({ onLogout }) {
                       : '0 2px 12px rgba(99, 102, 241, 0.3)',
                     width: windowWidth < 640 ? '100%' : 'auto'
                   }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.transform = 'translateY(-2px)';
+                    e.currentTarget.style.boxShadow = darkMode 
+                      ? '0 6px 20px rgba(99, 102, 241, 0.5)' 
+                      : '0 4px 16px rgba(99, 102, 241, 0.4)';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.transform = 'translateY(0)';
+                    e.currentTarget.style.boxShadow = darkMode 
+                      ? '0 4px 16px rgba(99, 102, 241, 0.4)' 
+                      : '0 2px 12px rgba(99, 102, 241, 0.3)';
+                  }}
                 >
-                  <Plus size={18} color="white" />
+                  <Plus size={windowWidth < 640 ? 16 : 18} color="white" />
                   {currentDashboard ? 'Add Data Panel' : 'Create Dashboard'}
                 </button>
                 {currentDashboard && (
                   <button
                     onClick={handleAddScada}
                     style={{
-                      padding: '12px 24px',
+                      padding: windowWidth < 640 ? '10px 20px' : '12px 24px',
                       background: `linear-gradient(135deg, ${theme.success} 0%, #059669 100%)`,
                       border: 'none',
                       borderRadius: '8px',
                       color: 'white',
                       cursor: 'pointer',
-                      fontSize: '14px',
+                      fontSize: windowWidth < 640 ? '13px' : '14px',
                       fontWeight: '600',
                       display: 'inline-flex',
                       alignItems: 'center',
@@ -962,8 +944,20 @@ export default function Dashboard({ onLogout }) {
                         : '0 2px 12px rgba(16, 185, 129, 0.3)',
                       width: windowWidth < 640 ? '100%' : 'auto'
                     }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.transform = 'translateY(-2px)';
+                      e.currentTarget.style.boxShadow = darkMode 
+                        ? '0 6px 20px rgba(16, 185, 129, 0.5)' 
+                        : '0 4px 16px rgba(16, 185, 129, 0.4)';
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.transform = 'translateY(0)';
+                      e.currentTarget.style.boxShadow = darkMode 
+                        ? '0 4px 16px rgba(16, 185, 129, 0.4)' 
+                        : '0 2px 12px rgba(16, 185, 129, 0.3)';
+                    }}
                   >
-                    <Settings size={18} color="white" />
+                    <Settings size={windowWidth < 640 ? 16 : 18} color="white" />
                     Add SCADA Diagram
                   </button>
                 )}
@@ -974,8 +968,8 @@ export default function Dashboard({ onLogout }) {
           <div style={{
             display: 'grid',
             gridTemplateColumns: `repeat(${responsiveGridCols}, 1fr)`,
-            gap: windowWidth < 640 ? '12px' : windowWidth < 1024 ? '12px' : '16px',
-            gridAutoRows: windowWidth < 640 ? '200px' : `${ROW_HEIGHT}px`
+            gap: windowWidth < 640 ? '8px' : windowWidth < 1024 ? '10px' : '12px',
+            gridAutoRows: windowWidth < 640 ? '180px' : `${ROW_HEIGHT}px`
           }}>
             {currentDashboard.panels.map((panel) => (
               <div 
@@ -1064,34 +1058,44 @@ export default function Dashboard({ onLogout }) {
                     </div>
                     <ScadaPanel config={panel} darkMode={darkMode} />
                     
-                    {windowWidth >= 640 && (
-                      <div
-                        onMouseDown={(e) => handleResizeStart(e, panel, 'se')}
-                        style={{
-                          position: 'absolute',
-                          bottom: '0',
-                          right: '0',
-                          width: '24px',
-                          height: '24px',
-                          cursor: 'nwse-resize',
-                          background: `linear-gradient(135deg, ${theme.accent} 0%, ${theme.accentHover} 100%)`,
-                          borderRadius: '0 0 10px 0',
-                          opacity: 0.8,
-                          zIndex: 10,
-                          boxShadow: darkMode 
-                            ? `0 2px 8px rgba(99, 102, 241, 0.5)` 
-                            : `0 2px 6px rgba(99, 102, 241, 0.4)`,
-                          transition: 'all 0.2s ease',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          borderLeft: `1px solid ${theme.border}`,
-                          borderTop: `1px solid ${theme.border}`
-                        }}
-                      >
-                        <Maximize2 size={14} color="white" style={{ opacity: 0.95 }} />
-                      </div>
-                    )}
+                    <div
+                      onMouseDown={(e) => handleResizeStart(e, panel, 'se')}
+                      style={{
+                        position: 'absolute',
+                        bottom: '0',
+                        right: '0',
+                        width: '24px',
+                        height: '24px',
+                        cursor: 'nwse-resize',
+                        background: `linear-gradient(135deg, ${theme.accent} 0%, ${theme.accentHover} 100%)`,
+                        borderRadius: '0 0 10px 0',
+                        opacity: 0.8,
+                        zIndex: 10,
+                        boxShadow: darkMode 
+                          ? `0 2px 8px rgba(99, 102, 241, 0.5)` 
+                          : `0 2px 6px rgba(99, 102, 241, 0.4)`,
+                        transition: 'all 0.2s ease',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        borderLeft: `1px solid ${theme.border}`,
+                        borderTop: `1px solid ${theme.border}`
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.opacity = '1';
+                        e.currentTarget.style.boxShadow = darkMode 
+                          ? '0 4px 12px rgba(99, 102, 241, 0.7)' 
+                          : '0 3px 10px rgba(99, 102, 241, 0.6)';
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.opacity = '0.8';
+                        e.currentTarget.style.boxShadow = darkMode 
+                          ? '0 2px 8px rgba(99, 102, 241, 0.5)' 
+                          : '0 2px 6px rgba(99, 102, 241, 0.4)';
+                      }}
+                    >
+                      <Maximize2 size={14} color="white" style={{ opacity: 0.95 }} />
+                    </div>
                   </div>
                 ) : (
                   <div style={{ position: 'relative', height: '100%' }}>
@@ -1104,34 +1108,44 @@ export default function Dashboard({ onLogout }) {
                       darkMode={darkMode}
                     />
                     
-                    {windowWidth >= 640 && (
-                      <div
-                        onMouseDown={(e) => handleResizeStart(e, panel, 'se')}
-                        style={{
-                          position: 'absolute',
-                          bottom: '0',
-                          right: '0',
-                          width: '24px',
-                          height: '24px',
-                          cursor: 'nwse-resize',
-                          background: `linear-gradient(135deg, ${theme.accent} 0%, ${theme.accentHover} 100%)`,
-                          borderRadius: '0 0 10px 0',
-                          opacity: 0.8,
-                          zIndex: 10,
-                          boxShadow: darkMode 
-                            ? `0 2px 8px rgba(99, 102, 241, 0.5)` 
-                            : `0 2px 6px rgba(99, 102, 241, 0.4)`,
-                          transition: 'all 0.2s ease',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          borderLeft: `1px solid ${theme.border}`,
-                          borderTop: `1px solid ${theme.border}`
-                        }}
-                      >
-                        <Maximize2 size={14} color="white" style={{ opacity: 0.95 }} />
-                      </div>
-                    )}
+                    <div
+                      onMouseDown={(e) => handleResizeStart(e, panel, 'se')}
+                      style={{
+                        position: 'absolute',
+                        bottom: '0',
+                        right: '0',
+                        width: '24px',
+                        height: '24px',
+                        cursor: 'nwse-resize',
+                        background: `linear-gradient(135deg, ${theme.accent} 0%, ${theme.accentHover} 100%)`,
+                        borderRadius: '0 0 10px 0',
+                        opacity: 0.8,
+                        zIndex: 10,
+                        boxShadow: darkMode 
+                          ? `0 2px 8px rgba(99, 102, 241, 0.5)` 
+                          : `0 2px 6px rgba(99, 102, 241, 0.4)`,
+                        transition: 'all 0.2s ease',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        borderLeft: `1px solid ${theme.border}`,
+                        borderTop: `1px solid ${theme.border}`
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.opacity = '1';
+                        e.currentTarget.style.boxShadow = darkMode 
+                          ? '0 4px 12px rgba(99, 102, 241, 0.7)' 
+                          : '0 3px 10px rgba(99, 102, 241, 0.6)';
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.opacity = '0.8';
+                        e.currentTarget.style.boxShadow = darkMode 
+                          ? '0 2px 8px rgba(99, 102, 241, 0.5)' 
+                          : '0 2px 6px rgba(99, 102, 241, 0.4)';
+                      }}
+                    >
+                      <Maximize2 size={14} color="white" style={{ opacity: 0.95 }} />
+                    </div>
                   </div>
                 )}
               </div>
@@ -1207,10 +1221,6 @@ export default function Dashboard({ onLogout }) {
         
         *::-webkit-scrollbar-thumb:hover {
           background: ${theme.borderLight};
-        }
-
-        #tabs-container::-webkit-scrollbar {
-          display: none;
         }
       `}</style>
     </div>
