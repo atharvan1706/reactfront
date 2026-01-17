@@ -133,50 +133,50 @@ class QuestDBService {
   // Format QuestDB response to array of objects
   // ✅ UPDATED: Now handles both array and object formats
   formatData(questdbResponse) {
-  if (!questdbResponse || !questdbResponse.dataset || !questdbResponse.columns) {
-    return [];
-  }
+    if (!questdbResponse || !questdbResponse.dataset || !questdbResponse.columns) {
+      return [];
+    }
 
-  const columns = questdbResponse.columns;
-  const dataset = questdbResponse.dataset;
+    const columns = questdbResponse.columns;
+    const dataset = questdbResponse.dataset;
 
-  if (dataset.length === 0) {
-    return [];
-  }
+    if (dataset.length === 0) {
+      return [];
+    }
 
-  const firstRow = dataset[0];
-  const isArrayFormat = Array.isArray(firstRow);
-  
-  // Numeric types that need coercion
-  const numericTypes = ['DOUBLE', 'REAL', 'INTEGER', 'BIGINT', 'SMALLINT', 'FLOAT', 'NUMERIC', 'DECIMAL'];
-
-  return dataset.map(row => {
-    const obj = {};
+    const firstRow = dataset[0];
+    const isArrayFormat = Array.isArray(firstRow);
     
-    columns.forEach((col, index) => {
-      let value = isArrayFormat ? row[index] : row[col.name];
+    // Numeric types that need coercion
+    const numericTypes = ['DOUBLE', 'REAL', 'INTEGER', 'BIGINT', 'SMALLINT', 'FLOAT', 'NUMERIC', 'DECIMAL'];
+
+    return dataset.map(row => {
+      const obj = {};
       
-      // Handle timestamps
-      if (col.type === 'TIMESTAMP') {
-        value = this.formatTimestamp(value);
-      }
-      
-      // ✅ Coerce numeric types to actual numbers
-      if (numericTypes.includes(col.type?.toUpperCase())) {
-        if (typeof value === 'string' && value.trim() !== '') {
-          const num = Number(value);
-          value = isNaN(num) ? 0 : num;
-        } else if (value === null || value === undefined || value === '') {
-          value = 0;
+      columns.forEach((col, index) => {
+        let value = isArrayFormat ? row[index] : row[col.name];
+        
+        // Handle timestamps
+        if (col.type === 'TIMESTAMP') {
+          value = this.formatTimestamp(value);
         }
-      }
+        
+        // ✅ Coerce numeric types to actual numbers
+        if (numericTypes.includes(col.type?.toUpperCase())) {
+          if (typeof value === 'string' && value.trim() !== '') {
+            const num = Number(value);
+            value = isNaN(num) ? 0 : num;
+          } else if (value === null || value === undefined || value === '') {
+            value = 0;
+          }
+        }
+        
+        obj[col.name] = value;
+      });
       
-      obj[col.name] = value;
+      return obj;
     });
-    
-    return obj;
-  });
-}
+  }
 
   // Format timestamp for display
   formatTimestamp(timestamp) {
@@ -207,66 +207,26 @@ class QuestDBService {
     return date.toISOString();
   }
 
-  // Format for charts (add display time)
- /* formatForChart(data, timestampField = 'timestamp', valueField = 'value') {
-    return data.map(item => {
-      const timestamp = item[timestampField];
-      let displayTime = 'N/A';
-
+  // Format for charts with timezone support
+  // ✅ FIXED: Changed from arrow function to regular method
+  formatForChart(data, timestampField = 'timestamp', timezone = 'UTC') {
+    if (!data || data.length === 0) return [];
+    
+    return data.map(row => {
+      const timestamp = row[timestampField];
+      let formattedTime;
+      
       if (timestamp) {
         const date = new Date(timestamp);
-        if (!isNaN(date.getTime())) {
-          displayTime = date.toLocaleTimeString('en-US', {
-            hour: '2-digit',
-            minute: '2-digit',
-            second: '2-digit',
-            hour12: false
-          });
-        }
-      }
-
-      return {
-        ...item,
-        _time: displayTime,
-        _timestamp: timestamp,
-        _value: item[valueField] // Normalize value field
-      };
-    }).reverse(); // Reverse for chronological order
-  }
-}
-*/
-
- formatForChart: (data, timestampField = 'timestamp', timezone = 'UTC') => {
-  if (!data || data.length === 0) return [];
-  
-  return data.map(row => {
-    const timestamp = row[timestampField];
-    let formattedTime;
-    
-    if (timestamp) {
-      const date = new Date(timestamp);
-      
-      // Format based on timezone
-      if (timezone === 'UTC') {
-        // Keep UTC formatting
-        formattedTime = date.toISOString().split('T')[0] + ' ' + 
-                       date.toISOString().split('T')[1].substring(0, 8);
-      } else if (timezone === 'local') {
-        // Use browser's local timezone
-        formattedTime = date.toLocaleString('en-US', {
-          year: 'numeric',
-          month: '2-digit',
-          day: '2-digit',
-          hour: '2-digit',
-          minute: '2-digit',
-          second: '2-digit',
-          hour12: false
-        }).replace(',', '');
-      } else {
-        // Use specific timezone (e.g., 'America/New_York')
-        try {
+        
+        // Format based on timezone
+        if (timezone === 'UTC') {
+          // Keep UTC formatting
+          formattedTime = date.toISOString().split('T')[0] + ' ' + 
+                         date.toISOString().split('T')[1].substring(0, 8);
+        } else if (timezone === 'local') {
+          // Use browser's local timezone
           formattedTime = date.toLocaleString('en-US', {
-            timeZone: timezone,
             year: 'numeric',
             month: '2-digit',
             day: '2-digit',
@@ -275,21 +235,36 @@ class QuestDBService {
             second: '2-digit',
             hour12: false
           }).replace(',', '');
-        } catch (error) {
-          console.error(`Invalid timezone: ${timezone}, falling back to UTC`);
-          formattedTime = date.toISOString().split('T')[0] + ' ' + 
-                         date.toISOString().split('T')[1].substring(0, 8);
+        } else {
+          // Use specific timezone (e.g., 'America/New_York')
+          try {
+            formattedTime = date.toLocaleString('en-US', {
+              timeZone: timezone,
+              year: 'numeric',
+              month: '2-digit',
+              day: '2-digit',
+              hour: '2-digit',
+              minute: '2-digit',
+              second: '2-digit',
+              hour12: false
+            }).replace(',', '');
+          } catch (error) {
+            console.error(`Invalid timezone: ${timezone}, falling back to UTC`);
+            formattedTime = date.toISOString().split('T')[0] + ' ' + 
+                           date.toISOString().split('T')[1].substring(0, 8);
+          }
         }
+      } else {
+        formattedTime = 'N/A';
       }
-    } else {
-      formattedTime = 'N/A';
-    }
-    
-    return {
-      ...row,
-      _time: formattedTime,
-      _timestamp: timestamp
-    };
-  });
-} 
+      
+      return {
+        ...row,
+        _time: formattedTime,
+        _timestamp: timestamp
+      };
+    });
+  }
+}
+
 export default new QuestDBService();
