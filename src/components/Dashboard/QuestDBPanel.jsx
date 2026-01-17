@@ -44,15 +44,24 @@ function QuestDBPanel({ config, onEdit, onDelete, onDuplicate, onResize, style, 
   };
 
   const buildQueryWithFiltersAndTimeRange = () => {
+    console.log('🔧 Building query with config:', {
+      dataSource: config.dataSource,
+      table: config.table,
+      timeRange: config.timeRange,
+      timeRangeLast: config.timeRangeLast,
+      filters: config.filters,
+      timestampField: config.timestampField,
+      timezone: config.timezone
+    });
+
     let query = config.query;
     
     if (config.dataSource === 'table' && config.table) {
       query = `SELECT * FROM ${config.table}`;
       
-      // Add WHERE clauses for filters and time range
       const whereClauses = [];
       
-      // Time range filter - FIXED: Use proper QuestDB date functions
+      // Time range filter
       if (config.timeRange === 'last' && config.timeRangeLast) {
         const intervals = {
           '5m': '5 minutes',
@@ -63,21 +72,24 @@ function QuestDBPanel({ config, onEdit, onDelete, onDuplicate, onResize, style, 
           '7d': '7 days',
           '30d': '30 days'
         };
-        // QuestDB dateadd syntax: dateadd('interval', count, timestamp)
-        whereClauses.push(`${config.timestampField} >= dateadd('${intervals[config.timeRangeLast]}', -1, now())`);
+        const timeClause = `${config.timestampField} >= dateadd('${intervals[config.timeRangeLast]}', -1, now())`;
+        whereClauses.push(timeClause);
+        console.log('⏰ Time range clause:', timeClause);
       } else if (config.timeRange === 'custom' && config.timeRangeStart && config.timeRangeEnd) {
-        // Convert datetime-local format to QuestDB timestamp
-        whereClauses.push(`${config.timestampField} BETWEEN timestamp('${config.timeRangeStart}:00') AND timestamp('${config.timeRangeEnd}:00')`);
+        const timeClause = `${config.timestampField} BETWEEN timestamp('${config.timeRangeStart}:00') AND timestamp('${config.timeRangeEnd}:00')`;
+        whereClauses.push(timeClause);
+        console.log('⏰ Custom time range clause:', timeClause);
       }
       
-      // Data filters - FIXED: Proper escaping and type handling
+      // Data filters
       if (config.filters && config.filters.length > 0) {
         config.filters.forEach(filter => {
           if (filter.field && filter.operator && filter.value !== '') {
-            // Check if value is a number
             const isNumber = !isNaN(parseFloat(filter.value)) && isFinite(filter.value);
-            const value = isNumber ? filter.value : `'${filter.value.replace(/'/g, "''")}'`; // Escape single quotes
-            whereClauses.push(`${filter.field} ${filter.operator} ${value}`);
+            const value = isNumber ? filter.value : `'${filter.value.replace(/'/g, "''")}'`;
+            const filterClause = `${filter.field} ${filter.operator} ${value}`;
+            whereClauses.push(filterClause);
+            console.log('🔍 Filter clause:', filterClause);
           }
         });
       }
@@ -89,6 +101,7 @@ function QuestDBPanel({ config, onEdit, onDelete, onDuplicate, onResize, style, 
       query += ` ORDER BY ${config.timestampField} DESC LIMIT ${config.limit}`;
     }
     
+    console.log('✅ Final query:', query);
     return query;
   };
 
@@ -104,12 +117,17 @@ function QuestDBPanel({ config, onEdit, onDelete, onDuplicate, onResize, style, 
         throw new Error('No query specified');
       }
 
-      console.log('Executing query:', query); // Debug log
+      console.log('🚀 Executing query:', query);
       const result = await questdbService.query(query);
+      console.log('📊 Raw query result:', result);
+      console.log('🌍 Using timezone:', config.timezone || 'UTC');
+      
       const formatted = questdbService.formatForChart(result, config.timestampField, config.timezone || 'UTC');
+      console.log('📈 Formatted data sample:', formatted.slice(0, 3));
       
       let finalData = formatted;
       if (config.transformations && config.transformations.length > 0) {
+        console.log('🔄 Applying transformations:', config.transformations);
         finalData = SimpleTransformations.applyTransformations(formatted, config.transformations);
       }
       
@@ -120,14 +138,14 @@ function QuestDBPanel({ config, onEdit, onDelete, onDuplicate, onResize, style, 
         setLatestRecordTime(new Date(result[0][config.timestampField]));
       }
       
+      console.log('✅ Final data count:', finalData.length);
       setData(finalData);
       setIsInitialLoad(false);
       setLoading(false);
     } catch (err) {
-      console.error('Error fetching data:', err);
+      console.error('❌ Error fetching data:', err);
       setError(err.message);
       setLoading(false);
-      // Keep previous data if available, only clear on initial load failure
       if (isInitialLoad) {
         setIsInitialLoad(false);
       }
@@ -135,6 +153,8 @@ function QuestDBPanel({ config, onEdit, onDelete, onDuplicate, onResize, style, 
   };
 
   useEffect(() => {
+    console.log('🔄 Config changed, refetching data');
+    console.log('Current config:', config);
     setIsInitialLoad(true);
     setLoading(true);
     fetchData();
@@ -169,9 +189,16 @@ function QuestDBPanel({ config, onEdit, onDelete, onDuplicate, onResize, style, 
   };
 
   const getYAxisDomain = () => {
+    console.log('📊 Y-axis config:', {
+      scale: config.yAxisScale,
+      min: config.yAxisMin,
+      max: config.yAxisMax
+    });
+    
     if (config.yAxisScale === 'custom') {
       const min = config.yAxisMin !== '' ? parseFloat(config.yAxisMin) : 'auto';
       const max = config.yAxisMax !== '' ? parseFloat(config.yAxisMax) : 'auto';
+      console.log('📊 Custom Y-axis domain:', [min, max]);
       return [min, max];
     }
     return ['auto', 'auto'];
@@ -243,6 +270,7 @@ function QuestDBPanel({ config, onEdit, onDelete, onDuplicate, onResize, style, 
     
     // Determine Y-axis scale type
     const yAxisScaleType = config.yAxisScale === 'log' ? 'log' : config.yAxisScale === 'linear' ? 'linear' : 'auto';
+    console.log('📊 Using Y-axis scale:', yAxisScaleType, 'domain:', yDomain);
 
     switch (config.vizType) {
       case 'line':
@@ -830,6 +858,8 @@ function QuestDBPanel({ config, onEdit, onDelete, onDuplicate, onResize, style, 
               <div style={{ textTransform: 'capitalize' }}>{config.vizType}</div>
               <div>•</div>
               <div>{data.length} pts</div>
+              <div>•</div>
+              <div>TZ: {config.timezone || 'UTC'}</div>
               {!isSmall && (
                 <>
                   <div>•</div>
