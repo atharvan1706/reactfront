@@ -273,6 +273,27 @@ export default function ScadaPanel({ config, darkMode }) {
     return mapping?.label || tagValue;
   };
 
+  // Get connection points on the edges of components (left, right, top, bottom)
+  const getConnectionPoint = (comp, side) => {
+    const svgData = SVG_COMPONENTS[comp.type];
+    const width = svgData?.width || 60;
+    const height = svgData?.height || 60;
+    
+    switch(side) {
+      case 'left':
+        return { x: comp.x, y: comp.y + height / 2 };
+      case 'right':
+        return { x: comp.x + width, y: comp.y + height / 2 };
+      case 'top':
+        return { x: comp.x + width / 2, y: comp.y };
+      case 'bottom':
+        return { x: comp.x + width / 2, y: comp.y + height };
+      default:
+        return { x: comp.x + width / 2, y: comp.y + height / 2 };
+    }
+  };
+
+  // Calculate best connection points and create orthogonal path
   const getLineCoordinates = (line) => {
     const fromComp = normalizedConfig.components?.find(c => c.id === line.from);
     const toComp = normalizedConfig.components?.find(c => c.id === line.to);
@@ -282,12 +303,79 @@ export default function ScadaPanel({ config, darkMode }) {
     const fromSvg = SVG_COMPONENTS[fromComp.type];
     const toSvg = SVG_COMPONENTS[toComp.type];
     
-    return {
-      x1: fromComp.x + (fromSvg?.width || 60) / 2,
-      y1: fromComp.y + (fromSvg?.height || 60) / 2,
-      x2: toComp.x + (toSvg?.width || 60) / 2,
-      y2: toComp.y + (toSvg?.height || 60) / 2
+    const fromWidth = fromSvg?.width || 60;
+    const fromHeight = fromSvg?.height || 60;
+    const toWidth = toSvg?.width || 60;
+    const toHeight = toSvg?.height || 60;
+    
+    // Calculate component centers
+    const fromCenter = {
+      x: fromComp.x + fromWidth / 2,
+      y: fromComp.y + fromHeight / 2
     };
+    const toCenter = {
+      x: toComp.x + toWidth / 2,
+      y: toComp.y + toHeight / 2
+    };
+    
+    // Determine if components are aligned horizontally or vertically
+    const isHorizontallyAligned = Math.abs(fromCenter.y - toCenter.y) < 50;
+    const isVerticallyAligned = Math.abs(fromCenter.x - toCenter.x) < 50;
+    
+    let fromPoint, toPoint;
+    
+    if (isHorizontallyAligned) {
+      // Use left-right connection for horizontal alignment
+      if (fromCenter.x < toCenter.x) {
+        fromPoint = getConnectionPoint(fromComp, 'right');
+        toPoint = getConnectionPoint(toComp, 'left');
+      } else {
+        fromPoint = getConnectionPoint(fromComp, 'left');
+        toPoint = getConnectionPoint(toComp, 'right');
+      }
+      
+      return {
+        path: `M ${fromPoint.x} ${fromPoint.y} L ${toPoint.x} ${toPoint.y}`,
+        isSimpleLine: true
+      };
+    } else if (isVerticallyAligned) {
+      // Use top-bottom connection for vertical alignment
+      if (fromCenter.y < toCenter.y) {
+        fromPoint = getConnectionPoint(fromComp, 'bottom');
+        toPoint = getConnectionPoint(toComp, 'top');
+      } else {
+        fromPoint = getConnectionPoint(fromComp, 'top');
+        toPoint = getConnectionPoint(toComp, 'bottom');
+      }
+      
+      return {
+        path: `M ${fromPoint.x} ${fromPoint.y} L ${toPoint.x} ${toPoint.y}`,
+        isSimpleLine: true
+      };
+    } else {
+      // Create orthogonal path with corner
+      let fromSide, toSide;
+      
+      // Determine optimal sides based on relative positions
+      if (fromCenter.x < toCenter.x) {
+        fromSide = 'right';
+        toSide = 'left';
+      } else {
+        fromSide = 'left';
+        toSide = 'right';
+      }
+      
+      fromPoint = getConnectionPoint(fromComp, fromSide);
+      toPoint = getConnectionPoint(toComp, toSide);
+      
+      // Create path with horizontal then vertical segment
+      const midX = (fromPoint.x + toPoint.x) / 2;
+      
+      return {
+        path: `M ${fromPoint.x} ${fromPoint.y} L ${midX} ${fromPoint.y} L ${midX} ${toPoint.y} L ${toPoint.x} ${toPoint.y}`,
+        isSimpleLine: false
+      };
+    }
   };
 
   const getViewBox = () => {
@@ -394,42 +482,22 @@ export default function ScadaPanel({ config, darkMode }) {
         preserveAspectRatio="xMidYMid meet"
         style={{ display: 'block' }}
       >
-        {/* Grid background */}
-        <defs>
-          <pattern id={`grid-${config.id}`} width="20" height="20" patternUnits="userSpaceOnUse">
-            <circle cx="1" cy="1" r="1" fill={darkMode ? '#374151' : '#e5e7eb'} opacity="0.5" />
-          </pattern>
-        </defs>
-        <rect width="100%" height="100%" fill={`url(#grid-${config.id})`} />
-
-        {/* Lines */}
+        {/* Lines - now with clean orthogonal routing */}
         {normalizedConfig.lines?.map(line => {
-          const coords = getLineCoordinates(line);
-          if (!coords) return null;
+          const lineData = getLineCoordinates(line);
+          if (!lineData) return null;
           
           return (
             <g key={line.id}>
-              <line
-                x1={coords.x1}
-                y1={coords.y1}
-                x2={coords.x2}
-                y2={coords.y2}
+              {/* Single clean line path */}
+              <path
+                d={lineData.path}
                 stroke={line.color || '#3b82f6'}
-                strokeWidth={line.width || 2}
-                strokeDasharray={line.style === 'dashed' ? '5,5' : '0'}
+                strokeWidth={line.width || 3}
+                fill="none"
                 strokeLinecap="round"
+                strokeLinejoin="round"
               />
-              {(() => {
-                const angle = Math.atan2(coords.y2 - coords.y1, coords.x2 - coords.x1);
-                const arrowSize = 10;
-                return (
-                  <polygon
-                    points={`0,-${arrowSize/2} ${arrowSize},0 0,${arrowSize/2}`}
-                    fill={line.color || '#3b82f6'}
-                    transform={`translate(${coords.x2}, ${coords.y2}) rotate(${angle * 180 / Math.PI})`}
-                  />
-                );
-              })()}
             </g>
           );
         })}
@@ -515,7 +583,7 @@ export default function ScadaPanel({ config, darkMode }) {
           background: darkMode ? 'rgba(26, 29, 41, 0.95)' : 'rgba(255, 255, 255, 0.95)',
           border: `1px solid ${theme.border}`,
           borderRadius: '8px',
-          padding: '2px',
+          padding: '12px',
           fontSize: '11px',
           color: theme.text,
           maxWidth: '200px',
