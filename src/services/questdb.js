@@ -208,7 +208,7 @@ class QuestDBService {
   }
 
   // Format for charts (add display time)
-  formatForChart(data, timestampField = 'timestamp', valueField = 'value') {
+ /* formatForChart(data, timestampField = 'timestamp', valueField = 'value') {
     return data.map(item => {
       const timestamp = item[timestampField];
       let displayTime = 'N/A';
@@ -234,5 +234,62 @@ class QuestDBService {
     }).reverse(); // Reverse for chronological order
   }
 }
+*/
 
+ formatForChart: (data, timestampField = 'timestamp', timezone = 'UTC') => {
+  if (!data || data.length === 0) return [];
+  
+  return data.map(row => {
+    const timestamp = row[timestampField];
+    let formattedTime;
+    
+    if (timestamp) {
+      const date = new Date(timestamp);
+      
+      // Format based on timezone
+      if (timezone === 'UTC') {
+        // Keep UTC formatting
+        formattedTime = date.toISOString().split('T')[0] + ' ' + 
+                       date.toISOString().split('T')[1].substring(0, 8);
+      } else if (timezone === 'local') {
+        // Use browser's local timezone
+        formattedTime = date.toLocaleString('en-US', {
+          year: 'numeric',
+          month: '2-digit',
+          day: '2-digit',
+          hour: '2-digit',
+          minute: '2-digit',
+          second: '2-digit',
+          hour12: false
+        }).replace(',', '');
+      } else {
+        // Use specific timezone (e.g., 'America/New_York')
+        try {
+          formattedTime = date.toLocaleString('en-US', {
+            timeZone: timezone,
+            year: 'numeric',
+            month: '2-digit',
+            day: '2-digit',
+            hour: '2-digit',
+            minute: '2-digit',
+            second: '2-digit',
+            hour12: false
+          }).replace(',', '');
+        } catch (error) {
+          console.error(`Invalid timezone: ${timezone}, falling back to UTC`);
+          formattedTime = date.toISOString().split('T')[0] + ' ' + 
+                         date.toISOString().split('T')[1].substring(0, 8);
+        }
+      }
+    } else {
+      formattedTime = 'N/A';
+    }
+    
+    return {
+      ...row,
+      _time: formattedTime,
+      _timestamp: timestamp
+    };
+  });
+} 
 export default new QuestDBService();
