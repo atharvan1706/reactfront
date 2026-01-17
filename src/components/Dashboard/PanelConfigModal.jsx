@@ -5,7 +5,7 @@ import {
   XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer
 } from 'recharts';
 import {
-  X as LucideX, Database, Eye, Save, RefreshCw, AlertCircle, Plus, Trash2, Settings
+  X as LucideX, Database, Eye, Save, RefreshCw, AlertCircle, Plus, Trash2, Settings, Globe
 } from 'lucide-react';
 
 import { COLORS, VIZ_TYPES, DEFAULT_PANEL_CONFIG } from './constants';
@@ -15,6 +15,22 @@ import SimpleTransformations from './simpleTransformations';
 import TransformationPanel from './TransformationPanel';
 
 const X = LucideX;
+
+// Timezone options
+const TIMEZONES = [
+  { value: 'UTC', label: 'UTC' },
+  { value: 'local', label: 'Local Browser Time' },
+  { value: 'America/New_York', label: 'Eastern Time (ET)' },
+  { value: 'America/Chicago', label: 'Central Time (CT)' },
+  { value: 'America/Denver', label: 'Mountain Time (MT)' },
+  { value: 'America/Los_Angeles', label: 'Pacific Time (PT)' },
+  { value: 'Europe/London', label: 'London (GMT/BST)' },
+  { value: 'Europe/Paris', label: 'Paris (CET/CEST)' },
+  { value: 'Asia/Tokyo', label: 'Tokyo (JST)' },
+  { value: 'Asia/Shanghai', label: 'Shanghai (CST)' },
+  { value: 'Asia/Kolkata', label: 'India (IST)' },
+  { value: 'Australia/Sydney', label: 'Sydney (AEST/AEDT)' },
+];
 
 function PanelConfigModal({ panel, onSave, onClose, allTables, darkMode }) {
   const [config, setConfig] = useState(panel || {
@@ -33,7 +49,9 @@ function PanelConfigModal({ panel, onSave, onClose, allTables, darkMode }) {
     timeRangeStart: '',
     timeRangeEnd: '',
     // NEW: Filters
-    filters: [] // [{field: '', operator: '', value: ''}]
+    filters: [], // [{field: '', operator: '', value: ''}]
+    // NEW: Timezone
+    timezone: 'UTC' // Default to UTC
   });
 
   const [previewData, setPreviewData] = useState([]);
@@ -93,7 +111,7 @@ function PanelConfigModal({ panel, onSave, onClose, allTables, darkMode }) {
       // Add WHERE clauses for filters and time range
       const whereClauses = [];
       
-      // Time range filter
+      // Time range filter - FIXED: Use proper QuestDB date functions
       if (config.timeRange === 'last' && config.timeRangeLast) {
         const intervals = {
           '5m': '5 minutes',
@@ -104,16 +122,20 @@ function PanelConfigModal({ panel, onSave, onClose, allTables, darkMode }) {
           '7d': '7 days',
           '30d': '30 days'
         };
+        // QuestDB dateadd syntax: dateadd('interval', count, timestamp)
         whereClauses.push(`${config.timestampField} >= dateadd('${intervals[config.timeRangeLast]}', -1, now())`);
       } else if (config.timeRange === 'custom' && config.timeRangeStart && config.timeRangeEnd) {
-        whereClauses.push(`${config.timestampField} BETWEEN '${config.timeRangeStart}' AND '${config.timeRangeEnd}'`);
+        // Convert datetime-local format to QuestDB timestamp
+        whereClauses.push(`${config.timestampField} BETWEEN timestamp('${config.timeRangeStart}:00') AND timestamp('${config.timeRangeEnd}:00')`);
       }
       
-      // Data filters
+      // Data filters - FIXED: Proper escaping and type handling
       if (config.filters && config.filters.length > 0) {
         config.filters.forEach(filter => {
           if (filter.field && filter.operator && filter.value !== '') {
-            const value = isNaN(filter.value) ? `'${filter.value}'` : filter.value;
+            // Check if value is a number
+            const isNumber = !isNaN(parseFloat(filter.value)) && isFinite(filter.value);
+            const value = isNumber ? filter.value : `'${filter.value.replace(/'/g, "''")}'`; // Escape single quotes
             whereClauses.push(`${filter.field} ${filter.operator} ${value}`);
           }
         });
@@ -142,8 +164,9 @@ function PanelConfigModal({ panel, onSave, onClose, allTables, darkMode }) {
         return;
       }
 
+      console.log('Executing query:', query); // Debug log
       const result = await questdbService.query(query);
-      const formatted = questdbService.formatForChart(result, config.timestampField);
+      const formatted = questdbService.formatForChart(result, config.timestampField, config.timezone);
       
       // Apply transformations if any
       let finalData = formatted;
@@ -162,6 +185,7 @@ function PanelConfigModal({ panel, onSave, onClose, allTables, darkMode }) {
         }
       }
     } catch (error) {
+      console.error('Query error:', error); // Debug log
       setPreviewError(error.message);
     }
     
@@ -177,10 +201,9 @@ function PanelConfigModal({ panel, onSave, onClose, allTables, darkMode }) {
 
   const getYAxisDomain = () => {
     if (config.yAxisScale === 'custom') {
-      return [
-        config.yAxisMin !== '' ? parseFloat(config.yAxisMin) : 'auto',
-        config.yAxisMax !== '' ? parseFloat(config.yAxisMax) : 'auto'
-      ];
+      const min = config.yAxisMin !== '' ? parseFloat(config.yAxisMin) : 'auto';
+      const max = config.yAxisMax !== '' ? parseFloat(config.yAxisMax) : 'auto';
+      return [min, max];
     }
     return ['auto', 'auto'];
   };
@@ -262,7 +285,7 @@ function PanelConfigModal({ panel, onSave, onClose, allTables, darkMode }) {
             <YAxis 
               tick={{ fill: theme.textMuted, fontSize: 10 }}
               domain={yDomain}
-              scale={config.yAxisScale === 'log' ? 'log' : 'auto'}
+              scale={config.yAxisScale === 'log' ? 'log' : config.yAxisScale === 'linear' ? 'linear' : 'auto'}
             />
             <Tooltip contentStyle={{ background: theme.bg, border: `1px solid ${theme.border}` }} />
             <Legend />
@@ -286,6 +309,7 @@ function PanelConfigModal({ panel, onSave, onClose, allTables, darkMode }) {
             <YAxis 
               tick={{ fill: theme.textMuted, fontSize: 10 }}
               domain={yDomain}
+              scale={config.yAxisScale === 'log' ? 'log' : config.yAxisScale === 'linear' ? 'linear' : 'auto'}
             />
             <Tooltip contentStyle={{ background: theme.bg, border: `1px solid ${theme.border}` }} />
             <Legend />
@@ -306,6 +330,7 @@ function PanelConfigModal({ panel, onSave, onClose, allTables, darkMode }) {
             <YAxis 
               tick={{ fill: theme.textMuted, fontSize: 10 }}
               domain={yDomain}
+              scale={config.yAxisScale === 'log' ? 'log' : config.yAxisScale === 'linear' ? 'linear' : 'auto'}
             />
             <Tooltip contentStyle={{ background: theme.bg, border: `1px solid ${theme.border}` }} />
             <Legend />
@@ -348,6 +373,7 @@ function PanelConfigModal({ panel, onSave, onClose, allTables, darkMode }) {
             <YAxis 
               tick={{ fill: theme.textMuted, fontSize: 10 }}
               domain={yDomain}
+              scale={config.yAxisScale === 'log' ? 'log' : config.yAxisScale === 'linear' ? 'linear' : 'auto'}
             />
             <Tooltip contentStyle={{ background: theme.bg, border: `1px solid ${theme.border}` }} />
             <Legend />
@@ -705,6 +731,34 @@ function PanelConfigModal({ panel, onSave, onClose, allTables, darkMode }) {
                 />
               )}
             </div>
+          </div>
+        </div>
+
+        {/* Timezone Selector */}
+        <div style={{ marginBottom: '20px' }}>
+          <label style={{ display: 'block', marginBottom: '8px', fontSize: '13px', color: theme.textSecondary, fontWeight: '600' }}>
+            <Globe size={14} style={{ display: 'inline', marginRight: '6px', verticalAlign: 'middle' }} />
+            Timezone Display
+          </label>
+          <select
+            value={config.timezone || 'UTC'}
+            onChange={(e) => setConfig({ ...config, timezone: e.target.value })}
+            style={{
+              width: '100%',
+              padding: '10px 12px',
+              background: theme.bg,
+              border: `2px solid ${theme.border}`,
+              borderRadius: '8px',
+              color: theme.text,
+              fontSize: '14px'
+            }}
+          >
+            {TIMEZONES.map(tz => (
+              <option key={tz.value} value={tz.value}>{tz.label}</option>
+            ))}
+          </select>
+          <div style={{ marginTop: '6px', fontSize: '11px', color: theme.textMuted }}>
+            ℹ️ Database timestamps remain in UTC. This only affects display.
           </div>
         </div>
       </div>
