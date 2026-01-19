@@ -411,7 +411,7 @@ function QuestDBPanel({ config, onEdit, onDelete, onDuplicate, onResize, style, 
                   <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                 ))}
               </Pie>
-              <Tooltip contentStyle={{ background: theme.card, border: `1px solid ${theme.border}`, borderRadius: '6px', color: theme.text, fontSize: `${fontSize}px` }} />
+              <Tooltip contentStyle={{ background: theme.card, border: `1px solid ${theme.border}`, borderRadius: '6px', color: '#688ae8', fontSize: `${fontSize}px` }} />
               {config.showLegend && !isSmall && <Legend wrapperStyle={{ color: theme.text, fontSize: `${fontSize}px` }} />}
             </PieChart>
           </ResponsiveContainer>
