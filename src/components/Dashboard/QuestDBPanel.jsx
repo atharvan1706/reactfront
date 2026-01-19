@@ -1,4 +1,4 @@
-// QuestDBPanel.jsx - ENHANCED WITH AXIS CONFIGURATIONS
+// QuestDBPanel.jsx - IMPROVED WITH BETTER AESTHETICS
 import React, { useState, useEffect, useRef } from 'react';
 import {
   LineChart, Line, BarChart, Bar, AreaChart, Area, PieChart, Pie, Cell,
@@ -45,16 +45,6 @@ function QuestDBPanel({ config, onEdit, onDelete, onDuplicate, onResize, style, 
   };
 
   const buildQueryWithFiltersAndTimeRange = () => {
-    console.log('🔧 Building query with config:', {
-      dataSource: config.dataSource,
-      table: config.table,
-      timeRange: config.timeRange,
-      timeRangeLast: config.timeRangeLast,
-      filters: config.filters,
-      timestampField: config.timestampField,
-      timezone: config.timezone
-    });
-
     let query = config.query;
     
     if (config.dataSource === 'table' && config.table) {
@@ -72,13 +62,9 @@ function QuestDBPanel({ config, onEdit, onDelete, onDuplicate, onResize, style, 
           '7d': '7 days',
           '30d': '30 days'
         };
-        const timeClause = `${config.timestampField} >= dateadd('${intervals[config.timeRangeLast]}', -1, now())`;
-        whereClauses.push(timeClause);
-        console.log('⏰ Time range clause:', timeClause);
+        whereClauses.push(`${config.timestampField} >= dateadd('${intervals[config.timeRangeLast]}', -1, now())`);
       } else if (config.timeRange === 'custom' && config.timeRangeStart && config.timeRangeEnd) {
-        const timeClause = `${config.timestampField} BETWEEN timestamp('${config.timeRangeStart}:00') AND timestamp('${config.timeRangeEnd}:00')`;
-        whereClauses.push(timeClause);
-        console.log('⏰ Custom time range clause:', timeClause);
+        whereClauses.push(`${config.timestampField} BETWEEN timestamp('${config.timeRangeStart}:00') AND timestamp('${config.timeRangeEnd}:00')`);
       }
       
       if (config.filters && config.filters.length > 0) {
@@ -86,9 +72,7 @@ function QuestDBPanel({ config, onEdit, onDelete, onDuplicate, onResize, style, 
           if (filter.field && filter.operator && filter.value !== '') {
             const isNumber = !isNaN(parseFloat(filter.value)) && isFinite(filter.value);
             const value = isNumber ? filter.value : `'${filter.value.replace(/'/g, "''")}'`;
-            const filterClause = `${filter.field} ${filter.operator} ${value}`;
-            whereClauses.push(filterClause);
-            console.log('🔍 Filter clause:', filterClause);
+            whereClauses.push(`${filter.field} ${filter.operator} ${value}`);
           }
         });
       }
@@ -100,11 +84,9 @@ function QuestDBPanel({ config, onEdit, onDelete, onDuplicate, onResize, style, 
       query += ` ORDER BY ${config.timestampField} DESC LIMIT ${config.limit}`;
     }
     
-    console.log('✅ Final query:', query);
     return query;
   };
 
-  // ✅ NEW: Format number based on configuration
   const formatNumber = (value) => {
     if (value === null || value === undefined || isNaN(value)) return 'N/A';
     
@@ -115,7 +97,7 @@ function QuestDBPanel({ config, onEdit, onDelete, onDuplicate, onResize, style, 
         return value.toString();
         
       case 'number':
-        if (config.yAxisUseCommas) {
+        if (config.yAxisUseCommas ?? true) {
           const formatted = num.toFixed(config.yAxisDecimals ?? 2);
           const parts = formatted.split('.');
           parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ',');
@@ -143,7 +125,7 @@ function QuestDBPanel({ config, onEdit, onDelete, onDuplicate, onResize, style, 
         return `${size.toFixed(config.yAxisDecimals ?? 2)} ${units[unitIndex]}`;
         
       case 'bits':
-        const bitUnits = ['bit', 'Kbit', 'Mbit', 'Gbit', 'Tbit', 'Pbit'];
+        const bitUnits = ['bit', 'Kbit', 'Mbit', 'Gbit', 'Tbit'];
         let bits = Math.abs(num);
         let bitUnitIndex = 0;
         while (bits >= 1000 && bitUnitIndex < bitUnits.length - 1) {
@@ -177,7 +159,7 @@ function QuestDBPanel({ config, onEdit, onDelete, onDuplicate, onResize, style, 
         const hours = Math.floor(totalSeconds / 3600);
         const minutes = Math.floor((totalSeconds % 3600) / 60);
         const seconds = totalSeconds % 60;
-        if (hours > 0) return `${hours}h ${minutes}m ${seconds}s`;
+        if (hours > 0) return `${hours}h ${minutes}m`;
         if (minutes > 0) return `${minutes}m ${seconds}s`;
         return `${seconds}s`;
         
@@ -185,7 +167,7 @@ function QuestDBPanel({ config, onEdit, onDelete, onDuplicate, onResize, style, 
         const h = Math.floor(num / 3600);
         const m = Math.floor((num % 3600) / 60);
         const s = Math.floor(num % 60);
-        if (h > 0) return `${h}h ${m}m ${s}s`;
+        if (h > 0) return `${h}h ${m}m`;
         if (m > 0) return `${m}m ${s}s`;
         return `${s}s`;
         
@@ -219,7 +201,6 @@ function QuestDBPanel({ config, onEdit, onDelete, onDuplicate, onResize, style, 
     }
   };
 
-  // ✅ NEW: Format tick value with unit
   const formatTickValue = (value) => {
     const formatted = formatNumber(value);
     
@@ -234,6 +215,28 @@ function QuestDBPanel({ config, onEdit, onDelete, onDuplicate, onResize, style, 
     return formatted;
   };
 
+  // ✅ NEW: Smart time label formatter - shows only relevant parts
+  const formatTimeLabel = (timeStr) => {
+    if (!timeStr) return '';
+    
+    // If it's already short (like "12:30"), return as is
+    if (timeStr.length < 10) return timeStr;
+    
+    try {
+      // Try to extract just time portion (HH:MM or HH:MM:SS)
+      const match = timeStr.match(/(\d{1,2}:\d{2}(?::\d{2})?)/);
+      if (match) {
+        return match[1];
+      }
+      
+      // Fallback: take last part after space or dash
+      const parts = timeStr.split(/[\s-]/);
+      return parts[parts.length - 1];
+    } catch (e) {
+      return timeStr;
+    }
+  };
+
   const fetchData = async () => {
     try {
       setError(null);
@@ -241,22 +244,13 @@ function QuestDBPanel({ config, onEdit, onDelete, onDuplicate, onResize, style, 
       const startTime = Date.now();
       
       const query = buildQueryWithFiltersAndTimeRange();
+      if (!query) throw new Error('No query specified');
 
-      if (!query) {
-        throw new Error('No query specified');
-      }
-
-      console.log('🚀 Executing query:', query);
       const result = await questdbService.query(query);
-      console.log('📊 Raw query result:', result);
-      console.log('🌍 Using timezone:', config.timezone || 'UTC');
-      
       const formatted = questdbService.formatForChart(result, config.timestampField, config.timezone || 'UTC');
-      console.log('📈 Formatted data sample:', formatted.slice(0, 3));
       
       let finalData = formatted;
       if (config.transformations && config.transformations.length > 0) {
-        console.log('🔄 Applying transformations:', config.transformations);
         finalData = SimpleTransformations.applyTransformations(formatted, config.transformations);
       }
       
@@ -267,7 +261,6 @@ function QuestDBPanel({ config, onEdit, onDelete, onDuplicate, onResize, style, 
         setLatestRecordTime(new Date(result[0][config.timestampField]));
       }
       
-      console.log('✅ Final data count:', finalData.length);
       setData(finalData);
       setIsInitialLoad(false);
       setLoading(false);
@@ -282,8 +275,6 @@ function QuestDBPanel({ config, onEdit, onDelete, onDuplicate, onResize, style, 
   };
 
   useEffect(() => {
-    console.log('🔄 Config changed, refetching data');
-    console.log('Current config:', config);
     setIsInitialLoad(true);
     setLoading(true);
     fetchData();
@@ -318,16 +309,9 @@ function QuestDBPanel({ config, onEdit, onDelete, onDuplicate, onResize, style, 
   };
 
   const getYAxisDomain = () => {
-    console.log('📊 Y-axis config:', {
-      scale: config.yAxisScale,
-      min: config.yAxisMin,
-      max: config.yAxisMax
-    });
-    
     if (config.yAxisScale === 'custom') {
       const min = config.yAxisMin !== '' ? parseFloat(config.yAxisMin) : 'auto';
       const max = config.yAxisMax !== '' ? parseFloat(config.yAxisMax) : 'auto';
-      console.log('📊 Custom Y-axis domain:', [min, max]);
       return [min, max];
     }
     return ['auto', 'auto'];
@@ -383,10 +367,10 @@ function QuestDBPanel({ config, onEdit, onDelete, onDuplicate, onResize, style, 
     const chartProps = {
       data,
       margin: isSmall 
-        ? { top: 50, right: 15, left: 5, bottom: 28 }
+        ? { top: 50, right: 20, left: 10, bottom: 35 }
         : isMedium
-        ? { top: 55, right: 18, left: 8, bottom: 30 }
-        : { top: 58, right: 22, left: 12, bottom: 32 }
+        ? { top: 55, right: 25, left: 15, bottom: 40 }
+        : { top: 60, right: 30, left: 20, bottom: 45 }
     };
 
     const yFields = (config.yAxes && config.yAxes.length > 0) ? config.yAxes : [config.yAxis].filter(Boolean);
@@ -394,36 +378,41 @@ function QuestDBPanel({ config, onEdit, onDelete, onDuplicate, onResize, style, 
     const yDomain = getYAxisDomain();
     
     const yAxisScaleType = config.yAxisScale === 'log' ? 'log' : config.yAxisScale === 'linear' ? 'linear' : 'auto';
-    console.log('📊 Using Y-axis scale:', yAxisScaleType, 'domain:', yDomain);
 
-    // ✅ ENHANCED: Apply axis configurations
+    // ✅ IMPROVED: Better X-axis defaults
     const xAxisConfig = {
       dataKey: "_time",
       tick: config.xAxisShowTicks !== false ? { 
         fill: theme.chartText, 
         fontSize: config.xAxisTickFontSize ?? fontSize,
         angle: config.xAxisTickRotation ?? 0,
-        textAnchor: (config.xAxisTickRotation ?? 0) !== 0 ? 'end' : 'middle'
+        textAnchor: (config.xAxisTickRotation ?? 0) < 0 ? 'end' : (config.xAxisTickRotation ?? 0) > 0 ? 'start' : 'middle',
+        dy: (config.xAxisTickRotation ?? 0) !== 0 ? 5 : 0
       } : false,
+      tickFormatter: formatTimeLabel,  // ✅ Shorter time labels
       label: (config.xAxisShowLabel !== false && config.xAxisLabel) ? {
         value: config.xAxisLabel,
         position: 'insideBottom',
-        offset: -5,
+        offset: -10,
         fontSize: config.xAxisLabelFontSize ?? 12,
-        angle: config.xAxisLabelRotation ?? 0,
         fill: theme.text
       } : undefined,
-      tickCount: config.xAxisTickCount !== 'auto' ? parseInt(config.xAxisTickCount) : undefined,
-      interval: config.xAxisTickInterval !== 'auto' ? parseInt(config.xAxisTickInterval) : undefined,
-      stroke: theme.chartAxis
+      // ✅ Smart tick count based on data length and panel width
+      tickCount: config.xAxisTickCount !== 'auto' 
+        ? parseInt(config.xAxisTickCount) 
+        : isSmall ? 3 : isMedium ? 5 : 7,
+      interval: config.xAxisTickInterval !== 'auto' 
+        ? parseInt(config.xAxisTickInterval) 
+        : 'preserveStartEnd',  // ✅ Better spacing
+      stroke: theme.chartAxis,
+      height: (config.xAxisTickRotation ?? 0) !== 0 ? 60 : 40
     };
 
+    // ✅ IMPROVED: Better Y-axis defaults
     const yAxisConfig = {
       tick: config.yAxisShowTicks !== false ? { 
         fill: theme.chartText, 
-        fontSize: config.yAxisTickFontSize ?? fontSize,
-        angle: config.yAxisTickRotation ?? 0,
-        textAnchor: (config.yAxisTickRotation ?? 0) !== 0 ? 'end' : 'end'
+        fontSize: config.yAxisTickFontSize ?? fontSize
       } : false,
       tickFormatter: formatTickValue,
       label: (config.yAxisShowLabel !== false && config.yAxisLabel) ? {
@@ -431,21 +420,27 @@ function QuestDBPanel({ config, onEdit, onDelete, onDuplicate, onResize, style, 
         angle: -90,
         position: 'insideLeft',
         fontSize: config.yAxisLabelFontSize ?? 12,
-        fill: theme.text
+        fill: theme.text,
+        offset: 10
       } : undefined,
       domain: yDomain,
       scale: yAxisScaleType,
-      width: config.yAxisWidth !== 'auto' ? parseInt(config.yAxisWidth) : undefined,
+      width: config.yAxisWidth !== 'auto' 
+        ? parseInt(config.yAxisWidth) 
+        : isSmall ? 45 : isMedium ? 55 : 65,  // ✅ Adequate width for formatted numbers
       orientation: config.yAxisPosition || 'left',
-      tickCount: config.yAxisTickCount !== 'auto' ? parseInt(config.yAxisTickCount) : undefined,
+      tickCount: config.yAxisTickCount !== 'auto' 
+        ? parseInt(config.yAxisTickCount) 
+        : isSmall ? 4 : isMedium ? 5 : 6,  // ✅ Better tick density
       stroke: theme.chartAxis
     };
 
-    const gridConfig = config.showGrid ? {
+    // ✅ IMPROVED: Subtler grid by default
+    const gridConfig = config.showGrid !== false ? {
       strokeDasharray: config.gridStrokeDashArray || '3 3',
       stroke: darkMode 
-        ? `rgba(148, 163, 184, ${config.gridOpacity ?? 0.1})` 
-        : `rgba(0, 0, 0, ${config.gridOpacity ?? 0.1})`
+        ? `rgba(148, 163, 184, ${config.gridOpacity ?? 0.08})`  // ✅ More subtle
+        : `rgba(0, 0, 0, ${config.gridOpacity ?? 0.05})`
     } : false;
 
     switch (config.vizType) {
@@ -462,18 +457,20 @@ function QuestDBPanel({ config, onEdit, onDelete, onDuplicate, onResize, style, 
                   border: `1px solid ${theme.border}`, 
                   borderRadius: '6px',
                   color: theme.text,
-                  fontSize: `${fontSize}px`
+                  fontSize: `${fontSize}px`,
+                  padding: '8px 12px'
                 }}
                 formatter={(value) => formatTickValue(value)}
+                labelStyle={{ color: theme.textSecondary, fontWeight: '600' }}
               />
-              {config.showLegend && <Legend wrapperStyle={{ color: theme.text, fontSize: `${fontSize}px` }} />}
+              {config.showLegend && <Legend wrapperStyle={{ color: theme.text, fontSize: `${fontSize}px`, paddingTop: '10px' }} />}
               {filteredYFields.map((yField, idx) => (
                 <Line 
                   key={yField}
                   type="monotone" 
                   dataKey={yField} 
                   stroke={getColor(idx)} 
-                  strokeWidth={isSmall ? 1.5 : config.lineWidth} 
+                  strokeWidth={isSmall ? 1.5 : (config.lineWidth ?? 2)} 
                   dot={config.showDots && !isSmall}
                   name={yField}
                   animationDuration={300}
@@ -497,11 +494,13 @@ function QuestDBPanel({ config, onEdit, onDelete, onDuplicate, onResize, style, 
                   border: `1px solid ${theme.border}`, 
                   borderRadius: '6px',
                   color: theme.text,
-                  fontSize: `${fontSize}px`
+                  fontSize: `${fontSize}px`,
+                  padding: '8px 12px'
                 }}
                 formatter={(value) => formatTickValue(value)}
+                labelStyle={{ color: theme.textSecondary, fontWeight: '600' }}
               />
-              {config.showLegend && <Legend wrapperStyle={{ color: theme.text, fontSize: `${fontSize}px` }} />}
+              {config.showLegend && <Legend wrapperStyle={{ color: theme.text, fontSize: `${fontSize}px`, paddingTop: '10px' }} />}
               {filteredYFields.map((yField, idx) => (
                 <Area 
                   key={yField}
@@ -509,8 +508,8 @@ function QuestDBPanel({ config, onEdit, onDelete, onDuplicate, onResize, style, 
                   dataKey={yField} 
                   stroke={getColor(idx)} 
                   fill={getColor(idx)} 
-                  fillOpacity={config.fillOpacity}
-                  strokeWidth={isSmall ? 1.5 : config.lineWidth}
+                  fillOpacity={config.fillOpacity ?? 0.5}
+                  strokeWidth={isSmall ? 1.5 : (config.lineWidth ?? 2)}
                   name={yField}
                   animationDuration={300}
                   animationEasing="ease-in-out"
@@ -533,11 +532,13 @@ function QuestDBPanel({ config, onEdit, onDelete, onDuplicate, onResize, style, 
                   border: `1px solid ${theme.border}`, 
                   borderRadius: '6px',
                   color: theme.text,
-                  fontSize: `${fontSize}px`
+                  fontSize: `${fontSize}px`,
+                  padding: '8px 12px'
                 }}
                 formatter={(value) => formatTickValue(value)}
+                labelStyle={{ color: theme.textSecondary, fontWeight: '600' }}
               />
-              {config.showLegend && <Legend wrapperStyle={{ color: theme.text, fontSize: `${fontSize}px` }} />}
+              {config.showLegend && <Legend wrapperStyle={{ color: theme.text, fontSize: `${fontSize}px`, paddingTop: '10px' }} />}
               {filteredYFields.map((yField, idx) => (
                 <Bar 
                   key={yField}
@@ -617,8 +618,8 @@ function QuestDBPanel({ config, onEdit, onDelete, onDuplicate, onResize, style, 
           <ResponsiveContainer width="100%" height="100%">
             <RadarChart data={data.slice(0, 8)} margin={radarMargin}>
               <PolarGrid stroke={theme.chartGrid} />
-              <PolarAngleAxis dataKey="_time" tick={{ fill: theme.chartText, fontSize }} />
-              <PolarRadiusAxis tick={{ fill: theme.chartText, fontSize }} />
+              <PolarAngleAxis dataKey="_time" tick={{ fill: theme.chartText, fontSize }} tickFormatter={formatTimeLabel} />
+              <PolarRadiusAxis tick={{ fill: theme.chartText, fontSize }} tickFormatter={formatTickValue} />
               {filteredYFields.map((yField, idx) => (
                 <Radar 
                   key={yField}
@@ -818,26 +819,6 @@ function QuestDBPanel({ config, onEdit, onDelete, onDuplicate, onResize, style, 
                 {config.timeRangeLast}
               </div>
             )}
-            {config.timeRange === 'custom' && config.timeRangeStart && (
-              <div style={{
-                padding: '2px 6px',
-                background: darkMode ? 'rgba(102, 126, 234, 0.35)' : 'rgba(102, 126, 234, 0.3)',
-                backdropFilter: 'blur(4px)',
-                border: '1px solid rgba(102, 126, 234, 0.6)',
-                borderRadius: '6px',
-                fontSize: '8px',
-                color: darkMode ? '#c7d2fe' : '#4f46e5',
-                fontWeight: '700',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '2px',
-                boxShadow: darkMode ? '0 1px 3px rgba(0,0,0,0.4)' : '0 1px 2px rgba(0,0,0,0.15)',
-                textShadow: darkMode ? '0 1px 2px rgba(0,0,0,0.5)' : 'none'
-              }}>
-                <Clock size={7} />
-                Custom
-              </div>
-            )}
             {config.filters && config.filters.length > 0 && (
               <div style={{
                 padding: '2px 6px',
@@ -856,23 +837,6 @@ function QuestDBPanel({ config, onEdit, onDelete, onDuplicate, onResize, style, 
               }}>
                 <Filter size={7} />
                 {config.filters.length}
-              </div>
-            )}
-            {config.yAxisScale && config.yAxisScale !== 'auto' && (
-              <div style={{
-                padding: '2px 6px',
-                background: darkMode ? 'rgba(245, 158, 11, 0.35)' : 'rgba(245, 158, 11, 0.3)',
-                backdropFilter: 'blur(4px)',
-                border: '1px solid rgba(245, 158, 11, 0.6)',
-                borderRadius: '6px',
-                fontSize: '8px',
-                color: darkMode ? '#fde68a' : '#d97706',
-                fontWeight: '700',
-                textTransform: 'capitalize',
-                boxShadow: darkMode ? '0 1px 3px rgba(0,0,0,0.4)' : '0 1px 2px rgba(0,0,0,0.15)',
-                textShadow: darkMode ? '0 1px 2px rgba(0,0,0,0.5)' : 'none'
-              }}>
-                {config.yAxisScale}
               </div>
             )}
           </div>
@@ -900,11 +864,9 @@ function QuestDBPanel({ config, onEdit, onDelete, onDuplicate, onResize, style, 
         }} 
         onMouseEnter={(e) => {
           e.currentTarget.style.background = darkMode ? 'rgba(99, 102, 241, 0.2)' : 'rgba(99, 102, 241, 0.1)';
-          e.currentTarget.style.transform = 'translateY(-1px)';
         }}
         onMouseLeave={(e) => {
           e.currentTarget.style.background = 'transparent';
-          e.currentTarget.style.transform = 'translateY(0)';
         }}
         title="Refresh">
           <RefreshCw size={isSmall ? 12 : 13} style={{ animation: loading ? 'spin 1s linear infinite' : 'none' }} />
@@ -921,11 +883,9 @@ function QuestDBPanel({ config, onEdit, onDelete, onDuplicate, onResize, style, 
         }}
         onMouseEnter={(e) => {
           e.currentTarget.style.background = darkMode ? 'rgba(99, 102, 241, 0.2)' : 'rgba(99, 102, 241, 0.1)';
-          e.currentTarget.style.transform = 'translateY(-1px)';
         }}
         onMouseLeave={(e) => {
           e.currentTarget.style.background = 'transparent';
-          e.currentTarget.style.transform = 'translateY(0)';
         }}
         title="Duplicate">
           <Copy size={isSmall ? 11 : 12} />
@@ -942,11 +902,9 @@ function QuestDBPanel({ config, onEdit, onDelete, onDuplicate, onResize, style, 
         }}
         onMouseEnter={(e) => {
           e.currentTarget.style.background = darkMode ? 'rgba(99, 102, 241, 0.2)' : 'rgba(99, 102, 241, 0.1)';
-          e.currentTarget.style.transform = 'translateY(-1px)';
         }}
         onMouseLeave={(e) => {
           e.currentTarget.style.background = 'transparent';
-          e.currentTarget.style.transform = 'translateY(0)';
         }}
         title="Edit">
           <Settings size={isSmall ? 11 : 12} />
@@ -963,11 +921,9 @@ function QuestDBPanel({ config, onEdit, onDelete, onDuplicate, onResize, style, 
         }}
         onMouseEnter={(e) => {
           e.currentTarget.style.background = 'rgba(239, 68, 68, 0.15)';
-          e.currentTarget.style.transform = 'translateY(-1px)';
         }}
         onMouseLeave={(e) => {
           e.currentTarget.style.background = 'transparent';
-          e.currentTarget.style.transform = 'translateY(0)';
         }}
         title="Delete">
           <Trash2 size={isSmall ? 11 : 12} />
@@ -980,59 +936,25 @@ function QuestDBPanel({ config, onEdit, onDelete, onDuplicate, onResize, style, 
         bottom: '6px',
         left: '6px',
         right: '6px',
+        fontSize: isSmall ? '7px' : '8px',
+        color: theme.textMuted,
         display: 'flex',
-        justifyContent: 'space-between',
+        gap: isSmall ? '4px' : '6px',
         alignItems: 'center',
-        pointerEvents: 'none',
+        flexWrap: 'wrap',
+        fontWeight: '600',
+        textShadow: darkMode ? '1px 1px 3px rgba(0,0,0,0.9)' : '1px 1px 2px rgba(255,255,255,1)',
         zIndex: 10
       }}>
-        <div style={{
-          fontSize: isSmall ? '7px' : '8px',
-          color: error ? '#ef4444' : theme.textMuted,
-          display: 'flex',
-          gap: isSmall ? '4px' : '6px',
-          alignItems: 'center',
-          flexWrap: 'wrap',
-          fontWeight: '600',
-          textShadow: darkMode ? '1px 1px 3px rgba(0,0,0,0.9)' : '1px 1px 2px rgba(255,255,255,1)'
-        }}>
-          {error ? (
-            <>
-              <AlertCircle size={isSmall ? 8 : 9} color="#ef4444" />
-              <span style={{ color: '#ef4444' }}>Error: {error}</span>
-              <div>•</div>
-              <span style={{ color: theme.textMuted }}>Showing last data</span>
-            </>
-          ) : (
-            <>
-              <div style={{ display: 'flex', gap: '2px', alignItems: 'center' }}>
-                {loading && <RefreshCw size={isSmall ? 7 : 8} style={{ animation: 'spin 1s linear infinite' }} />}
-                {!loading && <Play size={isSmall ? 7 : 8} />}
-                <span>{config.refreshInterval > 0 ? `${config.refreshInterval / 1000}s` : 'Manual'}</span>
-              </div>
-              <div>•</div>
-              <div style={{ textTransform: 'capitalize' }}>{config.vizType}</div>
-              <div>•</div>
-              <div>{data.length} pts</div>
-              <div>•</div>
-              <div>TZ: {config.timezone || 'UTC'}</div>
-              {!isSmall && (
-                <>
-                  <div>•</div>
-                  <div style={{ display: 'flex', gap: '2px', alignItems: 'center' }}>
-                    <Clock size={7} />
-                    <span title="Query time">Q: {formatTimestamp(queryTime)}</span>
-                  </div>
-                  <div>•</div>
-                  <div style={{ display: 'flex', gap: '2px', alignItems: 'center' }}>
-                    <Database size={7} />
-                    <span title="Latest record time">L: {formatTimestamp(latestRecordTime)}</span>
-                  </div>
-                </>
-              )}
-            </>
-          )}
+        <div style={{ display: 'flex', gap: '2px', alignItems: 'center' }}>
+          {loading && <RefreshCw size={isSmall ? 7 : 8} style={{ animation: 'spin 1s linear infinite' }} />}
+          {!loading && <Play size={isSmall ? 7 : 8} />}
+          <span>{config.refreshInterval > 0 ? `${config.refreshInterval / 1000}s` : 'Manual'}</span>
         </div>
+        <div>•</div>
+        <div>{data.length} pts</div>
+        <div>•</div>
+        <div>TZ: {config.timezone || 'UTC'}</div>
       </div>
 
       <style>{`
