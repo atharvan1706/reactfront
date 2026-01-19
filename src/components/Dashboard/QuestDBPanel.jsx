@@ -1,3 +1,4 @@
+// QuestDBPanel.jsx - ENHANCED WITH AXIS CONFIGURATIONS
 import React, { useState, useEffect, useRef } from 'react';
 import {
   LineChart, Line, BarChart, Bar, AreaChart, Area, PieChart, Pie, Cell,
@@ -61,7 +62,6 @@ function QuestDBPanel({ config, onEdit, onDelete, onDuplicate, onResize, style, 
       
       const whereClauses = [];
       
-      // Time range filter
       if (config.timeRange === 'last' && config.timeRangeLast) {
         const intervals = {
           '5m': '5 minutes',
@@ -81,7 +81,6 @@ function QuestDBPanel({ config, onEdit, onDelete, onDuplicate, onResize, style, 
         console.log('⏰ Custom time range clause:', timeClause);
       }
       
-      // Data filters
       if (config.filters && config.filters.length > 0) {
         config.filters.forEach(filter => {
           if (filter.field && filter.operator && filter.value !== '') {
@@ -103,6 +102,136 @@ function QuestDBPanel({ config, onEdit, onDelete, onDuplicate, onResize, style, 
     
     console.log('✅ Final query:', query);
     return query;
+  };
+
+  // ✅ NEW: Format number based on configuration
+  const formatNumber = (value) => {
+    if (value === null || value === undefined || isNaN(value)) return 'N/A';
+    
+    const num = parseFloat(value);
+    
+    switch (config.yAxisNumberFormat) {
+      case 'none':
+        return value.toString();
+        
+      case 'number':
+        if (config.yAxisUseCommas) {
+          const formatted = num.toFixed(config.yAxisDecimals ?? 2);
+          const parts = formatted.split('.');
+          parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+          return parts.join('.');
+        }
+        return num.toFixed(config.yAxisDecimals ?? 2);
+        
+      case 'percent':
+        return `${(num).toFixed(config.yAxisDecimals ?? 2)}%`;
+        
+      case 'percent_decimal':
+        return `${(num * 100).toFixed(config.yAxisDecimals ?? 2)}%`;
+        
+      case 'scientific':
+        return num.toExponential(config.yAxisDecimals ?? 2);
+        
+      case 'bytes':
+        const units = ['B', 'KB', 'MB', 'GB', 'TB', 'PB'];
+        let size = Math.abs(num);
+        let unitIndex = 0;
+        while (size >= 1024 && unitIndex < units.length - 1) {
+          size /= 1024;
+          unitIndex++;
+        }
+        return `${size.toFixed(config.yAxisDecimals ?? 2)} ${units[unitIndex]}`;
+        
+      case 'bits':
+        const bitUnits = ['bit', 'Kbit', 'Mbit', 'Gbit', 'Tbit', 'Pbit'];
+        let bits = Math.abs(num);
+        let bitUnitIndex = 0;
+        while (bits >= 1000 && bitUnitIndex < bitUnits.length - 1) {
+          bits /= 1000;
+          bitUnitIndex++;
+        }
+        return `${bits.toFixed(config.yAxisDecimals ?? 2)} ${bitUnits[bitUnitIndex]}`;
+        
+      case 'bps':
+        const bpsUnits = ['bps', 'Kbps', 'Mbps', 'Gbps', 'Tbps'];
+        let bps = Math.abs(num);
+        let bpsUnitIndex = 0;
+        while (bps >= 1000 && bpsUnitIndex < bpsUnits.length - 1) {
+          bps /= 1000;
+          bpsUnitIndex++;
+        }
+        return `${bps.toFixed(config.yAxisDecimals ?? 2)} ${bpsUnits[bpsUnitIndex]}`;
+        
+      case 'Bps':
+        const BpsUnits = ['B/s', 'KB/s', 'MB/s', 'GB/s', 'TB/s'];
+        let Bps = Math.abs(num);
+        let BpsUnitIndex = 0;
+        while (Bps >= 1024 && BpsUnitIndex < BpsUnits.length - 1) {
+          Bps /= 1024;
+          BpsUnitIndex++;
+        }
+        return `${Bps.toFixed(config.yAxisDecimals ?? 2)} ${BpsUnits[BpsUnitIndex]}`;
+        
+      case 'duration_ms':
+        const totalSeconds = Math.floor(num / 1000);
+        const hours = Math.floor(totalSeconds / 3600);
+        const minutes = Math.floor((totalSeconds % 3600) / 60);
+        const seconds = totalSeconds % 60;
+        if (hours > 0) return `${hours}h ${minutes}m ${seconds}s`;
+        if (minutes > 0) return `${minutes}m ${seconds}s`;
+        return `${seconds}s`;
+        
+      case 'duration_s':
+        const h = Math.floor(num / 3600);
+        const m = Math.floor((num % 3600) / 60);
+        const s = Math.floor(num % 60);
+        if (h > 0) return `${h}h ${m}m ${s}s`;
+        if (m > 0) return `${m}m ${s}s`;
+        return `${s}s`;
+        
+      case 'currency_usd':
+        return `$${num.toLocaleString('en-US', { minimumFractionDigits: config.yAxisDecimals ?? 2, maximumFractionDigits: config.yAxisDecimals ?? 2 })}`;
+        
+      case 'currency_eur':
+        return `€${num.toLocaleString('en-US', { minimumFractionDigits: config.yAxisDecimals ?? 2, maximumFractionDigits: config.yAxisDecimals ?? 2 })}`;
+        
+      case 'currency_gbp':
+        return `£${num.toLocaleString('en-US', { minimumFractionDigits: config.yAxisDecimals ?? 2, maximumFractionDigits: config.yAxisDecimals ?? 2 })}`;
+        
+      case 'currency_jpy':
+        return `¥${num.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`;
+        
+      case 'currency_inr':
+        return `₹${num.toLocaleString('en-IN', { minimumFractionDigits: config.yAxisDecimals ?? 2, maximumFractionDigits: config.yAxisDecimals ?? 2 })}`;
+        
+      case 'custom':
+        if (config.yAxisCustomFormat) {
+          try {
+            return config.yAxisCustomFormat.replace('{value}', num.toFixed(config.yAxisDecimals ?? 2));
+          } catch (e) {
+            return num.toFixed(config.yAxisDecimals ?? 2);
+          }
+        }
+        return num.toFixed(config.yAxisDecimals ?? 2);
+        
+      default:
+        return num.toFixed(config.yAxisDecimals ?? 2);
+    }
+  };
+
+  // ✅ NEW: Format tick value with unit
+  const formatTickValue = (value) => {
+    const formatted = formatNumber(value);
+    
+    if (config.yAxisUnit) {
+      if (config.yAxisUnitPosition === 'prefix') {
+        return `${config.yAxisUnit}${formatted}`;
+      } else {
+        return `${formatted}${config.yAxisUnit}`;
+      }
+    }
+    
+    return formatted;
   };
 
   const fetchData = async () => {
@@ -204,14 +333,12 @@ function QuestDBPanel({ config, onEdit, onDelete, onDuplicate, onResize, style, 
     return ['auto', 'auto'];
   };
 
-  // Calculate responsive sizing based on panel width
   const panelWidth = config.width || 4;
   const isSmall = panelWidth <= 2;
   const isMedium = panelWidth > 2 && panelWidth <= 4;
   const fontSize = isSmall ? 9 : isMedium ? 10 : 11;
 
   const renderChart = () => {
-    // Only show loading spinner on initial load
     if (loading && data.length === 0 && isInitialLoad) {
       return (
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%' }}>
@@ -223,7 +350,6 @@ function QuestDBPanel({ config, onEdit, onDelete, onDuplicate, onResize, style, 
       );
     }
 
-    // Only show big error on initial load failure
     if (error && data.length === 0 && isInitialLoad) {
       return (
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', padding: '20px' }}>
@@ -254,7 +380,6 @@ function QuestDBPanel({ config, onEdit, onDelete, onDuplicate, onResize, style, 
       );
     }
 
-    // Responsive margins based on panel width
     const chartProps = {
       data,
       margin: isSmall 
@@ -268,24 +393,69 @@ function QuestDBPanel({ config, onEdit, onDelete, onDuplicate, onResize, style, 
     const filteredYFields = yFields.filter(field => field && field !== 'value');
     const yDomain = getYAxisDomain();
     
-    // Determine Y-axis scale type
     const yAxisScaleType = config.yAxisScale === 'log' ? 'log' : config.yAxisScale === 'linear' ? 'linear' : 'auto';
     console.log('📊 Using Y-axis scale:', yAxisScaleType, 'domain:', yDomain);
+
+    // ✅ ENHANCED: Apply axis configurations
+    const xAxisConfig = {
+      dataKey: "_time",
+      tick: config.xAxisShowTicks !== false ? { 
+        fill: theme.chartText, 
+        fontSize: config.xAxisTickFontSize ?? fontSize,
+        angle: config.xAxisTickRotation ?? 0,
+        textAnchor: (config.xAxisTickRotation ?? 0) !== 0 ? 'end' : 'middle'
+      } : false,
+      label: (config.xAxisShowLabel !== false && config.xAxisLabel) ? {
+        value: config.xAxisLabel,
+        position: 'insideBottom',
+        offset: -5,
+        fontSize: config.xAxisLabelFontSize ?? 12,
+        angle: config.xAxisLabelRotation ?? 0,
+        fill: theme.text
+      } : undefined,
+      tickCount: config.xAxisTickCount !== 'auto' ? parseInt(config.xAxisTickCount) : undefined,
+      interval: config.xAxisTickInterval !== 'auto' ? parseInt(config.xAxisTickInterval) : undefined,
+      stroke: theme.chartAxis
+    };
+
+    const yAxisConfig = {
+      tick: config.yAxisShowTicks !== false ? { 
+        fill: theme.chartText, 
+        fontSize: config.yAxisTickFontSize ?? fontSize,
+        angle: config.yAxisTickRotation ?? 0,
+        textAnchor: (config.yAxisTickRotation ?? 0) !== 0 ? 'end' : 'end'
+      } : false,
+      tickFormatter: formatTickValue,
+      label: (config.yAxisShowLabel !== false && config.yAxisLabel) ? {
+        value: config.yAxisLabel,
+        angle: -90,
+        position: 'insideLeft',
+        fontSize: config.yAxisLabelFontSize ?? 12,
+        fill: theme.text
+      } : undefined,
+      domain: yDomain,
+      scale: yAxisScaleType,
+      width: config.yAxisWidth !== 'auto' ? parseInt(config.yAxisWidth) : undefined,
+      orientation: config.yAxisPosition || 'left',
+      tickCount: config.yAxisTickCount !== 'auto' ? parseInt(config.yAxisTickCount) : undefined,
+      stroke: theme.chartAxis
+    };
+
+    const gridConfig = config.showGrid ? {
+      strokeDasharray: config.gridStrokeDashArray || '3 3',
+      stroke: darkMode 
+        ? `rgba(148, 163, 184, ${config.gridOpacity ?? 0.1})` 
+        : `rgba(0, 0, 0, ${config.gridOpacity ?? 0.1})`
+    } : false;
 
     switch (config.vizType) {
       case 'line':
         return (
           <ResponsiveContainer width="100%" height="100%">
             <LineChart {...chartProps}>
-              {config.showGrid && <CartesianGrid strokeDasharray="3 3" stroke={theme.chartGrid} />}
-              <XAxis dataKey="_time" tick={{ fill: theme.chartText, fontSize }} stroke={theme.chartAxis} />
-              <YAxis 
-                tick={{ fill: theme.chartText, fontSize }} 
-                stroke={theme.chartAxis}
-                domain={yDomain}
-                scale={yAxisScaleType}
-                width={isSmall ? 30 : isMedium ? 35 : 40}
-              />
+              {gridConfig && <CartesianGrid {...gridConfig} />}
+              <XAxis {...xAxisConfig} />
+              <YAxis {...yAxisConfig} />
               <Tooltip 
                 contentStyle={{ 
                   background: theme.card, 
@@ -293,7 +463,8 @@ function QuestDBPanel({ config, onEdit, onDelete, onDuplicate, onResize, style, 
                   borderRadius: '6px',
                   color: theme.text,
                   fontSize: `${fontSize}px`
-                }} 
+                }}
+                formatter={(value) => formatTickValue(value)}
               />
               {config.showLegend && <Legend wrapperStyle={{ color: theme.text, fontSize: `${fontSize}px` }} />}
               {filteredYFields.map((yField, idx) => (
@@ -317,15 +488,9 @@ function QuestDBPanel({ config, onEdit, onDelete, onDuplicate, onResize, style, 
         return (
           <ResponsiveContainer width="100%" height="100%">
             <AreaChart {...chartProps}>
-              {config.showGrid && <CartesianGrid strokeDasharray="3 3" stroke={theme.chartGrid} />}
-              <XAxis dataKey="_time" tick={{ fill: theme.chartText, fontSize }} stroke={theme.chartAxis} />
-              <YAxis 
-                tick={{ fill: theme.chartText, fontSize }} 
-                stroke={theme.chartAxis}
-                domain={yDomain}
-                scale={yAxisScaleType}
-                width={isSmall ? 30 : isMedium ? 35 : 40}
-              />
+              {gridConfig && <CartesianGrid {...gridConfig} />}
+              <XAxis {...xAxisConfig} />
+              <YAxis {...yAxisConfig} />
               <Tooltip 
                 contentStyle={{ 
                   background: theme.card, 
@@ -333,7 +498,8 @@ function QuestDBPanel({ config, onEdit, onDelete, onDuplicate, onResize, style, 
                   borderRadius: '6px',
                   color: theme.text,
                   fontSize: `${fontSize}px`
-                }} 
+                }}
+                formatter={(value) => formatTickValue(value)}
               />
               {config.showLegend && <Legend wrapperStyle={{ color: theme.text, fontSize: `${fontSize}px` }} />}
               {filteredYFields.map((yField, idx) => (
@@ -358,15 +524,9 @@ function QuestDBPanel({ config, onEdit, onDelete, onDuplicate, onResize, style, 
         return (
           <ResponsiveContainer width="100%" height="100%">
             <BarChart {...chartProps}>
-              {config.showGrid && <CartesianGrid strokeDasharray="3 3" stroke={theme.chartGrid} />}
-              <XAxis dataKey="_time" tick={{ fill: theme.chartText, fontSize }} stroke={theme.chartAxis} />
-              <YAxis 
-                tick={{ fill: theme.chartText, fontSize }} 
-                stroke={theme.chartAxis}
-                domain={yDomain}
-                scale={yAxisScaleType}
-                width={isSmall ? 30 : isMedium ? 35 : 40}
-              />
+              {gridConfig && <CartesianGrid {...gridConfig} />}
+              <XAxis {...xAxisConfig} />
+              <YAxis {...yAxisConfig} />
               <Tooltip 
                 contentStyle={{ 
                   background: theme.card, 
@@ -374,7 +534,8 @@ function QuestDBPanel({ config, onEdit, onDelete, onDuplicate, onResize, style, 
                   borderRadius: '6px',
                   color: theme.text,
                   fontSize: `${fontSize}px`
-                }} 
+                }}
+                formatter={(value) => formatTickValue(value)}
               />
               {config.showLegend && <Legend wrapperStyle={{ color: theme.text, fontSize: `${fontSize}px` }} />}
               {filteredYFields.map((yField, idx) => (
@@ -411,7 +572,10 @@ function QuestDBPanel({ config, onEdit, onDelete, onDuplicate, onResize, style, 
                   <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                 ))}
               </Pie>
-              <Tooltip contentStyle={{ background: theme.card, border: `1px solid ${theme.border}`, borderRadius: '6px', color: '#688ae8', fontSize: `${fontSize}px` }} />
+              <Tooltip 
+                contentStyle={{ background: theme.card, border: `1px solid ${theme.border}`, borderRadius: '6px', color: theme.text, fontSize: `${fontSize}px` }}
+                formatter={(value) => formatTickValue(value)}
+              />
               {config.showLegend && !isSmall && <Legend wrapperStyle={{ color: theme.text, fontSize: `${fontSize}px` }} />}
             </PieChart>
           </ResponsiveContainer>
@@ -421,16 +585,13 @@ function QuestDBPanel({ config, onEdit, onDelete, onDuplicate, onResize, style, 
         return (
           <ResponsiveContainer width="100%" height="100%">
             <ScatterChart {...chartProps}>
-              {config.showGrid && <CartesianGrid strokeDasharray="3 3" stroke={theme.chartGrid} />}
-              <XAxis dataKey="_time" tick={{ fill: theme.chartText, fontSize }} stroke={theme.chartAxis} />
-              <YAxis 
-                tick={{ fill: theme.chartText, fontSize }} 
-                stroke={theme.chartAxis}
-                domain={yDomain}
-                scale={yAxisScaleType}
-                width={isSmall ? 30 : isMedium ? 35 : 40}
+              {gridConfig && <CartesianGrid {...gridConfig} />}
+              <XAxis {...xAxisConfig} />
+              <YAxis {...yAxisConfig} />
+              <Tooltip 
+                contentStyle={{ background: theme.card, border: `1px solid ${theme.border}`, borderRadius: '6px', color: theme.text, fontSize: `${fontSize}px` }}
+                formatter={(value) => formatTickValue(value)}
               />
-              <Tooltip contentStyle={{ background: theme.card, border: `1px solid ${theme.border}`, borderRadius: '6px', color: theme.text, fontSize: `${fontSize}px` }} />
               {config.showLegend && <Legend wrapperStyle={{ color: theme.text, fontSize: `${fontSize}px` }} />}
               {filteredYFields.map((yField, idx) => (
                 <Scatter 
@@ -499,7 +660,7 @@ function QuestDBPanel({ config, onEdit, onDelete, onDuplicate, onResize, style, 
             paddingRight: '8px'
           }}>
             <div style={{ fontSize: statFontSize, fontWeight: 'bold', color: getColor(0), marginBottom: '8px' }}>
-              {latest.toFixed(2)}
+              {formatTickValue(latest)}
             </div>
             <div style={{
               fontSize: changeFontSize,
@@ -507,7 +668,7 @@ function QuestDBPanel({ config, onEdit, onDelete, onDuplicate, onResize, style, 
               marginBottom: isSmall ? '12px' : '16px',
               fontWeight: '600'
             }}>
-              {change >= 0 ? '↑' : '↓'} {Math.abs(change).toFixed(2)} ({((change / previous) * 100).toFixed(1)}%)
+              {change >= 0 ? '↑' : '↓'} {formatNumber(Math.abs(change))} ({((change / previous) * 100).toFixed(1)}%)
             </div>
             <div style={{ 
               display: 'flex', 
@@ -517,9 +678,9 @@ function QuestDBPanel({ config, onEdit, onDelete, onDuplicate, onResize, style, 
               flexWrap: 'wrap',
               justifyContent: 'center'
             }}>
-              <div>Min: <span style={{ color: theme.text, fontWeight: '600' }}>{Math.min(...values).toFixed(2)}</span></div>
-              <div>Max: <span style={{ color: theme.text, fontWeight: '600' }}>{Math.max(...values).toFixed(2)}</span></div>
-              <div>Avg: <span style={{ color: theme.text, fontWeight: '600' }}>{avg.toFixed(2)}</span></div>
+              <div>Min: <span style={{ color: theme.text, fontWeight: '600' }}>{formatTickValue(Math.min(...values))}</span></div>
+              <div>Max: <span style={{ color: theme.text, fontWeight: '600' }}>{formatTickValue(Math.max(...values))}</span></div>
+              <div>Avg: <span style={{ color: theme.text, fontWeight: '600' }}>{formatTickValue(avg)}</span></div>
             </div>
           </div>
         );
@@ -553,7 +714,7 @@ function QuestDBPanel({ config, onEdit, onDelete, onDuplicate, onResize, style, 
                   <tr key={i} style={{ borderBottom: `1px solid ${theme.border}` }}>
                     {columns.map(col => (
                       <td key={col} style={{ padding: isSmall ? '6px' : '10px', color: theme.text }}>
-                        {typeof row[col] === 'number' ? row[col].toFixed(2) : row[col]}
+                        {typeof row[col] === 'number' ? formatTickValue(row[col]) : row[col]}
                       </td>
                     ))}
                   </tr>
@@ -584,12 +745,9 @@ function QuestDBPanel({ config, onEdit, onDelete, onDuplicate, onResize, style, 
       onMouseEnter={(e) => e.currentTarget.style.boxShadow = darkMode ? '0 4px 12px rgba(0,0,0,0.4)' : '0 2px 8px rgba(0,0,0,0.1)'}
       onMouseLeave={(e) => e.currentTarget.style.boxShadow = darkMode ? '0 2px 8px rgba(0,0,0,0.3)' : '0 1px 4px rgba(0,0,0,0.06)'}
     >
-      {/* Chart takes full space */}
-      <div style={{ width: '100%', height: '100%' }}>
-        {renderChart()}
-      </div>
+      {renderChart()}
 
-      {/* Header overlay - top left */}
+      {/* Header overlay */}
       <div style={{
         position: 'absolute',
         top: '6px',
@@ -601,7 +759,6 @@ function QuestDBPanel({ config, onEdit, onDelete, onDuplicate, onResize, style, 
         pointerEvents: 'none',
         zIndex: 10
       }}>
-        {/* Title row */}
         <div style={{
           fontWeight: '700',
           color: theme.text,
@@ -633,7 +790,6 @@ function QuestDBPanel({ config, onEdit, onDelete, onDuplicate, onResize, style, 
           </span>
         </div>
         
-        {/* Badges row - only show if present */}
         {(config.timeRange || config.filters?.length > 0 || (config.yAxisScale && config.yAxisScale !== 'auto')) && (
           <div style={{ 
             display: 'flex', 
@@ -723,7 +879,7 @@ function QuestDBPanel({ config, onEdit, onDelete, onDuplicate, onResize, style, 
         )}
       </div>
 
-      {/* Action buttons overlay - top right */}
+      {/* Action buttons */}
       <div style={{
         position: 'absolute',
         top: '6px',
@@ -818,7 +974,7 @@ function QuestDBPanel({ config, onEdit, onDelete, onDuplicate, onResize, style, 
         </button>
       </div>
 
-      {/* Footer info overlay - bottom */}
+      {/* Footer info */}
       <div style={{
         position: 'absolute',
         bottom: '6px',
