@@ -254,7 +254,7 @@ function QuestDBPanel({ config, onEdit, onDelete, onDuplicate, onResize, style, 
       const formatted = questdbService.formatForChart(result, config.timestampField, config.timezone || 'UTC');
       console.log('📈 Formatted data sample:', formatted.slice(0, 3));
       
-      let finalData = formatted;
+      let finalData = formatted.reverse();
       if (config.transformations && config.transformations.length > 0) {
         console.log('🔄 Applying transformations:', config.transformations);
         finalData = SimpleTransformations.applyTransformations(formatted, config.transformations);
