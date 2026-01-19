@@ -1,3 +1,4 @@
+// constants.js - COMPLETE VERSION WITH AXIS CONFIGURATIONS
 import {
   Activity, TrendingUp, BarChart3, PieChart as PieIcon,
   CircleDot, Radar as RadarIcon, Gauge, Table as TableIcon
@@ -44,7 +45,7 @@ export const DEFAULT_PANEL_CONFIG = {
   showDots: false,
   transformations: [],
   
-  // ✅ NEW FIELDS
+  // Time and filter configurations
   timezone: 'UTC',
   yAxisScale: 'auto',
   yAxisMin: '',
@@ -54,7 +55,46 @@ export const DEFAULT_PANEL_CONFIG = {
   timeRangeLast: '1h',
   timeRangeStart: '',
   timeRangeEnd: '',
-  filters: []
+  filters: [],
+  
+  // ✅ NEW: Axis label configurations
+  xAxisLabel: '',
+  yAxisLabel: '',
+  xAxisLabelRotation: 0,
+  yAxisLabelRotation: 0,
+  xAxisTickRotation: 0,
+  yAxisTickRotation: 0,
+  xAxisShowLabel: true,
+  yAxisShowLabel: true,
+  xAxisShowTicks: true,
+  yAxisShowTicks: true,
+  
+  // ✅ NEW: Number formatting
+  yAxisNumberFormat: 'number',
+  yAxisDecimals: 2,
+  yAxisUnit: '',
+  yAxisUnitPosition: 'suffix',
+  yAxisCustomFormat: '',
+  yAxisUseCommas: true,
+  
+  // ✅ NEW: Axis positioning
+  yAxisWidth: 'auto',
+  yAxisPosition: 'left',
+  
+  // ✅ NEW: Grid customization
+  gridStrokeDashArray: '3 3',
+  gridOpacity: 0.1,
+  
+  // ✅ NEW: Tick customization
+  xAxisTickCount: 'auto',
+  yAxisTickCount: 'auto',
+  xAxisTickInterval: 'auto',
+  
+  // ✅ NEW: Font sizes
+  xAxisLabelFontSize: 12,
+  yAxisLabelFontSize: 12,
+  xAxisTickFontSize: 11,
+  yAxisTickFontSize: 11
 };
 
 export const FILTER_OPERATORS = [
@@ -85,6 +125,59 @@ export const AXIS_SCALES = [
   { value: 'linear', label: 'Linear', description: 'Linear scaling' },
   { value: 'log', label: 'Logarithmic', description: 'Log scale (base 10)' },
   { value: 'custom', label: 'Custom', description: 'Custom min/max values' }
+];
+
+// ✅ NEW: Number format options
+export const NUMBER_FORMATS = [
+  { value: 'none', label: 'None', example: '1234.567' },
+  { value: 'number', label: 'Number', example: '1,234.57' },
+  { value: 'percent', label: 'Percent (0-100)', example: '12.35%' },
+  { value: 'percent_decimal', label: 'Percent (0-1)', example: '0.12%' },
+  { value: 'scientific', label: 'Scientific', example: '1.23e+3' },
+  { value: 'bytes', label: 'Bytes', example: '1.21 KB' },
+  { value: 'bits', label: 'Bits', example: '9.87 Kbit' },
+  { value: 'bps', label: 'Bits/sec', example: '9.87 Kbps' },
+  { value: 'Bps', label: 'Bytes/sec', example: '1.21 KB/s' },
+  { value: 'duration_ms', label: 'Duration (ms)', example: '1m 23s' },
+  { value: 'duration_s', label: 'Duration (s)', example: '20m 34s' },
+  { value: 'currency_usd', label: 'Currency (USD)', example: '$1,234.57' },
+  { value: 'currency_eur', label: 'Currency (EUR)', example: '€1,234.57' },
+  { value: 'currency_gbp', label: 'Currency (GBP)', example: '£1,234.57' },
+  { value: 'currency_jpy', label: 'Currency (JPY)', example: '¥1,235' },
+  { value: 'currency_inr', label: 'Currency (INR)', example: '₹1,234.57' },
+  { value: 'custom', label: 'Custom Format', example: 'Custom' }
+];
+
+// ✅ NEW: Axis label rotation options
+export const LABEL_ROTATIONS = [
+  { value: 0, label: 'Horizontal (0°)' },
+  { value: -45, label: 'Diagonal (-45°)' },
+  { value: -90, label: 'Vertical (-90°)' },
+  { value: 45, label: 'Diagonal (45°)' },
+  { value: 90, label: 'Vertical (90°)' }
+];
+
+// ✅ NEW: Timezone options
+export const TIMEZONES = [
+  { value: 'UTC', label: 'UTC' },
+  { value: 'local', label: 'Local Browser Time' },
+  { value: 'America/New_York', label: 'Eastern Time (ET)' },
+  { value: 'America/Chicago', label: 'Central Time (CT)' },
+  { value: 'America/Denver', label: 'Mountain Time (MT)' },
+  { value: 'America/Los_Angeles', label: 'Pacific Time (PT)' },
+  { value: 'Europe/London', label: 'London (GMT/BST)' },
+  { value: 'Europe/Paris', label: 'Paris (CET/CEST)' },
+  { value: 'Europe/Berlin', label: 'Berlin (CET/CEST)' },
+  { value: 'Europe/Moscow', label: 'Moscow (MSK)' },
+  { value: 'Asia/Tokyo', label: 'Tokyo (JST)' },
+  { value: 'Asia/Shanghai', label: 'Shanghai (CST)' },
+  { value: 'Asia/Hong_Kong', label: 'Hong Kong (HKT)' },
+  { value: 'Asia/Singapore', label: 'Singapore (SGT)' },
+  { value: 'Asia/Dubai', label: 'Dubai (GST)' },
+  { value: 'Asia/Kolkata', label: 'India (IST)' },
+  { value: 'Australia/Sydney', label: 'Sydney (AEST/AEDT)' },
+  { value: 'Australia/Melbourne', label: 'Melbourne (AEST/AEDT)' },
+  { value: 'Pacific/Auckland', label: 'Auckland (NZST/NZDT)' }
 ];
 
 export const GRID_COLS = 12;
