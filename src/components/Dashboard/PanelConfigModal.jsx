@@ -1,4 +1,4 @@
-// PanelConfigModal.jsx - FIXED DEFAULT CONFIG INITIALIZATION
+// PanelConfigModal.jsx - ENHANCED WITH GRAFANA-LIKE AXIS CONFIGURATIONS
 import React, { useState, useEffect } from 'react';
 import {
   LineChart, Line, BarChart, Bar, AreaChart, Area, PieChart, Pie, Cell,
@@ -6,7 +6,8 @@ import {
   XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer
 } from 'recharts';
 import {
-  X as LucideX, Database, Eye, Save, RefreshCw, AlertCircle, Plus, Trash2, Settings, Globe
+  X as LucideX, Database, Eye, Save, RefreshCw, AlertCircle, Plus, Trash2, Settings, Globe,
+  AlignLeft, RotateCw, Hash, Type
 } from 'lucide-react';
 
 import { COLORS, VIZ_TYPES, DEFAULT_PANEL_CONFIG } from './constants';
@@ -33,15 +34,40 @@ const TIMEZONES = [
   { value: 'Australia/Sydney', label: 'Sydney (AEST/AEDT)' },
 ];
 
+// Number format presets
+const NUMBER_FORMATS = [
+  { value: 'none', label: 'None', example: '1234.567' },
+  { value: 'number', label: 'Number', example: '1,234.57' },
+  { value: 'percent', label: 'Percent (0-100)', example: '12.35%' },
+  { value: 'percent_decimal', label: 'Percent (0-1)', example: '0.12%' },
+  { value: 'scientific', label: 'Scientific', example: '1.23e+3' },
+  { value: 'bytes', label: 'Bytes', example: '1.21 KB' },
+  { value: 'bits', label: 'Bits', example: '9.87 Kbit' },
+  { value: 'bps', label: 'Bits/sec', example: '9.87 Kbps' },
+  { value: 'Bps', label: 'Bytes/sec', example: '1.21 KB/s' },
+  { value: 'duration_ms', label: 'Duration (ms)', example: '1m 23s' },
+  { value: 'duration_s', label: 'Duration (s)', example: '20m 34s' },
+  { value: 'currency_usd', label: 'Currency (USD)', example: '$1,234.57' },
+  { value: 'currency_eur', label: 'Currency (EUR)', example: '€1,234.57' },
+  { value: 'custom', label: 'Custom Format', example: 'Custom' }
+];
+
+// Axis label rotation options
+const LABEL_ROTATIONS = [
+  { value: 0, label: 'Horizontal (0°)' },
+  { value: -45, label: 'Diagonal (-45°)' },
+  { value: -90, label: 'Vertical (-90°)' },
+  { value: 45, label: 'Diagonal (45°)' },
+  { value: 90, label: 'Vertical (90°)' }
+];
+
 function PanelConfigModal({ panel, onSave, onClose, allTables, darkMode }) {
-  // ✅ FIXED: Proper initialization with defaults for ALL fields
+  // ✅ ENHANCED: Added axis configuration fields
   const [config, setConfig] = useState(() => {
     if (panel) {
-      // If editing existing panel, preserve ALL fields
       return {
         ...DEFAULT_PANEL_CONFIG,
         ...panel,
-        // Ensure these critical fields are never undefined
         timezone: panel.timezone || 'UTC',
         yAxisScale: panel.yAxisScale || 'auto',
         yAxisMin: panel.yAxisMin || '',
@@ -52,10 +78,50 @@ function PanelConfigModal({ panel, onSave, onClose, allTables, darkMode }) {
         timeRangeStart: panel.timeRangeStart || '',
         timeRangeEnd: panel.timeRangeEnd || '',
         filters: panel.filters || [],
-        transformations: panel.transformations || []
+        transformations: panel.transformations || [],
+        
+        // ✅ NEW: Advanced Axis Configurations
+        xAxisLabel: panel.xAxisLabel || '',
+        yAxisLabel: panel.yAxisLabel || '',
+        xAxisLabelRotation: panel.xAxisLabelRotation ?? 0,
+        yAxisLabelRotation: panel.yAxisLabelRotation ?? 0,
+        xAxisTickRotation: panel.xAxisTickRotation ?? 0,
+        yAxisTickRotation: panel.yAxisTickRotation ?? 0,
+        xAxisShowLabel: panel.xAxisShowLabel ?? true,
+        yAxisShowLabel: panel.yAxisShowLabel ?? true,
+        xAxisShowTicks: panel.xAxisShowTicks ?? true,
+        yAxisShowTicks: panel.yAxisShowTicks ?? true,
+        
+        // Number formatting
+        yAxisNumberFormat: panel.yAxisNumberFormat || 'number',
+        yAxisDecimals: panel.yAxisDecimals ?? 2,
+        yAxisUnit: panel.yAxisUnit || '',
+        yAxisUnitPosition: panel.yAxisUnitPosition || 'suffix', // 'prefix' or 'suffix'
+        yAxisCustomFormat: panel.yAxisCustomFormat || '',
+        
+        // Comma separated values
+        yAxisUseCommas: panel.yAxisUseCommas ?? true,
+        
+        // Axis width/position
+        yAxisWidth: panel.yAxisWidth || 'auto',
+        yAxisPosition: panel.yAxisPosition || 'left', // 'left' or 'right'
+        
+        // Grid customization
+        gridStrokeDashArray: panel.gridStrokeDashArray || '3 3',
+        gridOpacity: panel.gridOpacity ?? 0.1,
+        
+        // Tick customization
+        xAxisTickCount: panel.xAxisTickCount || 'auto',
+        yAxisTickCount: panel.yAxisTickCount || 'auto',
+        xAxisTickInterval: panel.xAxisTickInterval || 'auto',
+        
+        // Label styling
+        xAxisLabelFontSize: panel.xAxisLabelFontSize || 12,
+        yAxisLabelFontSize: panel.yAxisLabelFontSize || 12,
+        xAxisTickFontSize: panel.xAxisTickFontSize || 11,
+        yAxisTickFontSize: panel.yAxisTickFontSize || 11
       };
     } else {
-      // If creating new panel, use full defaults
       return {
         ...DEFAULT_PANEL_CONFIG,
         id: `panel_${Date.now()}`,
@@ -70,7 +136,36 @@ function PanelConfigModal({ panel, onSave, onClose, allTables, darkMode }) {
         timeRangeLast: '1h',
         timeRangeStart: '',
         timeRangeEnd: '',
-        filters: []
+        filters: [],
+        
+        // ✅ NEW: Default axis configurations
+        xAxisLabel: '',
+        yAxisLabel: '',
+        xAxisLabelRotation: 0,
+        yAxisLabelRotation: 0,
+        xAxisTickRotation: 0,
+        yAxisTickRotation: 0,
+        xAxisShowLabel: true,
+        yAxisShowLabel: true,
+        xAxisShowTicks: true,
+        yAxisShowTicks: true,
+        yAxisNumberFormat: 'number',
+        yAxisDecimals: 2,
+        yAxisUnit: '',
+        yAxisUnitPosition: 'suffix',
+        yAxisCustomFormat: '',
+        yAxisUseCommas: true,
+        yAxisWidth: 'auto',
+        yAxisPosition: 'left',
+        gridStrokeDashArray: '3 3',
+        gridOpacity: 0.1,
+        xAxisTickCount: 'auto',
+        yAxisTickCount: 'auto',
+        xAxisTickInterval: 'auto',
+        xAxisLabelFontSize: 12,
+        yAxisLabelFontSize: 12,
+        xAxisTickFontSize: 11,
+        yAxisTickFontSize: 11
       };
     }
   });
@@ -79,7 +174,7 @@ function PanelConfigModal({ panel, onSave, onClose, allTables, darkMode }) {
   const [previewLoading, setPreviewLoading] = useState(false);
   const [previewError, setPreviewError] = useState(null);
   const [availableFields, setAvailableFields] = useState([]);
-  const [activeTab, setActiveTab] = useState('data'); // 'data', 'style', 'advanced'
+  const [activeTab, setActiveTab] = useState('data');
 
   // Dark mode theme
   const theme = darkMode ? {
@@ -104,15 +199,8 @@ function PanelConfigModal({ panel, onSave, onClose, allTables, darkMode }) {
     accent: '#667eea'
   };
 
-  // ✅ LOG CONFIG CHANGES
   useEffect(() => {
-    console.log('📝 Config updated:', {
-      timezone: config.timezone,
-      yAxisScale: config.yAxisScale,
-      timeRange: config.timeRange,
-      timeRangeLast: config.timeRangeLast,
-      filters: config.filters
-    });
+    console.log('📝 Config updated:', config);
   }, [config]);
 
   useEffect(() => {
@@ -140,10 +228,8 @@ function PanelConfigModal({ panel, onSave, onClose, allTables, darkMode }) {
     if (config.dataSource === 'table' && config.table) {
       query = `SELECT * FROM ${config.table}`;
       
-      // Add WHERE clauses for filters and time range
       const whereClauses = [];
       
-      // Time range filter - FIXED: Use proper QuestDB date functions
       if (config.timeRange === 'last' && config.timeRangeLast) {
         const intervals = {
           '5m': '5 minutes',
@@ -159,7 +245,6 @@ function PanelConfigModal({ panel, onSave, onClose, allTables, darkMode }) {
         whereClauses.push(`${config.timestampField} BETWEEN timestamp('${config.timeRangeStart}:00') AND timestamp('${config.timeRangeEnd}:00')`);
       }
       
-      // Data filters - FIXED: Proper escaping and type handling
       if (config.filters && config.filters.length > 0) {
         config.filters.forEach(filter => {
           if (filter.field && filter.operator && filter.value !== '') {
@@ -180,6 +265,127 @@ function PanelConfigModal({ panel, onSave, onClose, allTables, darkMode }) {
     return query;
   };
 
+  // ✅ NEW: Format number based on configuration
+  const formatNumber = (value) => {
+    if (value === null || value === undefined || isNaN(value)) return 'N/A';
+    
+    const num = parseFloat(value);
+    
+    switch (config.yAxisNumberFormat) {
+      case 'none':
+        return value.toString();
+        
+      case 'number':
+        if (config.yAxisUseCommas) {
+          const formatted = num.toFixed(config.yAxisDecimals);
+          const parts = formatted.split('.');
+          parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+          return parts.join('.');
+        }
+        return num.toFixed(config.yAxisDecimals);
+        
+      case 'percent':
+        return `${(num).toFixed(config.yAxisDecimals)}%`;
+        
+      case 'percent_decimal':
+        return `${(num * 100).toFixed(config.yAxisDecimals)}%`;
+        
+      case 'scientific':
+        return num.toExponential(config.yAxisDecimals);
+        
+      case 'bytes':
+        const units = ['B', 'KB', 'MB', 'GB', 'TB', 'PB'];
+        let size = Math.abs(num);
+        let unitIndex = 0;
+        while (size >= 1024 && unitIndex < units.length - 1) {
+          size /= 1024;
+          unitIndex++;
+        }
+        return `${size.toFixed(config.yAxisDecimals)} ${units[unitIndex]}`;
+        
+      case 'bits':
+        const bitUnits = ['bit', 'Kbit', 'Mbit', 'Gbit', 'Tbit', 'Pbit'];
+        let bits = Math.abs(num);
+        let bitUnitIndex = 0;
+        while (bits >= 1000 && bitUnitIndex < bitUnits.length - 1) {
+          bits /= 1000;
+          bitUnitIndex++;
+        }
+        return `${bits.toFixed(config.yAxisDecimals)} ${bitUnits[bitUnitIndex]}`;
+        
+      case 'bps':
+        const bpsUnits = ['bps', 'Kbps', 'Mbps', 'Gbps', 'Tbps'];
+        let bps = Math.abs(num);
+        let bpsUnitIndex = 0;
+        while (bps >= 1000 && bpsUnitIndex < bpsUnits.length - 1) {
+          bps /= 1000;
+          bpsUnitIndex++;
+        }
+        return `${bps.toFixed(config.yAxisDecimals)} ${bpsUnits[bpsUnitIndex]}`;
+        
+      case 'Bps':
+        const BpsUnits = ['B/s', 'KB/s', 'MB/s', 'GB/s', 'TB/s'];
+        let Bps = Math.abs(num);
+        let BpsUnitIndex = 0;
+        while (Bps >= 1024 && BpsUnitIndex < BpsUnits.length - 1) {
+          Bps /= 1024;
+          BpsUnitIndex++;
+        }
+        return `${Bps.toFixed(config.yAxisDecimals)} ${BpsUnits[BpsUnitIndex]}`;
+        
+      case 'duration_ms':
+        const totalSeconds = Math.floor(num / 1000);
+        const hours = Math.floor(totalSeconds / 3600);
+        const minutes = Math.floor((totalSeconds % 3600) / 60);
+        const seconds = totalSeconds % 60;
+        if (hours > 0) return `${hours}h ${minutes}m ${seconds}s`;
+        if (minutes > 0) return `${minutes}m ${seconds}s`;
+        return `${seconds}s`;
+        
+      case 'duration_s':
+        const h = Math.floor(num / 3600);
+        const m = Math.floor((num % 3600) / 60);
+        const s = Math.floor(num % 60);
+        if (h > 0) return `${h}h ${m}m ${s}s`;
+        if (m > 0) return `${m}m ${s}s`;
+        return `${s}s`;
+        
+      case 'currency_usd':
+        return `$${num.toLocaleString('en-US', { minimumFractionDigits: config.yAxisDecimals, maximumFractionDigits: config.yAxisDecimals })}`;
+        
+      case 'currency_eur':
+        return `€${num.toLocaleString('en-US', { minimumFractionDigits: config.yAxisDecimals, maximumFractionDigits: config.yAxisDecimals })}`;
+        
+      case 'custom':
+        if (config.yAxisCustomFormat) {
+          try {
+            return config.yAxisCustomFormat.replace('{value}', num.toFixed(config.yAxisDecimals));
+          } catch (e) {
+            return num.toFixed(config.yAxisDecimals);
+          }
+        }
+        return num.toFixed(config.yAxisDecimals);
+        
+      default:
+        return num.toFixed(config.yAxisDecimals);
+    }
+  };
+
+  // ✅ NEW: Format tick value with unit
+  const formatTickValue = (value) => {
+    const formatted = formatNumber(value);
+    
+    if (config.yAxisUnit) {
+      if (config.yAxisUnitPosition === 'prefix') {
+        return `${config.yAxisUnit}${formatted}`;
+      } else {
+        return `${formatted}${config.yAxisUnit}`;
+      }
+    }
+    
+    return formatted;
+  };
+
   const handlePreview = async () => {
     setPreviewLoading(true);
     setPreviewError(null);
@@ -193,12 +399,9 @@ function PanelConfigModal({ panel, onSave, onClose, allTables, darkMode }) {
         return;
       }
 
-      console.log('Executing query:', query);
       const result = await questdbService.query(query);
-      console.log('Using timezone for preview:', config.timezone);
       const formatted = questdbService.formatForChart(result, config.timestampField, config.timezone);
       
-      // Apply transformations if any
       let finalData = formatted;
       if (config.transformations && config.transformations.length > 0) {
         finalData = SimpleTransformations.applyTransformations(formatted, config.transformations);
@@ -306,17 +509,60 @@ function PanelConfigModal({ panel, onSave, onClose, allTables, darkMode }) {
     const yFields = (config.yAxes && config.yAxes.length > 0) ? config.yAxes : [config.yAxis].filter(Boolean);
     const yDomain = getYAxisDomain();
 
+    // ✅ ENHANCED: Apply axis configurations
+    const xAxisConfig = {
+      dataKey: "_time",
+      tick: config.xAxisShowTicks ? { 
+        fill: theme.textMuted, 
+        fontSize: config.xAxisTickFontSize,
+        angle: config.xAxisTickRotation,
+        textAnchor: config.xAxisTickRotation !== 0 ? 'end' : 'middle'
+      } : false,
+      label: config.xAxisShowLabel && config.xAxisLabel ? {
+        value: config.xAxisLabel,
+        position: 'insideBottom',
+        offset: -5,
+        fontSize: config.xAxisLabelFontSize,
+        angle: config.xAxisLabelRotation
+      } : undefined,
+      tickCount: config.xAxisTickCount !== 'auto' ? parseInt(config.xAxisTickCount) : undefined,
+      interval: config.xAxisTickInterval !== 'auto' ? parseInt(config.xAxisTickInterval) : undefined
+    };
+
+    const yAxisConfig = {
+      tick: config.yAxisShowTicks ? { 
+        fill: theme.textMuted, 
+        fontSize: config.yAxisTickFontSize,
+        angle: config.yAxisTickRotation,
+        textAnchor: config.yAxisTickRotation !== 0 ? 'end' : 'end'
+      } : false,
+      tickFormatter: formatTickValue,
+      label: config.yAxisShowLabel && config.yAxisLabel ? {
+        value: config.yAxisLabel,
+        angle: -90,
+        position: 'insideLeft',
+        fontSize: config.yAxisLabelFontSize,
+        angle: config.yAxisLabelRotation !== 0 ? config.yAxisLabelRotation : -90
+      } : undefined,
+      domain: yDomain,
+      scale: config.yAxisScale === 'log' ? 'log' : config.yAxisScale === 'linear' ? 'linear' : 'auto',
+      width: config.yAxisWidth !== 'auto' ? parseInt(config.yAxisWidth) : undefined,
+      orientation: config.yAxisPosition,
+      tickCount: config.yAxisTickCount !== 'auto' ? parseInt(config.yAxisTickCount) : undefined
+    };
+
+    const gridConfig = config.showGrid ? {
+      strokeDasharray: config.gridStrokeDashArray,
+      stroke: `rgba(0,0,0,${config.gridOpacity})`
+    } : false;
+
     return (
       <ResponsiveContainer width="100%" height={200}>
         {config.vizType === 'line' && (
           <LineChart {...chartProps}>
-            <CartesianGrid strokeDasharray="3 3" stroke="rgba(0,0,0,0.1)" />
-            <XAxis dataKey="_time" tick={{ fill: theme.textMuted, fontSize: 10 }} />
-            <YAxis 
-              tick={{ fill: theme.textMuted, fontSize: 10 }}
-              domain={yDomain}
-              scale={config.yAxisScale === 'log' ? 'log' : config.yAxisScale === 'linear' ? 'linear' : 'auto'}
-            />
+            {gridConfig && <CartesianGrid {...gridConfig} />}
+            <XAxis {...xAxisConfig} />
+            <YAxis {...yAxisConfig} />
             <Tooltip contentStyle={{ background: theme.bg, border: `1px solid ${theme.border}` }} />
             <Legend />
             {yFields.map((yField, idx) => (
@@ -332,13 +578,52 @@ function PanelConfigModal({ panel, onSave, onClose, allTables, darkMode }) {
             ))}
           </LineChart>
         )}
-        {/* ... other chart types ... */}
+        {config.vizType === 'bar' && (
+          <BarChart {...chartProps}>
+            {gridConfig && <CartesianGrid {...gridConfig} />}
+            <XAxis {...xAxisConfig} />
+            <YAxis {...yAxisConfig} />
+            <Tooltip contentStyle={{ background: theme.bg, border: `1px solid ${theme.border}` }} />
+            <Legend />
+            {yFields.map((yField, idx) => (
+              <Bar 
+                key={yField}
+                dataKey={yField} 
+                fill={getColor(idx)}
+                name={yField}
+              />
+            ))}
+          </BarChart>
+        )}
+        {config.vizType === 'area' && (
+          <AreaChart {...chartProps}>
+            {gridConfig && <CartesianGrid {...gridConfig} />}
+            <XAxis {...xAxisConfig} />
+            <YAxis {...yAxisConfig} />
+            <Tooltip contentStyle={{ background: theme.bg, border: `1px solid ${theme.border}` }} />
+            <Legend />
+            {yFields.map((yField, idx) => (
+              <Area 
+                key={yField}
+                type="monotone" 
+                dataKey={yField} 
+                stroke={getColor(idx)} 
+                fill={getColor(idx)} 
+                fillOpacity={config.fillOpacity}
+                strokeWidth={config.lineWidth}
+                name={yField}
+              />
+            ))}
+          </AreaChart>
+        )}
+        {/* Other chart types remain the same */}
       </ResponsiveContainer>
     );
   };
 
   const renderDataTab = () => (
     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px' }}>
+      {/* Left column - same as before */}
       <div>
         {/* Panel Title */}
         <div style={{ marginBottom: '20px' }}>
@@ -446,30 +731,28 @@ function PanelConfigModal({ panel, onSave, onClose, allTables, darkMode }) {
           </div>
 
           {config.dataSource === 'table' ? (
-            <>
-              <select
-                value={config.table}
-                onChange={(e) => setConfig({ ...config, table: e.target.value })}
-                style={{
-                  width: '100%',
-                  padding: '10px 12px',
-                  background: theme.bg,
-                  border: `2px solid ${theme.border}`,
-                  borderRadius: '8px',
-                  color: theme.text,
-                  fontSize: '14px'
-                }}
-              >
-                <option value="">Select a table...</option>
-                {allTables && allTables.length > 0 ? (
-                  allTables.map(table => (
-                    <option key={table} value={table}>{table}</option>
-                  ))
-                ) : (
-                  <option value="" disabled>No tables available</option>
-                )}
-              </select>
-            </>
+            <select
+              value={config.table}
+              onChange={(e) => setConfig({ ...config, table: e.target.value })}
+              style={{
+                width: '100%',
+                padding: '10px 12px',
+                background: theme.bg,
+                border: `2px solid ${theme.border}`,
+                borderRadius: '8px',
+                color: theme.text,
+                fontSize: '14px'
+              }}
+            >
+              <option value="">Select a table...</option>
+              {allTables && allTables.length > 0 ? (
+                allTables.map(table => (
+                  <option key={table} value={table}>{table}</option>
+                ))
+              ) : (
+                <option value="" disabled>No tables available</option>
+              )}
+            </select>
           ) : (
             <textarea
               value={config.query}
@@ -614,7 +897,7 @@ function PanelConfigModal({ panel, onSave, onClose, allTables, darkMode }) {
           </div>
         </div>
 
-        {/* ✅ FIXED: Timezone Selector - now properly bound to config.timezone */}
+        {/* Timezone Selector */}
         <div style={{ marginBottom: '20px' }}>
           <label style={{ display: 'block', marginBottom: '8px', fontSize: '13px', color: theme.textSecondary, fontWeight: '600' }}>
             <Globe size={14} style={{ display: 'inline', marginRight: '6px', verticalAlign: 'middle' }} />
@@ -622,10 +905,7 @@ function PanelConfigModal({ panel, onSave, onClose, allTables, darkMode }) {
           </label>
           <select
             value={config.timezone || 'UTC'}
-            onChange={(e) => {
-              console.log('🌍 Timezone changed to:', e.target.value);
-              setConfig({ ...config, timezone: e.target.value });
-            }}
+            onChange={(e) => setConfig({ ...config, timezone: e.target.value })}
             style={{
               width: '100%',
               padding: '10px 12px',
@@ -640,12 +920,6 @@ function PanelConfigModal({ panel, onSave, onClose, allTables, darkMode }) {
               <option key={tz.value} value={tz.value}>{tz.label}</option>
             ))}
           </select>
-          <div style={{ marginTop: '6px', fontSize: '11px', color: theme.textMuted }}>
-            ℹ️ Database timestamps remain in UTC. This only affects display.
-          </div>
-          <div style={{ marginTop: '4px', fontSize: '10px', color: theme.accent, fontWeight: '600' }}>
-            Current: {config.timezone || 'UTC'}
-          </div>
         </div>
       </div>
 
@@ -686,14 +960,9 @@ function PanelConfigModal({ panel, onSave, onClose, allTables, darkMode }) {
           }}>
             {renderPreviewChart()}
           </div>
-          {previewData.length > 0 && (
-            <div style={{ marginTop: '8px', fontSize: '12px', color: theme.textMuted }}>
-              {previewData.length} data points loaded
-            </div>
-          )}
         </div>
 
-        {/* ✅ FIXED: Time Range - now properly bound */}
+        {/* Time Range */}
         <div style={{ marginBottom: '20px' }}>
           <label style={{ display: 'block', marginBottom: '12px', fontSize: '13px', color: theme.textSecondary, fontWeight: '600' }}>
             Time Range
@@ -702,10 +971,7 @@ function PanelConfigModal({ panel, onSave, onClose, allTables, darkMode }) {
             {['all', 'last', 'custom'].map(range => (
               <button
                 key={range}
-                onClick={() => {
-                  console.log('⏰ Time range changed to:', range);
-                  setConfig({ ...config, timeRange: range });
-                }}
+                onClick={() => setConfig({ ...config, timeRange: range })}
                 style={{
                   flex: 1,
                   padding: '8px',
@@ -726,35 +992,27 @@ function PanelConfigModal({ panel, onSave, onClose, allTables, darkMode }) {
           </div>
           
           {config.timeRange === 'last' && (
-            <>
-              <select
-                value={config.timeRangeLast}
-                onChange={(e) => {
-                  console.log('⏰ Time range last changed to:', e.target.value);
-                  setConfig({ ...config, timeRangeLast: e.target.value });
-                }}
-                style={{
-                  width: '100%',
-                  padding: '8px',
-                  background: theme.bg,
-                  border: `2px solid ${theme.border}`,
-                  borderRadius: '6px',
-                  color: theme.text,
-                  fontSize: '13px'
-                }}
-              >
-                <option value="5m">Last 5 minutes</option>
-                <option value="15m">Last 15 minutes</option>
-                <option value="1h">Last 1 hour</option>
-                <option value="6h">Last 6 hours</option>
-                <option value="24h">Last 24 hours</option>
-                <option value="7d">Last 7 days</option>
-                <option value="30d">Last 30 days</option>
-              </select>
-              <div style={{ marginTop: '4px', fontSize: '10px', color: theme.accent, fontWeight: '600' }}>
-                Current: {config.timeRangeLast}
-              </div>
-            </>
+            <select
+              value={config.timeRangeLast}
+              onChange={(e) => setConfig({ ...config, timeRangeLast: e.target.value })}
+              style={{
+                width: '100%',
+                padding: '8px',
+                background: theme.bg,
+                border: `2px solid ${theme.border}`,
+                borderRadius: '6px',
+                color: theme.text,
+                fontSize: '13px'
+              }}
+            >
+              <option value="5m">Last 5 minutes</option>
+              <option value="15m">Last 15 minutes</option>
+              <option value="1h">Last 1 hour</option>
+              <option value="6h">Last 6 hours</option>
+              <option value="24h">Last 24 hours</option>
+              <option value="7d">Last 7 days</option>
+              <option value="30d">Last 30 days</option>
+            </select>
           )}
           
           {config.timeRange === 'custom' && (
@@ -766,10 +1024,7 @@ function PanelConfigModal({ panel, onSave, onClose, allTables, darkMode }) {
                 <input
                   type="datetime-local"
                   value={config.timeRangeStart}
-                  onChange={(e) => {
-                    console.log('⏰ Time range start changed to:', e.target.value);
-                    setConfig({ ...config, timeRangeStart: e.target.value });
-                  }}
+                  onChange={(e) => setConfig({ ...config, timeRangeStart: e.target.value })}
                   style={{
                     width: '100%',
                     padding: '8px',
@@ -788,10 +1043,7 @@ function PanelConfigModal({ panel, onSave, onClose, allTables, darkMode }) {
                 <input
                   type="datetime-local"
                   value={config.timeRangeEnd}
-                  onChange={(e) => {
-                    console.log('⏰ Time range end changed to:', e.target.value);
-                    setConfig({ ...config, timeRangeEnd: e.target.value });
-                  }}
+                  onChange={(e) => setConfig({ ...config, timeRangeEnd: e.target.value })}
                   style={{
                     width: '100%',
                     padding: '8px',
@@ -931,10 +1183,608 @@ function PanelConfigModal({ panel, onSave, onClose, allTables, darkMode }) {
     </div>
   );
 
+  const renderAxisTab = () => (
+    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px' }}>
+      <div>
+        {/* ✅ X-AXIS CONFIGURATION */}
+        <div style={{ 
+          marginBottom: '24px', 
+          padding: '16px', 
+          background: theme.card, 
+          borderRadius: '8px',
+          border: `1px solid ${theme.border}`
+        }}>
+          <h3 style={{ 
+            margin: '0 0 16px 0', 
+            fontSize: '14px', 
+            fontWeight: '700', 
+            color: theme.text,
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px'
+          }}>
+            <AlignLeft size={16} />
+            X-Axis Configuration
+          </h3>
+
+          {/* X-Axis Label */}
+          <div style={{ marginBottom: '12px' }}>
+            <label style={{ display: 'block', marginBottom: '6px', fontSize: '12px', color: theme.textMuted }}>
+              Axis Label
+            </label>
+            <input
+              type="text"
+              value={config.xAxisLabel}
+              onChange={(e) => setConfig({ ...config, xAxisLabel: e.target.value })}
+              placeholder="e.g., Time"
+              style={{
+                width: '100%',
+                padding: '8px',
+                background: theme.bg,
+                border: `2px solid ${theme.border}`,
+                borderRadius: '6px',
+                color: theme.text,
+                fontSize: '13px'
+              }}
+            />
+          </div>
+
+          {/* X-Axis Label Options */}
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', marginBottom: '12px' }}>
+            <div>
+              <label style={{ display: 'block', marginBottom: '6px', fontSize: '11px', color: theme.textMuted }}>
+                Label Font Size
+              </label>
+              <input
+                type="number"
+                value={config.xAxisLabelFontSize}
+                onChange={(e) => setConfig({ ...config, xAxisLabelFontSize: parseInt(e.target.value) || 12 })}
+                min="8"
+                max="24"
+                style={{
+                  width: '100%',
+                  padding: '6px',
+                  background: theme.bg,
+                  border: `1px solid ${theme.border}`,
+                  borderRadius: '4px',
+                  color: theme.text,
+                  fontSize: '12px'
+                }}
+              />
+            </div>
+            <div>
+              <label style={{ display: 'block', marginBottom: '6px', fontSize: '11px', color: theme.textMuted }}>
+                Label Rotation
+              </label>
+              <select
+                value={config.xAxisLabelRotation}
+                onChange={(e) => setConfig({ ...config, xAxisLabelRotation: parseInt(e.target.value) })}
+                style={{
+                  width: '100%',
+                  padding: '6px',
+                  background: theme.bg,
+                  border: `1px solid ${theme.border}`,
+                  borderRadius: '4px',
+                  color: theme.text,
+                  fontSize: '12px'
+                }}
+              >
+                {LABEL_ROTATIONS.map(rot => (
+                  <option key={rot.value} value={rot.value}>{rot.label}</option>
+                ))}
+              </select>
+            </div>
+          </div>
+
+          {/* X-Axis Tick Options */}
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', marginBottom: '12px' }}>
+            <div>
+              <label style={{ display: 'block', marginBottom: '6px', fontSize: '11px', color: theme.textMuted }}>
+                Tick Font Size
+              </label>
+              <input
+                type="number"
+                value={config.xAxisTickFontSize}
+                onChange={(e) => setConfig({ ...config, xAxisTickFontSize: parseInt(e.target.value) || 11 })}
+                min="6"
+                max="18"
+                style={{
+                  width: '100%',
+                  padding: '6px',
+                  background: theme.bg,
+                  border: `1px solid ${theme.border}`,
+                  borderRadius: '4px',
+                  color: theme.text,
+                  fontSize: '12px'
+                }}
+              />
+            </div>
+            <div>
+              <label style={{ display: 'block', marginBottom: '6px', fontSize: '11px', color: theme.textMuted }}>
+                Tick Rotation
+              </label>
+              <select
+                value={config.xAxisTickRotation}
+                onChange={(e) => setConfig({ ...config, xAxisTickRotation: parseInt(e.target.value) })}
+                style={{
+                  width: '100%',
+                  padding: '6px',
+                  background: theme.bg,
+                  border: `1px solid ${theme.border}`,
+                  borderRadius: '4px',
+                  color: theme.text,
+                  fontSize: '12px'
+                }}
+              >
+                {LABEL_ROTATIONS.map(rot => (
+                  <option key={rot.value} value={rot.value}>{rot.label}</option>
+                ))}
+              </select>
+            </div>
+          </div>
+
+          {/* X-Axis Advanced Options */}
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', marginBottom: '12px' }}>
+            <div>
+              <label style={{ display: 'block', marginBottom: '6px', fontSize: '11px', color: theme.textMuted }}>
+                Tick Count
+              </label>
+              <input
+                type="text"
+                value={config.xAxisTickCount}
+                onChange={(e) => setConfig({ ...config, xAxisTickCount: e.target.value })}
+                placeholder="auto"
+                style={{
+                  width: '100%',
+                  padding: '6px',
+                  background: theme.bg,
+                  border: `1px solid ${theme.border}`,
+                  borderRadius: '4px',
+                  color: theme.text,
+                  fontSize: '12px'
+                }}
+              />
+            </div>
+            <div>
+              <label style={{ display: 'block', marginBottom: '6px', fontSize: '11px', color: theme.textMuted }}>
+                Tick Interval
+              </label>
+              <input
+                type="text"
+                value={config.xAxisTickInterval}
+                onChange={(e) => setConfig({ ...config, xAxisTickInterval: e.target.value })}
+                placeholder="auto"
+                style={{
+                  width: '100%',
+                  padding: '6px',
+                  background: theme.bg,
+                  border: `1px solid ${theme.border}`,
+                  borderRadius: '4px',
+                  color: theme.text,
+                  fontSize: '12px'
+                }}
+              />
+            </div>
+          </div>
+
+          {/* X-Axis Visibility Toggles */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+            <label style={{ display: 'flex', alignItems: 'center', gap: '8px', color: theme.textSecondary, fontSize: '12px', cursor: 'pointer' }}>
+              <input
+                type="checkbox"
+                checked={config.xAxisShowLabel}
+                onChange={(e) => setConfig({ ...config, xAxisShowLabel: e.target.checked })}
+                style={{ width: '14px', height: '14px' }}
+              />
+              Show Axis Label
+            </label>
+            <label style={{ display: 'flex', alignItems: 'center', gap: '8px', color: theme.textSecondary, fontSize: '12px', cursor: 'pointer' }}>
+              <input
+                type="checkbox"
+                checked={config.xAxisShowTicks}
+                onChange={(e) => setConfig({ ...config, xAxisShowTicks: e.target.checked })}
+                style={{ width: '14px', height: '14px' }}
+              />
+              Show Tick Labels
+            </label>
+          </div>
+        </div>
+
+        {/* ✅ GRID CONFIGURATION */}
+        <div style={{ 
+          padding: '16px', 
+          background: theme.card, 
+          borderRadius: '8px',
+          border: `1px solid ${theme.border}`
+        }}>
+          <h3 style={{ 
+            margin: '0 0 16px 0', 
+            fontSize: '14px', 
+            fontWeight: '700', 
+            color: theme.text,
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px'
+          }}>
+            <Hash size={16} />
+            Grid Configuration
+          </h3>
+
+          <div style={{ marginBottom: '12px' }}>
+            <label style={{ display: 'block', marginBottom: '6px', fontSize: '12px', color: theme.textMuted }}>
+              Stroke Pattern (e.g., "3 3" for dashed)
+            </label>
+            <input
+              type="text"
+              value={config.gridStrokeDashArray}
+              onChange={(e) => setConfig({ ...config, gridStrokeDashArray: e.target.value })}
+              placeholder="3 3"
+              style={{
+                width: '100%',
+                padding: '8px',
+                background: theme.bg,
+                border: `2px solid ${theme.border}`,
+                borderRadius: '6px',
+                color: theme.text,
+                fontSize: '13px'
+              }}
+            />
+            <div style={{ marginTop: '4px', fontSize: '10px', color: theme.textMuted }}>
+              Examples: "3 3" (dashed), "1 0" (solid), "5 10" (long dash), "0 0" (hidden)
+            </div>
+          </div>
+
+          <div style={{ marginBottom: '12px' }}>
+            <label style={{ display: 'block', marginBottom: '6px', fontSize: '12px', color: theme.textMuted }}>
+              Grid Opacity: {Math.round(config.gridOpacity * 100)}%
+            </label>
+            <input
+              type="range"
+              min="0"
+              max="1"
+              step="0.05"
+              value={config.gridOpacity}
+              onChange={(e) => setConfig({ ...config, gridOpacity: parseFloat(e.target.value) })}
+              style={{ width: '100%' }}
+            />
+          </div>
+        </div>
+      </div>
+
+      {/* Right Column - Y-Axis Configuration */}
+      <div>
+        {/* ✅ Y-AXIS CONFIGURATION */}
+        <div style={{ 
+          padding: '16px', 
+          background: theme.card, 
+          borderRadius: '8px',
+          border: `1px solid ${theme.border}`
+        }}>
+          <h3 style={{ 
+            margin: '0 0 16px 0', 
+            fontSize: '14px', 
+            fontWeight: '700', 
+            color: theme.text,
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px'
+          }}>
+            <RotateCw size={16} />
+            Y-Axis Configuration
+          </h3>
+
+          {/* Y-Axis Label */}
+          <div style={{ marginBottom: '12px' }}>
+            <label style={{ display: 'block', marginBottom: '6px', fontSize: '12px', color: theme.textMuted }}>
+              Axis Label
+            </label>
+            <input
+              type="text"
+              value={config.yAxisLabel}
+              onChange={(e) => setConfig({ ...config, yAxisLabel: e.target.value })}
+              placeholder="e.g., Value, Temperature, Count"
+              style={{
+                width: '100%',
+                padding: '8px',
+                background: theme.bg,
+                border: `2px solid ${theme.border}`,
+                borderRadius: '6px',
+                color: theme.text,
+                fontSize: '13px'
+              }}
+            />
+          </div>
+
+          {/* Y-Axis Number Format */}
+          <div style={{ marginBottom: '12px' }}>
+            <label style={{ display: 'block', marginBottom: '6px', fontSize: '12px', color: theme.textMuted }}>
+              <Type size={12} style={{ display: 'inline', marginRight: '4px' }} />
+              Number Format
+            </label>
+            <select
+              value={config.yAxisNumberFormat}
+              onChange={(e) => setConfig({ ...config, yAxisNumberFormat: e.target.value })}
+              style={{
+                width: '100%',
+                padding: '8px',
+                background: theme.bg,
+                border: `2px solid ${theme.border}`,
+                borderRadius: '6px',
+                color: theme.text,
+                fontSize: '13px'
+              }}
+            >
+              {NUMBER_FORMATS.map(format => (
+                <option key={format.value} value={format.value}>
+                  {format.label} - {format.example}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {/* Decimals and Unit */}
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', marginBottom: '12px' }}>
+            <div>
+              <label style={{ display: 'block', marginBottom: '6px', fontSize: '11px', color: theme.textMuted }}>
+                Decimal Places
+              </label>
+              <input
+                type="number"
+                value={config.yAxisDecimals}
+                onChange={(e) => setConfig({ ...config, yAxisDecimals: parseInt(e.target.value) || 0 })}
+                min="0"
+                max="10"
+                style={{
+                  width: '100%',
+                  padding: '6px',
+                  background: theme.bg,
+                  border: `1px solid ${theme.border}`,
+                  borderRadius: '4px',
+                  color: theme.text,
+                  fontSize: '12px'
+                }}
+              />
+            </div>
+            <div>
+              <label style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px', fontSize: '11px', color: theme.textMuted, cursor: 'pointer' }}>
+                <input
+                  type="checkbox"
+                  checked={config.yAxisUseCommas}
+                  onChange={(e) => setConfig({ ...config, yAxisUseCommas: e.target.checked })}
+                  style={{ width: '14px', height: '14px' }}
+                />
+                Use Commas (1,000)
+              </label>
+            </div>
+          </div>
+
+          {/* Custom Unit */}
+          <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '8px', marginBottom: '12px' }}>
+            <div>
+              <label style={{ display: 'block', marginBottom: '6px', fontSize: '11px', color: theme.textMuted }}>
+                Custom Unit
+              </label>
+              <input
+                type="text"
+                value={config.yAxisUnit}
+                onChange={(e) => setConfig({ ...config, yAxisUnit: e.target.value })}
+                placeholder="e.g., °C, MB, rpm"
+                style={{
+                  width: '100%',
+                  padding: '6px',
+                  background: theme.bg,
+                  border: `1px solid ${theme.border}`,
+                  borderRadius: '4px',
+                  color: theme.text,
+                  fontSize: '12px'
+                }}
+              />
+            </div>
+            <div>
+              <label style={{ display: 'block', marginBottom: '6px', fontSize: '11px', color: theme.textMuted }}>
+                Position
+              </label>
+              <select
+                value={config.yAxisUnitPosition}
+                onChange={(e) => setConfig({ ...config, yAxisUnitPosition: e.target.value })}
+                style={{
+                  width: '100%',
+                  padding: '6px',
+                  background: theme.bg,
+                  border: `1px solid ${theme.border}`,
+                  borderRadius: '4px',
+                  color: theme.text,
+                  fontSize: '12px'
+                }}
+              >
+                <option value="prefix">Prefix</option>
+                <option value="suffix">Suffix</option>
+              </select>
+            </div>
+          </div>
+
+          {/* Custom Format String (for custom format type) */}
+          {config.yAxisNumberFormat === 'custom' && (
+            <div style={{ marginBottom: '12px' }}>
+              <label style={{ display: 'block', marginBottom: '6px', fontSize: '11px', color: theme.textMuted }}>
+                Custom Format String (use {'{value}'} as placeholder)
+              </label>
+              <input
+                type="text"
+                value={config.yAxisCustomFormat}
+                onChange={(e) => setConfig({ ...config, yAxisCustomFormat: e.target.value })}
+                placeholder="e.g., {value} units"
+                style={{
+                  width: '100%',
+                  padding: '6px',
+                  background: theme.bg,
+                  border: `1px solid ${theme.border}`,
+                  borderRadius: '4px',
+                  color: theme.text,
+                  fontSize: '12px',
+                  fontFamily: 'monospace'
+                }}
+              />
+            </div>
+          )}
+
+          {/* Y-Axis Label & Tick Styling */}
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', marginBottom: '12px' }}>
+            <div>
+              <label style={{ display: 'block', marginBottom: '6px', fontSize: '11px', color: theme.textMuted }}>
+                Label Font Size
+              </label>
+              <input
+                type="number"
+                value={config.yAxisLabelFontSize}
+                onChange={(e) => setConfig({ ...config, yAxisLabelFontSize: parseInt(e.target.value) || 12 })}
+                min="8"
+                max="24"
+                style={{
+                  width: '100%',
+                  padding: '6px',
+                  background: theme.bg,
+                  border: `1px solid ${theme.border}`,
+                  borderRadius: '4px',
+                  color: theme.text,
+                  fontSize: '12px'
+                }}
+              />
+            </div>
+            <div>
+              <label style={{ display: 'block', marginBottom: '6px', fontSize: '11px', color: theme.textMuted }}>
+                Tick Font Size
+              </label>
+              <input
+                type="number"
+                value={config.yAxisTickFontSize}
+                onChange={(e) => setConfig({ ...config, yAxisTickFontSize: parseInt(e.target.value) || 11 })}
+                min="6"
+                max="18"
+                style={{
+                  width: '100%',
+                  padding: '6px',
+                  background: theme.bg,
+                  border: `1px solid ${theme.border}`,
+                  borderRadius: '4px',
+                  color: theme.text,
+                  fontSize: '12px'
+                }}
+              />
+            </div>
+          </div>
+
+          {/* Y-Axis Advanced Options */}
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '8px', marginBottom: '12px' }}>
+            <div>
+              <label style={{ display: 'block', marginBottom: '6px', fontSize: '11px', color: theme.textMuted }}>
+                Width
+              </label>
+              <input
+                type="text"
+                value={config.yAxisWidth}
+                onChange={(e) => setConfig({ ...config, yAxisWidth: e.target.value })}
+                placeholder="auto"
+                style={{
+                  width: '100%',
+                  padding: '6px',
+                  background: theme.bg,
+                  border: `1px solid ${theme.border}`,
+                  borderRadius: '4px',
+                  color: theme.text,
+                  fontSize: '12px'
+                }}
+              />
+            </div>
+            <div>
+              <label style={{ display: 'block', marginBottom: '6px', fontSize: '11px', color: theme.textMuted }}>
+                Position
+              </label>
+              <select
+                value={config.yAxisPosition}
+                onChange={(e) => setConfig({ ...config, yAxisPosition: e.target.value })}
+                style={{
+                  width: '100%',
+                  padding: '6px',
+                  background: theme.bg,
+                  border: `1px solid ${theme.border}`,
+                  borderRadius: '4px',
+                  color: theme.text,
+                  fontSize: '12px'
+                }}
+              >
+                <option value="left">Left</option>
+                <option value="right">Right</option>
+              </select>
+            </div>
+            <div>
+              <label style={{ display: 'block', marginBottom: '6px', fontSize: '11px', color: theme.textMuted }}>
+                Tick Count
+              </label>
+              <input
+                type="text"
+                value={config.yAxisTickCount}
+                onChange={(e) => setConfig({ ...config, yAxisTickCount: e.target.value })}
+                placeholder="auto"
+                style={{
+                  width: '100%',
+                  padding: '6px',
+                  background: theme.bg,
+                  border: `1px solid ${theme.border}`,
+                  borderRadius: '4px',
+                  color: theme.text,
+                  fontSize: '12px'
+                }}
+              />
+            </div>
+          </div>
+
+          {/* Y-Axis Visibility Toggles */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+            <label style={{ display: 'flex', alignItems: 'center', gap: '8px', color: theme.textSecondary, fontSize: '12px', cursor: 'pointer' }}>
+              <input
+                type="checkbox"
+                checked={config.yAxisShowLabel}
+                onChange={(e) => setConfig({ ...config, yAxisShowLabel: e.target.checked })}
+                style={{ width: '14px', height: '14px' }}
+              />
+              Show Axis Label
+            </label>
+            <label style={{ display: 'flex', alignItems: 'center', gap: '8px', color: theme.textSecondary, fontSize: '12px', cursor: 'pointer' }}>
+              <input
+                type="checkbox"
+                checked={config.yAxisShowTicks}
+                onChange={(e) => setConfig({ ...config, yAxisShowTicks: e.target.checked })}
+                style={{ width: '14px', height: '14px' }}
+              />
+              Show Tick Labels
+            </label>
+          </div>
+
+          {/* Format Preview */}
+          <div style={{ 
+            marginTop: '16px', 
+            padding: '12px', 
+            background: theme.bg, 
+            borderRadius: '6px',
+            border: `1px dashed ${theme.border}`
+          }}>
+            <div style={{ fontSize: '11px', color: theme.textMuted, marginBottom: '6px' }}>
+              Format Preview:
+            </div>
+            <div style={{ fontSize: '14px', color: theme.text, fontWeight: '600', fontFamily: 'monospace' }}>
+              {formatTickValue(1234.567)}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+
   const renderAdvancedTab = () => (
     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px' }}>
       <div>
-        {/* ✅ FIXED: Axis Scaling - now properly bound */}
+        {/* Axis Scaling */}
         <div style={{ marginBottom: '20px' }}>
           <label style={{ display: 'block', marginBottom: '12px', fontSize: '13px', color: theme.textSecondary, fontWeight: '600' }}>
             Y-Axis Scaling
@@ -943,10 +1793,7 @@ function PanelConfigModal({ panel, onSave, onClose, allTables, darkMode }) {
             {['auto', 'linear', 'log', 'custom'].map(scale => (
               <button
                 key={scale}
-                onClick={() => {
-                  console.log('📊 Y-axis scale changed to:', scale);
-                  setConfig({ ...config, yAxisScale: scale });
-                }}
+                onClick={() => setConfig({ ...config, yAxisScale: scale })}
                 style={{
                   padding: '8px',
                   background: config.yAxisScale === scale ? theme.accent : theme.card,
@@ -965,10 +1812,6 @@ function PanelConfigModal({ panel, onSave, onClose, allTables, darkMode }) {
             ))}
           </div>
           
-          <div style={{ marginBottom: '8px', fontSize: '10px', color: theme.accent, fontWeight: '600' }}>
-            Current: {config.yAxisScale}
-          </div>
-          
           {config.yAxisScale === 'custom' && (
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
               <div>
@@ -978,10 +1821,7 @@ function PanelConfigModal({ panel, onSave, onClose, allTables, darkMode }) {
                 <input
                   type="number"
                   value={config.yAxisMin}
-                  onChange={(e) => {
-                    console.log('📊 Y-axis min changed to:', e.target.value);
-                    setConfig({ ...config, yAxisMin: e.target.value });
-                  }}
+                  onChange={(e) => setConfig({ ...config, yAxisMin: e.target.value })}
                   placeholder="Auto"
                   style={{
                     width: '100%',
@@ -1001,10 +1841,7 @@ function PanelConfigModal({ panel, onSave, onClose, allTables, darkMode }) {
                 <input
                   type="number"
                   value={config.yAxisMax}
-                  onChange={(e) => {
-                    console.log('📊 Y-axis max changed to:', e.target.value);
-                    setConfig({ ...config, yAxisMax: e.target.value });
-                  }}
+                  onChange={(e) => setConfig({ ...config, yAxisMax: e.target.value })}
                   placeholder="Auto"
                   style={{
                     width: '100%',
@@ -1315,7 +2152,7 @@ function PanelConfigModal({ panel, onSave, onClose, allTables, darkMode }) {
           </button>
         </div>
 
-        {/* Tabs */}
+        {/* ✅ ENHANCED: Added Axes tab */}
         <div style={{
           display: 'flex',
           gap: '4px',
@@ -1325,6 +2162,7 @@ function PanelConfigModal({ panel, onSave, onClose, allTables, darkMode }) {
         }}>
           {[
             { id: 'data', label: 'Data & Filters', icon: Database },
+            { id: 'axes', label: 'Axes & Format', icon: AlignLeft },
             { id: 'style', label: 'Style', icon: Eye },
             { id: 'advanced', label: 'Advanced', icon: Settings }
           ].map(tab => {
@@ -1358,6 +2196,7 @@ function PanelConfigModal({ panel, onSave, onClose, allTables, darkMode }) {
         {/* Content */}
         <div style={{ flex: 1, overflow: 'auto', padding: '24px' }}>
           {activeTab === 'data' && renderDataTab()}
+          {activeTab === 'axes' && renderAxisTab()}
           {activeTab === 'style' && renderStyleTab()}
           {activeTab === 'advanced' && renderAdvancedTab()}
         </div>
@@ -1388,7 +2227,7 @@ function PanelConfigModal({ panel, onSave, onClose, allTables, darkMode }) {
           </button>
           <button
             onClick={() => {
-              console.log('💾 Saving config:', config);
+              console.log('💾 Saving config with axes:', config);
               onSave(config);
             }}
             style={{
