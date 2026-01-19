@@ -24,43 +24,37 @@ export const VIZ_TYPES = [
 export const DEFAULT_PANEL_CONFIG = {
   title: 'New Panel',
   vizType: 'line',
-  dataSource: 'custom',
-  query: '',
+  dataSource: 'table',
   table: '',
+  query: '',
   timestampField: 'timestamp',
-  xAxis: 'timestamp',
   yAxis: '',
   yAxes: [],
   limit: 100,
-  refreshInterval: 5000,
-  colors: COLORS.slice(0, 5),
+  refreshInterval: 0,
+  x: 0,
+  y: 0,
+  width: 4,
+  height: 2,
+  colors: [COLORS[0], COLORS[1], COLORS[2], COLORS[3], COLORS[4]],
+  lineWidth: 2,
+  fillOpacity: 0.5,
   showLegend: true,
   showGrid: true,
-  lineWidth: 2,
   showDots: false,
-  fillOpacity: 0.3,
-  aggregate: 'none',
-  width: 6,
-  height: 4,
   transformations: [],
   
-  // Axis scaling features
-  yAxisScale: 'auto', // 'auto', 'linear', 'log', 'custom'
+  // ✅ NEW FIELDS
+  timezone: 'UTC',
+  yAxisScale: 'auto',
   yAxisMin: '',
   yAxisMax: '',
   xAxisScale: 'auto',
-  
-  // Time range features
-  timeRange: 'all', // 'all', 'last', 'custom'
-  timeRangeLast: '1h', // '5m', '15m', '1h', '6h', '24h', '7d', '30d'
+  timeRange: 'all',
+  timeRangeLast: '1h',
   timeRangeStart: '',
   timeRangeEnd: '',
-  
-  // Filters feature
-  filters: [], // [{field: '', operator: '', value: ''}]
-  
-  // ✅ NEW: Timezone feature
-  timezone: 'UTC' // 'UTC', 'local', or IANA timezone name
+  filters: []
 };
 
 export const FILTER_OPERATORS = [
