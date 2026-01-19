@@ -51,7 +51,7 @@ function PanelConfigModal({ panel, onSave, onClose, allTables, darkMode }) {
     // NEW: Filters
     filters: [], // [{field: '', operator: '', value: ''}]
     // NEW: Timezone
-    timezone: 'UTC' // Default to UTC
+    timezone: 'IST' // Default to UTC
   });
 
   const [previewData, setPreviewData] = useState([]);
