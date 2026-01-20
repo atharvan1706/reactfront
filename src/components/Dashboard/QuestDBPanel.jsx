@@ -1,4 +1,4 @@
-// QuestDBPanel.jsx - ENHANCED WITH AXIS CONFIGURATIONS
+// QuestDBPanel.jsx - FIXED TICK COLORS
 import React, { useState, useEffect, useRef } from 'react';
 import {
   LineChart, Line, BarChart, Bar, AreaChart, Area, PieChart, Pie, Cell,
@@ -30,7 +30,7 @@ function QuestDBPanel({ config, onEdit, onDelete, onDuplicate, onResize, style, 
     textMuted: '#94a3b8',
     border: '#2d3548',
     chartGrid: 'rgba(148, 163, 184, 0.08)',
-    chartAxis: '#3f4a61',
+    chartAxis: '#94a3b8',
     chartText: '#94a3b8'
   } : {
     card: '#ffffff',
@@ -40,7 +40,7 @@ function QuestDBPanel({ config, onEdit, onDelete, onDuplicate, onResize, style, 
     textMuted: '#64748b',
     border: '#e2e8f0',
     chartGrid: 'rgba(0,0,0,0.06)',
-    chartAxis: '#cbd5e1',
+    chartAxis: '#94a3b8',
     chartText: '#64748b'
   };
 
@@ -104,7 +104,6 @@ function QuestDBPanel({ config, onEdit, onDelete, onDuplicate, onResize, style, 
     return query;
   };
 
-  // ✅ NEW: Format number based on configuration
   const formatNumber = (value) => {
     if (value === null || value === undefined || isNaN(value)) return 'N/A';
     
@@ -219,7 +218,6 @@ function QuestDBPanel({ config, onEdit, onDelete, onDuplicate, onResize, style, 
     }
   };
 
-  // ✅ NEW: Format tick value with unit
   const formatTickValue = (value) => {
     const formatted = formatNumber(value);
     
@@ -396,15 +394,13 @@ function QuestDBPanel({ config, onEdit, onDelete, onDuplicate, onResize, style, 
     const yAxisScaleType = config.yAxisScale === 'log' ? 'log' : config.yAxisScale === 'linear' ? 'linear' : 'auto';
     console.log('📊 Using Y-axis scale:', yAxisScaleType, 'domain:', yDomain);
 
-    // ✅ ENHANCED: Apply axis configurations
     const xAxisConfig = {
       dataKey: "_time",
       tick: config.xAxisShowTicks !== false ? { 
-        fill: theme.chartText, 
+        fill: theme.chartText,
         fontSize: config.xAxisTickFontSize ?? fontSize,
         angle: config.xAxisTickRotation ?? 0,
-        textAnchor: (config.xAxisTickRotation ?? 0) !== 0 ? 'end' : 'middle',
-        style: { fill: theme.chartText }
+        textAnchor: (config.xAxisTickRotation ?? 0) !== 0 ? 'end' : 'middle'
       } : false,
       label: (config.xAxisShowLabel !== false && config.xAxisLabel) ? {
         value: config.xAxisLabel,
@@ -416,16 +412,16 @@ function QuestDBPanel({ config, onEdit, onDelete, onDuplicate, onResize, style, 
       } : undefined,
       tickCount: config.xAxisTickCount !== 'auto' ? parseInt(config.xAxisTickCount) : undefined,
       interval: config.xAxisTickInterval !== 'auto' ? parseInt(config.xAxisTickInterval) : undefined,
-      stroke: theme.chartAxis
+      stroke: theme.chartAxis,
+      tickLine: { stroke: theme.chartAxis }
     };
 
     const yAxisConfig = {
       tick: config.yAxisShowTicks !== false ? { 
-        fill: theme.chartText, 
+        fill: theme.chartText,
         fontSize: config.yAxisTickFontSize ?? fontSize,
         angle: config.yAxisTickRotation ?? 0,
-        textAnchor: (config.yAxisTickRotation ?? 0) !== 0 ? 'end' : 'end',
-        style: { fill: theme.chartText }
+        textAnchor: (config.yAxisTickRotation ?? 0) !== 0 ? 'end' : 'end'
       } : false,
       tickFormatter: formatTickValue,
       label: (config.yAxisShowLabel !== false && config.yAxisLabel) ? {
@@ -440,7 +436,8 @@ function QuestDBPanel({ config, onEdit, onDelete, onDuplicate, onResize, style, 
       width: config.yAxisWidth !== 'auto' ? parseInt(config.yAxisWidth) : undefined,
       orientation: config.yAxisPosition || 'left',
       tickCount: config.yAxisTickCount !== 'auto' ? parseInt(config.yAxisTickCount) : undefined,
-      stroke: theme.chartAxis
+      stroke: theme.chartAxis,
+      tickLine: { stroke: theme.chartAxis }
     };
 
     const gridConfig = config.showGrid ? {
@@ -1045,6 +1042,28 @@ function QuestDBPanel({ config, onEdit, onDelete, onDuplicate, onResize, style, 
         @keyframes pulse {
           0%, 100% { opacity: 1; }
           50% { opacity: 0.5; }
+        }
+        
+        /* Force Recharts tick colors */
+        .recharts-cartesian-axis-tick text {
+          fill: ${theme.chartText} !important;
+        }
+        
+        .recharts-label text {
+          fill: ${theme.text} !important;
+        }
+        
+        .recharts-cartesian-axis-line {
+          stroke: ${theme.chartAxis} !important;
+        }
+        
+        .recharts-cartesian-axis-tick-line {
+          stroke: ${theme.chartAxis} !important;
+        }
+        
+        .recharts-polar-angle-axis-tick text,
+        .recharts-polar-radius-axis-tick text {
+          fill: ${theme.chartText} !important;
         }
       `}</style>
     </div>
