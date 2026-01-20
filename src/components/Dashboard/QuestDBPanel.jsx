@@ -403,7 +403,8 @@ function QuestDBPanel({ config, onEdit, onDelete, onDuplicate, onResize, style, 
         fill: theme.chartText, 
         fontSize: config.xAxisTickFontSize ?? fontSize,
         angle: config.xAxisTickRotation ?? 0,
-        textAnchor: (config.xAxisTickRotation ?? 0) !== 0 ? 'end' : 'middle'
+        textAnchor: (config.xAxisTickRotation ?? 0) !== 0 ? 'end' : 'middle',
+        style: { fill: theme.chartText }
       } : false,
       label: (config.xAxisShowLabel !== false && config.xAxisLabel) ? {
         value: config.xAxisLabel,
@@ -423,7 +424,8 @@ function QuestDBPanel({ config, onEdit, onDelete, onDuplicate, onResize, style, 
         fill: theme.chartText, 
         fontSize: config.yAxisTickFontSize ?? fontSize,
         angle: config.yAxisTickRotation ?? 0,
-        textAnchor: (config.yAxisTickRotation ?? 0) !== 0 ? 'end' : 'end'
+        textAnchor: (config.yAxisTickRotation ?? 0) !== 0 ? 'end' : 'end',
+        style: { fill: theme.chartText }
       } : false,
       tickFormatter: formatTickValue,
       label: (config.yAxisShowLabel !== false && config.yAxisLabel) ? {
