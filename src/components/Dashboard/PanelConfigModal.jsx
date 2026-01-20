@@ -222,48 +222,75 @@ function PanelConfigModal({ panel, onSave, onClose, allTables, darkMode }) {
     }
   };
 
-  const buildQueryWithFiltersAndTimeRange = () => {
-    let query = config.query;
-    
-    if (config.dataSource === 'table' && config.table) {
-      query = `SELECT * FROM ${config.table}`;
-      
-      const whereClauses = [];
-      
-      if (config.timeRange === 'last' && config.timeRangeLast) {
-        const intervals = {
-          '5m': '5 minutes',
-          '15m': '15 minutes',
-          '1h': '1 hour',
-          '6h': '6 hours',
-          '24h': '24 hours',
-          '7d': '7 days',
-          '30d': '30 days'
-        };
-        whereClauses.push(`${config.timestampField} >= dateadd('${intervals[config.timeRangeLast]}', -1, now())`);
-      } else if (config.timeRange === 'custom' && config.timeRangeStart && config.timeRangeEnd) {
-        whereClauses.push(`${config.timestampField} BETWEEN timestamp('${config.timeRangeStart}:00') AND timestamp('${config.timeRangeEnd}:00')`);
+ const buildQueryWithFiltersAndTimeRange = () => {
+  let query = config.query;
+
+  if (config.dataSource === 'table' && config.table) {
+    query = `SELECT * FROM ${config.table}`;
+
+    const whereClauses = [];
+
+    // ✅ LAST X time range (QuestDB syntax)
+    if (config.timeRange === 'last' && config.timeRangeLast) {
+      const intervals = {
+        '5m': '5m',
+        '15m': '15m',
+        '1h': '1h',
+        '6h': '6h',
+        '24h': '24h',
+        '7d': '7d',
+        '30d': '30d'
+      };
+
+      const interval = intervals[config.timeRangeLast];
+      if (interval) {
+        whereClauses.push(
+          `${config.timestampField} >= now() - ${interval}`
+        );
       }
-      
-      if (config.filters && config.filters.length > 0) {
-        config.filters.forEach(filter => {
-          if (filter.field && filter.operator && filter.value !== '') {
-            const isNumber = !isNaN(parseFloat(filter.value)) && isFinite(filter.value);
-            const value = isNumber ? filter.value : `'${filter.value.replace(/'/g, "''")}'`;
-            whereClauses.push(`${filter.field} ${filter.operator} ${value}`);
-          }
-        });
-      }
-      
-      if (whereClauses.length > 0) {
-        query += ` WHERE ${whereClauses.join(' AND ')}`;
-      }
-      
-      query += ` ORDER BY ${config.timestampField} DESC LIMIT ${config.limit}`;
     }
-    
-    return query;
-  };
+
+    // ✅ CUSTOM time range (QuestDB syntax)
+    else if (
+      config.timeRange === 'custom' &&
+      config.timeRangeStart &&
+      config.timeRangeEnd
+    ) {
+      whereClauses.push(
+        `${config.timestampField} BETWEEN '${config.timeRangeStart}:00Z' AND '${config.timeRangeEnd}:00Z'`
+      );
+    }
+
+    // ✅ Filters
+    if (config.filters && config.filters.length > 0) {
+      config.filters.forEach(filter => {
+        if (filter.field && filter.operator && filter.value !== '') {
+          const isNumber =
+            !isNaN(parseFloat(filter.value)) && isFinite(filter.value);
+
+          const value = isNumber
+            ? filter.value
+            : `'${filter.value.replace(/'/g, "''")}'`;
+
+          whereClauses.push(
+            `${filter.field} ${filter.operator} ${value}`
+          );
+        }
+      });
+    }
+
+    // ✅ WHERE clause
+    if (whereClauses.length > 0) {
+      query += ` WHERE ${whereClauses.join(' AND ')}`;
+    }
+
+    // ✅ ORDER + LIMIT (QuestDB-friendly)
+    query += ` ORDER BY ${config.timestampField} DESC LIMIT ${config.limit}`;
+  }
+
+  return query;
+};
+
 
   // ✅ NEW: Format number based on configuration
   const formatNumber = (value) => {
