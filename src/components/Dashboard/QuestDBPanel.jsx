@@ -331,6 +331,37 @@ const buildQueryWithFiltersAndTimeRange = () => {
   const isMedium = panelWidth > 2 && panelWidth <= 4;
   const fontSize = isSmall ? 9 : isMedium ? 10 : 11;
 
+  // Smart margin calculation based on actual data values
+  const calculateSmartMargins = (data, yFields) => {
+    if (!data || data.length === 0) {
+      return { left: 60, right: 30, top: 60, bottom: 50 };
+    }
+
+    // Calculate max Y-axis label width by finding longest formatted value
+    let maxYValue = 0;
+    yFields.forEach(field => {
+      const values = data.map(d => d[field] || 0);
+      const max = Math.max(...values, Math.abs(Math.min(...values)));
+      maxYValue = Math.max(maxYValue, max);
+    });
+    
+    const formattedMaxY = formatTickValue(maxYValue);
+    const estimatedCharWidth = isSmall ? 5 : isMedium ? 6 : 7;
+    const yLabelWidth = formattedMaxY.length * estimatedCharWidth;
+    
+    // Calculate max X-axis label width
+    const sampleXLabels = data.slice(0, 5).map(d => d._time || '');
+    const maxXLabelLength = Math.max(...sampleXLabels.map(l => l.length));
+    const hasRotatedXTicks = (config.xAxisTickRotation ?? 0) !== 0;
+    
+    return {
+      left: yLabelWidth,
+      right: hasRotatedXTicks ? 20 : Math.max(30, maxXLabelLength * 2),
+      top: 60,
+      bottom: hasRotatedXTicks ? 70 : 50
+    };
+  };
+
   const renderChart = () => {
     if (loading && data.length === 0 && isInitialLoad) {
       return (
@@ -376,36 +407,19 @@ const buildQueryWithFiltersAndTimeRange = () => {
     const yFields = (config.yAxes && config.yAxes.length > 0) ? config.yAxes : [config.yAxis].filter(Boolean);
     const filteredYFields = yFields.filter(field => field && field !== 'value');
     
-    // ✅ FIXED: Calculate dynamic margins based on content
+    // ✅ SMART DYNAMIC MARGINS based on actual data
+    const smartMargins = calculateSmartMargins(data, filteredYFields);
+    
     const hasLegend = config.showLegend && filteredYFields.length > 1;
     const hasRotatedXTicks = (config.xAxisTickRotation ?? 0) !== 0;
     const hasYAxisLabel = config.yAxisShowLabel !== false && config.yAxisLabel;
     const hasXAxisLabel = config.xAxisShowLabel !== false && config.xAxisLabel;
     
-    // Dynamic bottom margin based on tick rotation and label
-    const bottomMargin = isSmall 
-      ? (hasRotatedXTicks ? 55 : 40) + (hasXAxisLabel ? 15 : 0)
-      : isMedium
-      ? (hasRotatedXTicks ? 65 : 45) + (hasXAxisLabel ? 18 : 0)
-      : (hasRotatedXTicks ? 75 : 50) + (hasXAxisLabel ? 20 : 0);
-    
-    // Dynamic left margin based on Y-axis content and number format length
-    const estimatedYAxisWidth = isSmall ? 35 : isMedium ? 45 : 55;
-    const leftMargin = isSmall
-      ? (hasYAxisLabel ? estimatedYAxisWidth + 15 : estimatedYAxisWidth)
-      : isMedium
-      ? (hasYAxisLabel ? estimatedYAxisWidth + 18 : estimatedYAxisWidth)
-      : (hasYAxisLabel ? estimatedYAxisWidth + 20 : estimatedYAxisWidth);
-    
-    // Dynamic top margin for legend (wrappers need space)
-    const topMargin = isSmall
-      ? (hasLegend ? 65 : 50)
-      : isMedium
-      ? (hasLegend ? 70 : 55)
-      : (hasLegend ? 75 : 60);
-    
-    // Right margin for overflow protection
-    const rightMargin = isSmall ? 25 : isMedium ? 30 : 35;
+    // Adjust margins based on labels and rotation
+    const bottomMargin = smartMargins.bottom + (hasXAxisLabel ? 20 : 0);
+    const leftMargin = smartMargins.left + (hasYAxisLabel ? 20 : 0);
+    const topMargin = hasLegend ? 70 : 55;
+    const rightMargin = smartMargins.right;
 
     const chartProps = {
       data,
@@ -438,10 +452,11 @@ const buildQueryWithFiltersAndTimeRange = () => {
         fill: theme.text
       } : undefined,
       tickCount: config.xAxisTickCount !== 'auto' ? parseInt(config.xAxisTickCount) : undefined,
-      interval: config.xAxisTickInterval !== 'auto' ? parseInt(config.xAxisTickInterval) : undefined,
+      interval: config.xAxisTickInterval !== 'auto' ? parseInt(config.xAxisTickInterval) : 'preserveStartEnd',
       stroke: theme.chartAxis,
       tickLine: { stroke: theme.chartAxis },
-      height: hasRotatedXTicks ? (isSmall ? 50 : isMedium ? 60 : 70) : undefined
+      height: hasRotatedXTicks ? (isSmall ? 60 : isMedium ? 70 : 80) : undefined,
+      tickMargin: hasRotatedXTicks ? 10 : 5
     };
 
     const yAxisConfig = {
@@ -461,11 +476,12 @@ const buildQueryWithFiltersAndTimeRange = () => {
       } : undefined,
       domain: yDomain,
       scale: yAxisScaleType,
-      width: config.yAxisWidth !== 'auto' ? parseInt(config.yAxisWidth) : (isSmall ? 45 : isMedium ? 55 : 65),
+      width: config.yAxisWidth !== 'auto' ? parseInt(config.yAxisWidth) : smartMargins.left,
       orientation: config.yAxisPosition || 'left',
       tickCount: config.yAxisTickCount !== 'auto' ? parseInt(config.yAxisTickCount) : undefined,
       stroke: theme.chartAxis,
-      tickLine: { stroke: theme.chartAxis }
+      tickLine: { stroke: theme.chartAxis },
+      tickMargin: 5
     };
 
     const gridConfig = config.showGrid ? {
@@ -475,17 +491,20 @@ const buildQueryWithFiltersAndTimeRange = () => {
         : `rgba(0, 0, 0, ${config.gridOpacity ?? 0.1})`
     } : false;
 
-    // ✅ FIXED: Legend configuration with proper wrapping
+    // ✅ FIXED: Legend configuration with proper spacing to prevent overlap
     const legendConfig = config.showLegend ? {
       wrapperStyle: { 
         color: theme.text, 
         fontSize: `${fontSize}px`,
-        paddingTop: '8px'
+        paddingTop: '10px',
+        paddingBottom: '5px'
       },
-      layout: isSmall ? 'horizontal' : 'horizontal',
+      layout: 'horizontal',
       verticalAlign: 'top',
       align: 'center',
-      iconSize: isSmall ? 8 : 10
+      iconSize: isSmall ? 8 : 10,
+      iconType: 'line',
+      wrapperMargin: { top: 5, bottom: 5 }
     } : null;
 
     switch (config.vizType) {
@@ -594,16 +613,28 @@ const buildQueryWithFiltersAndTimeRange = () => {
 
       case 'pie':
         const pieDataKey = filteredYFields[0] || config.yAxis;
-        const pieRadius = isSmall ? 50 : isMedium ? 65 : 80;
+        const pieRadius = isSmall ? 45 : isMedium ? 60 : 75;
+        const pieLegendConfig = config.showLegend ? {
+          wrapperStyle: { 
+            color: theme.text, 
+            fontSize: `${fontSize}px`,
+            paddingTop: '45px' // Extra space to avoid header
+          },
+          layout: 'horizontal',
+          verticalAlign: 'top',
+          align: 'center',
+          iconSize: 8
+        } : null;
+        
         return (
           <ResponsiveContainer width="100%" height="100%">
-            <PieChart>
+            <PieChart margin={{ top: 50, right: 20, bottom: 20, left: 20 }}>
               <Pie 
                 data={data.slice(0, 10)} 
                 dataKey={pieDataKey} 
                 nameKey="_time" 
                 cx="50%" 
-                cy="50%" 
+                cy="55%" 
                 outerRadius={pieRadius} 
                 label={!isSmall}
                 isAnimationActive={true}
@@ -616,7 +647,7 @@ const buildQueryWithFiltersAndTimeRange = () => {
                 contentStyle={{ background: theme.card, border: `1px solid ${theme.border}`, borderRadius: '6px', color: theme.text, fontSize: `${fontSize}px` }}
                 formatter={(value) => formatTickValue(value)}
               />
-              {legendConfig && <Legend {...legendConfig} />}
+              {pieLegendConfig && <Legend {...pieLegendConfig} />}
             </PieChart>
           </ResponsiveContainer>
         );
@@ -648,17 +679,29 @@ const buildQueryWithFiltersAndTimeRange = () => {
 
       case 'radar':
         const radarMargin = isSmall 
-          ? { top: 50, right: 25, bottom: 40, left: 25 }
+          ? { top: 55, right: 30, bottom: 40, left: 30 }
           : isMedium
-          ? { top: 55, right: 30, bottom: 45, left: 30 }
-          : { top: 60, right: 35, bottom: 50, left: 35 };
+          ? { top: 60, right: 35, bottom: 45, left: 35 }
+          : { top: 65, right: 40, bottom: 50, left: 40 };
+        
+        const radarLegendConfig = config.showLegend ? {
+          wrapperStyle: { 
+            color: theme.text, 
+            fontSize: `${fontSize}px`,
+            paddingTop: '45px' // Extra space to avoid header
+          },
+          layout: 'horizontal',
+          verticalAlign: 'top',
+          align: 'center',
+          iconSize: 8
+        } : null;
         
         return (
           <ResponsiveContainer width="100%" height="100%">
             <RadarChart data={data.slice(0, 8)} margin={radarMargin}>
               <PolarGrid stroke={theme.chartGrid} />
-              <PolarAngleAxis dataKey="_time" tick={{ fill: theme.chartText, fontSize }} />
-              <PolarRadiusAxis tick={{ fill: theme.chartText, fontSize }} />
+              <PolarAngleAxis dataKey="_time" tick={{ fill: theme.chartText, fontSize: fontSize - 1 }} />
+              <PolarRadiusAxis tick={{ fill: theme.chartText, fontSize: fontSize - 1 }} angle={30} />
               {filteredYFields.map((yField, idx) => (
                 <Radar 
                   key={yField}
@@ -670,7 +713,7 @@ const buildQueryWithFiltersAndTimeRange = () => {
                   isAnimationActive={true}
                 />
               ))}
-              {legendConfig && <Legend {...legendConfig} />}
+              {radarLegendConfig && <Legend {...radarLegendConfig} />}
             </RadarChart>
           </ResponsiveContainer>
         );
