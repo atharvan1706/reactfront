@@ -1,5 +1,5 @@
 // PanelConfigModal.jsx - REFINED MINIMAL PREMIUM DESIGN
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import {
   LineChart, Line, BarChart, Bar, AreaChart, Area, PieChart, Pie, Cell,
   ScatterChart, Scatter, RadarChart, Radar, PolarGrid, PolarAngleAxis, PolarRadiusAxis,
@@ -61,6 +61,92 @@ const LABEL_ROTATIONS = [
   { value: 90, label: 'Vertical (90°)' }
 ];
 
+// ✅ FIX 2: Legend position options
+const LEGEND_POSITIONS = [
+  { value: 'top', label: 'Top' },
+  { value: 'bottom', label: 'Bottom' },
+  { value: 'left', label: 'Left' },
+  { value: 'right', label: 'Right' }
+];
+
+// ✅ FIX 1: Move Input/Select OUTSIDE component to prevent recreation
+const Input = React.memo(({ label, value, onChange, placeholder, type = "text", theme, ...props }) => (
+  <div style={{ marginBottom: '12px' }}>
+    {label && (
+      <label style={{ 
+        display: 'block', 
+        marginBottom: '6px', 
+        fontSize: '11px', 
+        fontWeight: '500',
+        color: theme.textMuted,
+        letterSpacing: '0.02em'
+      }}>
+        {label}
+      </label>
+    )}
+    <input
+      type={type}
+      value={value}
+      onChange={onChange}
+      placeholder={placeholder}
+      style={{
+        width: '100%',
+        padding: '8px 10px',
+        background: theme.bg,
+        border: `1px solid ${theme.border}`,
+        borderRadius: '6px',
+        color: theme.text,
+        fontSize: '13px',
+        transition: 'all 0.15s ease',
+        outline: 'none',
+        ...props.style
+      }}
+      onFocus={(e) => e.target.style.borderColor = theme.accent}
+      onBlur={(e) => e.target.style.borderColor = theme.border}
+      {...props}
+    />
+  </div>
+));
+
+const Select = React.memo(({ label, value, onChange, children, theme, ...props }) => (
+  <div style={{ marginBottom: '12px' }}>
+    {label && (
+      <label style={{ 
+        display: 'block', 
+        marginBottom: '6px', 
+        fontSize: '11px', 
+        fontWeight: '500',
+        color: theme.textMuted,
+        letterSpacing: '0.02em'
+      }}>
+        {label}
+      </label>
+    )}
+    <select
+      value={value}
+      onChange={onChange}
+      style={{
+        width: '100%',
+        padding: '8px 10px',
+        background: theme.bg,
+        border: `1px solid ${theme.border}`,
+        borderRadius: '6px',
+        color: theme.text,
+        fontSize: '13px',
+        transition: 'all 0.15s ease',
+        outline: 'none',
+        cursor: 'pointer',
+        ...props.style
+      }}
+      onFocus={(e) => e.target.style.borderColor = theme.accent}
+      onBlur={(e) => e.target.style.borderColor = theme.border}
+      {...props}
+    >
+      {children}
+    </select>
+  </div>
+));
+
 function PanelConfigModal({ panel, onSave, onClose, allTables, darkMode }) {
   const [config, setConfig] = useState(() => {
     if (panel) {
@@ -78,6 +164,7 @@ function PanelConfigModal({ panel, onSave, onClose, allTables, darkMode }) {
         timeRangeEnd: panel.timeRangeEnd || '',
         filters: panel.filters || [],
         transformations: panel.transformations || [],
+        legendPosition: panel.legendPosition || 'top', // ✅ ADD THIS
         
         xAxisLabel: panel.xAxisLabel || '',
         yAxisLabel: panel.yAxisLabel || '',
@@ -129,7 +216,8 @@ function PanelConfigModal({ panel, onSave, onClose, allTables, darkMode }) {
         timeRangeStart: '',
         timeRangeEnd: '',
         filters: [],
-        dataSource: 'table', // ✅ DEFAULT TO TABLE
+        dataSource: 'table',
+        legendPosition: 'top', // ✅ ADD THIS
         
         xAxisLabel: '',
         yAxisLabel: '',
@@ -168,8 +256,8 @@ function PanelConfigModal({ panel, onSave, onClose, allTables, darkMode }) {
   const [availableFields, setAvailableFields] = useState([]);
   const [activeTab, setActiveTab] = useState('data');
 
-  // Refined theme with subtle premium touches
-  const theme = darkMode ? {
+  // ✅ Memoize theme to prevent recreation
+  const theme = useMemo(() => darkMode ? {
     bg: '#0f172a',
     card: '#1e293b',
     cardHover: '#334155',
@@ -197,7 +285,7 @@ function PanelConfigModal({ panel, onSave, onClose, allTables, darkMode }) {
     shadow: '0 1px 2px rgba(0,0,0,0.05)',
     shadowMd: '0 4px 6px rgba(0,0,0,0.07)',
     shadowLg: '0 20px 25px rgba(0,0,0,0.1)'
-  };
+  }, [darkMode]);
 
   useEffect(() => {
     console.log('📝 Config updated:', config);
@@ -222,60 +310,60 @@ function PanelConfigModal({ panel, onSave, onClose, allTables, darkMode }) {
     }
   };
 
-const buildQueryWithFiltersAndTimeRange = () => {
-  let query = config.query;
-  
-  if (config.dataSource === 'table' && config.table) {
-    query = `SELECT * FROM ${config.table}`;
+  const buildQueryWithFiltersAndTimeRange = useCallback(() => {
+    let query = config.query;
     
-    const whereClauses = [];
-    
-    if (config.timeRange === 'last' && config.timeRangeLast) {
-      const intervals = {
-        '5m': '5 minutes',
-        '15m': '15 minutes',
-        '1h': '1 hour',
-        '6h': '6 hours',
-        '24h': '24 hours',
-        '7d': '7 days',
-        '30d': '30 days'
-      };
+    if (config.dataSource === 'table' && config.table) {
+      query = `SELECT * FROM ${config.table}`;
       
-      const interval = intervals[config.timeRangeLast];
-      if (interval) {
+      const whereClauses = [];
+      
+      if (config.timeRange === 'last' && config.timeRangeLast) {
+        const intervals = {
+          '5m': '5 minutes',
+          '15m': '15 minutes',
+          '1h': '1 hour',
+          '6h': '6 hours',
+          '24h': '24 hours',
+          '7d': '7 days',
+          '30d': '30 days'
+        };
+        
+        const interval = intervals[config.timeRangeLast];
+        if (interval) {
+          whereClauses.push(
+            `${config.timestampField} >= dateadd('${interval}', -1, now())`
+          );
+        }
+      }
+      
+      else if (config.timeRange === 'custom' && config.timeRangeStart && config.timeRangeEnd) {
         whereClauses.push(
-          `${config.timestampField} >= dateadd('${interval}', -1, now())`
+          `${config.timestampField} BETWEEN cast('${config.timeRangeStart}:00' as timestamp) AND cast('${config.timeRangeEnd}:00' as timestamp)`
         );
       }
+      
+      if (config.filters && config.filters.length > 0) {
+        config.filters.forEach(filter => {
+          if (filter.field && filter.operator && filter.value !== '') {
+            const isNumber = !isNaN(parseFloat(filter.value)) && isFinite(filter.value);
+            const value = isNumber ? filter.value : `'${filter.value.replace(/'/g, "''")}'`;
+            whereClauses.push(`${filter.field} ${filter.operator} ${value}`);
+          }
+        });
+      }
+      
+      if (whereClauses.length > 0) {
+        query += ` WHERE ${whereClauses.join(' AND ')}`;
+      }
+      
+      query += ` ORDER BY ${config.timestampField} DESC LIMIT ${config.limit}`;
     }
     
-    else if (config.timeRange === 'custom' && config.timeRangeStart && config.timeRangeEnd) {
-      whereClauses.push(
-        `${config.timestampField} BETWEEN cast('${config.timeRangeStart}:00' as timestamp) AND cast('${config.timeRangeEnd}:00' as timestamp)`
-      );
-    }
-    
-    if (config.filters && config.filters.length > 0) {
-      config.filters.forEach(filter => {
-        if (filter.field && filter.operator && filter.value !== '') {
-          const isNumber = !isNaN(parseFloat(filter.value)) && isFinite(filter.value);
-          const value = isNumber ? filter.value : `'${filter.value.replace(/'/g, "''")}'`;
-          whereClauses.push(`${filter.field} ${filter.operator} ${value}`);
-        }
-      });
-    }
-    
-    if (whereClauses.length > 0) {
-      query += ` WHERE ${whereClauses.join(' AND ')}`;
-    }
-    
-    query += ` ORDER BY ${config.timestampField} DESC LIMIT ${config.limit}`;
-  }
-  
-  return query;
-};
+    return query;
+  }, [config]);
 
-  const formatNumber = (value) => {
+  const formatNumber = useCallback((value) => {
     if (value === null || value === undefined || isNaN(value)) return 'N/A';
     
     const num = parseFloat(value);
@@ -378,9 +466,9 @@ const buildQueryWithFiltersAndTimeRange = () => {
       default:
         return num.toFixed(config.yAxisDecimals);
     }
-  };
+  }, [config]);
 
-  const formatTickValue = (value) => {
+  const formatTickValue = useCallback((value) => {
     const formatted = formatNumber(value);
     
     if (config.yAxisUnit) {
@@ -392,7 +480,7 @@ const buildQueryWithFiltersAndTimeRange = () => {
     }
     
     return formatted;
-  };
+  }, [formatNumber, config]);
 
   const handlePreview = async () => {
     setPreviewLoading(true);
@@ -433,21 +521,21 @@ const buildQueryWithFiltersAndTimeRange = () => {
     setPreviewLoading(false);
   };
 
-  const getColor = (idx) => {
+  const getColor = useCallback((idx) => {
     if (config.colors && config.colors.length > idx && config.colors[idx]) {
       return config.colors[idx];
     }
     return COLORS[idx % COLORS.length];
-  };
+  }, [config.colors]);
 
-  const getYAxisDomain = () => {
+  const getYAxisDomain = useCallback(() => {
     if (config.yAxisScale === 'custom') {
       const min = config.yAxisMin !== '' ? parseFloat(config.yAxisMin) : 'auto';
       const max = config.yAxisMax !== '' ? parseFloat(config.yAxisMax) : 'auto';
       return [min, max];
     }
     return ['auto', 'auto'];
-  };
+  }, [config]);
 
   const addFilter = () => {
     const newFilter = { field: '', operator: '=', value: '' };
@@ -565,6 +653,26 @@ const buildQueryWithFiltersAndTimeRange = () => {
       stroke: `rgba(0,0,0,${config.gridOpacity})`
     } : false;
 
+    // ✅ Legend config based on position
+    const legendConfig = config.showLegend ? {
+      wrapperStyle: { 
+        color: theme.text, 
+        fontSize: '11px',
+        paddingTop: config.legendPosition === 'top' ? '5px' : '0',
+        paddingBottom: config.legendPosition === 'bottom' ? '5px' : '0'
+      },
+      layout: (config.legendPosition === 'left' || config.legendPosition === 'right') 
+        ? 'vertical' 
+        : 'horizontal',
+      verticalAlign: (config.legendPosition === 'top' || config.legendPosition === 'bottom') 
+        ? config.legendPosition 
+        : 'middle',
+      align: (config.legendPosition === 'left' || config.legendPosition === 'right') 
+        ? config.legendPosition 
+        : 'center',
+      iconSize: 8
+    } : null;
+
     return (
       <ResponsiveContainer width="100%" height={200}>
         {config.vizType === 'line' && (
@@ -573,7 +681,7 @@ const buildQueryWithFiltersAndTimeRange = () => {
             <XAxis {...xAxisConfig} />
             <YAxis {...yAxisConfig} />
             <Tooltip contentStyle={{ background: theme.bg, border: `1px solid ${theme.border}` }} />
-            <Legend />
+            {legendConfig && <Legend {...legendConfig} />}
             {yFields.map((yField, idx) => (
               <Line 
                 key={yField}
@@ -593,7 +701,7 @@ const buildQueryWithFiltersAndTimeRange = () => {
             <XAxis {...xAxisConfig} />
             <YAxis {...yAxisConfig} />
             <Tooltip contentStyle={{ background: theme.bg, border: `1px solid ${theme.border}` }} />
-            <Legend />
+            {legendConfig && <Legend {...legendConfig} />}
             {yFields.map((yField, idx) => (
               <Bar 
                 key={yField}
@@ -610,7 +718,7 @@ const buildQueryWithFiltersAndTimeRange = () => {
             <XAxis {...xAxisConfig} />
             <YAxis {...yAxisConfig} />
             <Tooltip contentStyle={{ background: theme.bg, border: `1px solid ${theme.border}` }} />
-            <Legend />
+            {legendConfig && <Legend {...legendConfig} />}
             {yFields.map((yField, idx) => (
               <Area 
                 key={yField}
@@ -629,85 +737,6 @@ const buildQueryWithFiltersAndTimeRange = () => {
     );
   };
 
-  // Input component for consistency
-  const Input = ({ label, value, onChange, placeholder, type = "text", ...props }) => (
-    <div style={{ marginBottom: '12px' }}>
-      {label && (
-        <label style={{ 
-          display: 'block', 
-          marginBottom: '6px', 
-          fontSize: '11px', 
-          fontWeight: '500',
-          color: theme.textMuted,
-          letterSpacing: '0.02em'
-        }}>
-          {label}
-        </label>
-      )}
-      <input
-        type={type}
-        value={value}
-        onChange={onChange}
-        placeholder={placeholder}
-        style={{
-          width: '100%',
-          padding: '8px 10px',
-          background: theme.bg,
-          border: `1px solid ${theme.border}`,
-          borderRadius: '6px',
-          color: theme.text,
-          fontSize: '13px',
-          transition: 'all 0.15s ease',
-          outline: 'none',
-          ...props.style
-        }}
-        onFocus={(e) => e.target.style.borderColor = theme.accent}
-        onBlur={(e) => e.target.style.borderColor = theme.border}
-        {...props}
-      />
-    </div>
-  );
-
-  // Select component for consistency
-  const Select = ({ label, value, onChange, children, ...props }) => (
-    <div style={{ marginBottom: '12px' }}>
-      {label && (
-        <label style={{ 
-          display: 'block', 
-          marginBottom: '6px', 
-          fontSize: '11px', 
-          fontWeight: '500',
-          color: theme.textMuted,
-          letterSpacing: '0.02em'
-        }}>
-          {label}
-        </label>
-      )}
-      <select
-        value={value}
-        onChange={onChange}
-        style={{
-          width: '100%',
-          padding: '8px 10px',
-          background: theme.bg,
-          border: `1px solid ${theme.border}`,
-          borderRadius: '6px',
-          color: theme.text,
-          fontSize: '13px',
-          transition: 'all 0.15s ease',
-          outline: 'none',
-          cursor: 'pointer',
-          ...props.style
-        }}
-        onFocus={(e) => e.target.style.borderColor = theme.accent}
-        onBlur={(e) => e.target.style.borderColor = theme.border}
-        {...props}
-      >
-        {children}
-      </select>
-    </div>
-  );
-
   const renderDataTab = () => (
     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px', minHeight: '500px' }}>
       <div>
@@ -716,6 +745,7 @@ const buildQueryWithFiltersAndTimeRange = () => {
           value={config.title}
           onChange={(e) => setConfig({ ...config, title: e.target.value })}
           placeholder="My Dashboard Panel"
+          theme={theme}
         />
 
         {/* Visualization Type - Compact Grid */}
@@ -817,6 +847,7 @@ const buildQueryWithFiltersAndTimeRange = () => {
             <Select
               value={config.table}
               onChange={(e) => setConfig({ ...config, table: e.target.value })}
+              theme={theme}
             >
               <option value="">Select a table...</option>
               {allTables && allTables.length > 0 ? (
@@ -858,6 +889,7 @@ const buildQueryWithFiltersAndTimeRange = () => {
             label="Timestamp Field"
             value={config.timestampField}
             onChange={(e) => setConfig({ ...config, timestampField: e.target.value })}
+            theme={theme}
           >
             {availableFields.length > 0 ? (
               availableFields.map(field => (
@@ -979,6 +1011,7 @@ const buildQueryWithFiltersAndTimeRange = () => {
                   yAxis: e.target.value.split(',')[0]?.trim() || ''
                 })}
                 placeholder="value1, value2"
+                theme={theme}
               />
             )}
             {config.yAxes && config.yAxes.length > 0 && (
@@ -993,6 +1026,7 @@ const buildQueryWithFiltersAndTimeRange = () => {
           label={<><Globe size={11} style={{ display: 'inline', marginRight: '4px', verticalAlign: 'middle' }} />Timezone</>}
           value={config.timezone || 'UTC'}
           onChange={(e) => setConfig({ ...config, timezone: e.target.value })}
+          theme={theme}
         >
           {TIMEZONES.map(tz => (
             <option key={tz.value} value={tz.value}>{tz.label}</option>
@@ -1089,6 +1123,7 @@ const buildQueryWithFiltersAndTimeRange = () => {
             <Select
               value={config.timeRangeLast}
               onChange={(e) => setConfig({ ...config, timeRangeLast: e.target.value })}
+              theme={theme}
             >
               <option value="5m">Last 5 minutes</option>
               <option value="15m">Last 15 minutes</option>
@@ -1107,12 +1142,14 @@ const buildQueryWithFiltersAndTimeRange = () => {
                 type="datetime-local"
                 value={config.timeRangeStart}
                 onChange={(e) => setConfig({ ...config, timeRangeStart: e.target.value })}
+                theme={theme}
               />
               <Input
                 label="End"
                 type="datetime-local"
                 value={config.timeRangeEnd}
                 onChange={(e) => setConfig({ ...config, timeRangeEnd: e.target.value })}
+                theme={theme}
               />
             </div>
           )}
@@ -1286,6 +1323,7 @@ const buildQueryWithFiltersAndTimeRange = () => {
             value={config.xAxisLabel}
             onChange={(e) => setConfig({ ...config, xAxisLabel: e.target.value })}
             placeholder="e.g., Time"
+            theme={theme}
           />
 
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginBottom: '12px' }}>
@@ -1296,11 +1334,13 @@ const buildQueryWithFiltersAndTimeRange = () => {
               onChange={(e) => setConfig({ ...config, xAxisLabelFontSize: parseInt(e.target.value) || 12 })}
               min="8"
               max="24"
+              theme={theme}
             />
             <Select
               label="Label Rotation"
               value={config.xAxisLabelRotation}
               onChange={(e) => setConfig({ ...config, xAxisLabelRotation: parseInt(e.target.value) })}
+              theme={theme}
             >
               {LABEL_ROTATIONS.map(rot => (
                 <option key={rot.value} value={rot.value}>{rot.label}</option>
@@ -1316,11 +1356,13 @@ const buildQueryWithFiltersAndTimeRange = () => {
               onChange={(e) => setConfig({ ...config, xAxisTickFontSize: parseInt(e.target.value) || 11 })}
               min="6"
               max="18"
+              theme={theme}
             />
             <Select
               label="Tick Rotation"
               value={config.xAxisTickRotation}
               onChange={(e) => setConfig({ ...config, xAxisTickRotation: parseInt(e.target.value) })}
+              theme={theme}
             >
               {LABEL_ROTATIONS.map(rot => (
                 <option key={rot.value} value={rot.value}>{rot.label}</option>
@@ -1334,12 +1376,14 @@ const buildQueryWithFiltersAndTimeRange = () => {
               value={config.xAxisTickCount}
               onChange={(e) => setConfig({ ...config, xAxisTickCount: e.target.value })}
               placeholder="auto"
+              theme={theme}
             />
             <Input
               label="Tick Interval"
               value={config.xAxisTickInterval}
               onChange={(e) => setConfig({ ...config, xAxisTickInterval: e.target.value })}
               placeholder="auto"
+              theme={theme}
             />
           </div>
 
@@ -1391,6 +1435,7 @@ const buildQueryWithFiltersAndTimeRange = () => {
             value={config.gridStrokeDashArray}
             onChange={(e) => setConfig({ ...config, gridStrokeDashArray: e.target.value })}
             placeholder="3 3"
+            theme={theme}
           />
           <div style={{ fontSize: '10px', color: theme.textMuted, marginTop: '-8px', marginBottom: '12px' }}>
             Examples: "3 3" (dashed), "1 0" (solid), "0 0" (hidden)
@@ -1446,12 +1491,14 @@ const buildQueryWithFiltersAndTimeRange = () => {
             value={config.yAxisLabel}
             onChange={(e) => setConfig({ ...config, yAxisLabel: e.target.value })}
             placeholder="e.g., Value, Temperature"
+            theme={theme}
           />
 
           <Select
             label={<><Type size={11} style={{ display: 'inline', marginRight: '4px', verticalAlign: 'middle' }} />Number Format</>}
             value={config.yAxisNumberFormat}
             onChange={(e) => setConfig({ ...config, yAxisNumberFormat: e.target.value })}
+            theme={theme}
           >
             {NUMBER_FORMATS.map(format => (
               <option key={format.value} value={format.value}>
@@ -1468,6 +1515,7 @@ const buildQueryWithFiltersAndTimeRange = () => {
               onChange={(e) => setConfig({ ...config, yAxisDecimals: parseInt(e.target.value) || 0 })}
               min="0"
               max="10"
+              theme={theme}
             />
             <div style={{ display: 'flex', alignItems: 'flex-end', paddingBottom: '12px' }}>
               <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '11px', color: theme.textSecondary, cursor: 'pointer', whiteSpace: 'nowrap' }}>
@@ -1488,11 +1536,13 @@ const buildQueryWithFiltersAndTimeRange = () => {
               value={config.yAxisUnit}
               onChange={(e) => setConfig({ ...config, yAxisUnit: e.target.value })}
               placeholder="e.g., °C, MB"
+              theme={theme}
             />
             <Select
               label="Position"
               value={config.yAxisUnitPosition}
               onChange={(e) => setConfig({ ...config, yAxisUnitPosition: e.target.value })}
+              theme={theme}
             >
               <option value="prefix">Prefix</option>
               <option value="suffix">Suffix</option>
@@ -1506,6 +1556,7 @@ const buildQueryWithFiltersAndTimeRange = () => {
               onChange={(e) => setConfig({ ...config, yAxisCustomFormat: e.target.value })}
               placeholder="e.g., {value} units"
               style={{ fontFamily: 'ui-monospace, monospace' }}
+              theme={theme}
             />
           )}
 
@@ -1517,6 +1568,7 @@ const buildQueryWithFiltersAndTimeRange = () => {
               onChange={(e) => setConfig({ ...config, yAxisLabelFontSize: parseInt(e.target.value) || 12 })}
               min="8"
               max="24"
+              theme={theme}
             />
             <Input
               label="Tick Size"
@@ -1525,6 +1577,7 @@ const buildQueryWithFiltersAndTimeRange = () => {
               onChange={(e) => setConfig({ ...config, yAxisTickFontSize: parseInt(e.target.value) || 11 })}
               min="6"
               max="18"
+              theme={theme}
             />
           </div>
 
@@ -1534,11 +1587,13 @@ const buildQueryWithFiltersAndTimeRange = () => {
               value={config.yAxisWidth}
               onChange={(e) => setConfig({ ...config, yAxisWidth: e.target.value })}
               placeholder="auto"
+              theme={theme}
             />
             <Select
               label="Side"
               value={config.yAxisPosition}
               onChange={(e) => setConfig({ ...config, yAxisPosition: e.target.value })}
+              theme={theme}
             >
               <option value="left">Left</option>
               <option value="right">Right</option>
@@ -1548,6 +1603,7 @@ const buildQueryWithFiltersAndTimeRange = () => {
               value={config.yAxisTickCount}
               onChange={(e) => setConfig({ ...config, yAxisTickCount: e.target.value })}
               placeholder="auto"
+              theme={theme}
             />
           </div>
 
@@ -1639,6 +1695,7 @@ const buildQueryWithFiltersAndTimeRange = () => {
                 value={config.yAxisMin}
                 onChange={(e) => setConfig({ ...config, yAxisMin: e.target.value })}
                 placeholder="Auto"
+                theme={theme}
               />
               <Input
                 label="Max"
@@ -1646,6 +1703,7 @@ const buildQueryWithFiltersAndTimeRange = () => {
                 value={config.yAxisMax}
                 onChange={(e) => setConfig({ ...config, yAxisMax: e.target.value })}
                 placeholder="Auto"
+                theme={theme}
               />
             </div>
           )}
@@ -1671,6 +1729,7 @@ const buildQueryWithFiltersAndTimeRange = () => {
               onChange={(e) => setConfig({ ...config, width: Math.max(1, Math.min(12, parseInt(e.target.value) || 1)) })}
               min="1"
               max="12"
+              theme={theme}
             />
             <Input
               label="Height (1-10)"
@@ -1679,6 +1738,7 @@ const buildQueryWithFiltersAndTimeRange = () => {
               onChange={(e) => setConfig({ ...config, height: Math.max(1, Math.min(10, parseInt(e.target.value) || 1)) })}
               min="1"
               max="10"
+              theme={theme}
             />
           </div>
         </div>
@@ -1692,11 +1752,13 @@ const buildQueryWithFiltersAndTimeRange = () => {
             onChange={(e) => setConfig({ ...config, limit: parseInt(e.target.value) })}
             min="10"
             max="10000"
+            theme={theme}
           />
           <Select
             label="Auto Refresh"
             value={config.refreshInterval}
             onChange={(e) => setConfig({ ...config, refreshInterval: parseInt(e.target.value) })}
+            theme={theme}
           >
             <option value={0}>None</option>
             <option value={1000}>1s</option>
@@ -1762,6 +1824,43 @@ const buildQueryWithFiltersAndTimeRange = () => {
                   ))}
                 </select>
               </div>
+            ))}
+          </div>
+        </div>
+
+        {/* ✅ Legend Position Control */}
+        <div style={{ marginBottom: '16px' }}>
+          <label style={{ 
+            display: 'block', 
+            marginBottom: '8px', 
+            fontSize: '11px', 
+            fontWeight: '500',
+            color: theme.textMuted,
+            letterSpacing: '0.02em'
+          }}>
+            Legend Position
+          </label>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '6px', marginBottom: '12px' }}>
+            {LEGEND_POSITIONS.map(pos => (
+              <button
+                key={pos.value}
+                onClick={() => setConfig({ ...config, legendPosition: pos.value })}
+                style={{
+                  padding: '8px',
+                  background: config.legendPosition === pos.value ? theme.accent : theme.card,
+                  border: `1px solid ${config.legendPosition === pos.value ? theme.accent : theme.border}`,
+                  borderRadius: '6px',
+                  color: config.legendPosition === pos.value ? 'white' : theme.text,
+                  cursor: 'pointer',
+                  fontSize: '11px',
+                  fontWeight: '500',
+                  transition: 'all 0.15s ease'
+                }}
+                onMouseEnter={(e) => config.legendPosition !== pos.value && (e.currentTarget.style.background = theme.cardHover)}
+                onMouseLeave={(e) => config.legendPosition !== pos.value && (e.currentTarget.style.background = theme.card)}
+              >
+                {pos.label}
+              </button>
             ))}
           </div>
         </div>
@@ -2070,7 +2169,7 @@ const buildQueryWithFiltersAndTimeRange = () => {
           height: 14px;
           background: ${theme.accent};
           border-radius: 50%;
-          cursor: pointer;
+          cursor: 'pointer';
           border: none;
           transition: all 0.15s ease;
         }
