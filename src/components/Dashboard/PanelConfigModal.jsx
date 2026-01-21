@@ -222,72 +222,60 @@ function PanelConfigModal({ panel, onSave, onClose, allTables, darkMode }) {
     }
   };
 
- const buildQueryWithFiltersAndTimeRange = () => {
+ // ✅ CORRECT VERSION
+const buildQueryWithFiltersAndTimeRange = () => {
   let query = config.query;
-
+  
   if (config.dataSource === 'table' && config.table) {
     query = `SELECT * FROM ${config.table}`;
-
+    
     const whereClauses = [];
-
-    // ✅ LAST X time range (QuestDB syntax)
+    
+    // ✅ FIX 1: Use dateadd() with proper interval format
     if (config.timeRange === 'last' && config.timeRangeLast) {
       const intervals = {
-        '5m': '5m',
-        '15m': '15m',
-        '1h': '1h',
-        '6h': '6h',
-        '24h': '24h',
-        '7d': '7d',
-        '30d': '30d'
+        '5m': '5 minutes',      // ✅ Use full word format
+        '15m': '15 minutes',
+        '1h': '1 hour',
+        '6h': '6 hours',
+        '24h': '24 hours',
+        '7d': '7 days',
+        '30d': '30 days'
       };
-
+      
       const interval = intervals[config.timeRangeLast];
       if (interval) {
         whereClauses.push(
-          `${config.timestampField} >= now() - ${interval}`
+          `${config.timestampField} >= dateadd('${interval}', -1, now())` // ✅ Correct syntax
         );
       }
     }
-
-    // ✅ CUSTOM time range (QuestDB syntax)
-    else if (
-      config.timeRange === 'custom' &&
-      config.timeRangeStart &&
-      config.timeRangeEnd
-    ) {
+    
+    // ✅ FIX 2: Use cast() instead of timestamp()
+    else if (config.timeRange === 'custom' && config.timeRangeStart && config.timeRangeEnd) {
       whereClauses.push(
-        `${config.timestampField} BETWEEN '${config.timeRangeStart}:00Z' AND '${config.timeRangeEnd}:00Z'`
+        `${config.timestampField} BETWEEN cast('${config.timeRangeStart}:00' as timestamp) AND cast('${config.timeRangeEnd}:00' as timestamp)` // ✅ Use cast()
       );
     }
-
-    // ✅ Filters
+    
+    // Filters (unchanged)
     if (config.filters && config.filters.length > 0) {
       config.filters.forEach(filter => {
         if (filter.field && filter.operator && filter.value !== '') {
-          const isNumber =
-            !isNaN(parseFloat(filter.value)) && isFinite(filter.value);
-
-          const value = isNumber
-            ? filter.value
-            : `'${filter.value.replace(/'/g, "''")}'`;
-
-          whereClauses.push(
-            `${filter.field} ${filter.operator} ${value}`
-          );
+          const isNumber = !isNaN(parseFloat(filter.value)) && isFinite(filter.value);
+          const value = isNumber ? filter.value : `'${filter.value.replace(/'/g, "''")}'`;
+          whereClauses.push(`${filter.field} ${filter.operator} ${value}`);
         }
       });
     }
-
-    // ✅ WHERE clause
+    
     if (whereClauses.length > 0) {
       query += ` WHERE ${whereClauses.join(' AND ')}`;
     }
-
-    // ✅ ORDER + LIMIT (QuestDB-friendly)
+    
     query += ` ORDER BY ${config.timestampField} DESC LIMIT ${config.limit}`;
   }
-
+  
   return query;
 };
 
