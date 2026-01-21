@@ -44,66 +44,62 @@ function QuestDBPanel({ config, onEdit, onDelete, onDuplicate, onResize, style, 
     chartText: '#64748b'
   };
 
-  const buildQueryWithFiltersAndTimeRange = () => {
-    console.log('🔧 Building query with config:', {
-      dataSource: config.dataSource,
-      table: config.table,
-      timeRange: config.timeRange,
-      timeRangeLast: config.timeRangeLast,
-      filters: config.filters,
-      timestampField: config.timestampField,
-      timezone: config.timezone
-    });
-
-    let query = config.query;
+  // ✅ CORRECT VERSION
+const buildQueryWithFiltersAndTimeRange = () => {
+  let query = config.query;
+  
+  if (config.dataSource === 'table' && config.table) {
+    query = `SELECT * FROM ${config.table}`;
     
-    if (config.dataSource === 'table' && config.table) {
-      query = `SELECT * FROM ${config.table}`;
+    const whereClauses = [];
+    
+    // ✅ FIX 1: Use dateadd() with proper interval format
+    if (config.timeRange === 'last' && config.timeRangeLast) {
+      const intervals = {
+        '5m': '5 minutes',      // ✅ Use full word format
+        '15m': '15 minutes',
+        '1h': '1 hour',
+        '6h': '6 hours',
+        '24h': '24 hours',
+        '7d': '7 days',
+        '30d': '30 days'
+      };
       
-      const whereClauses = [];
-      
-      if (config.timeRange === 'last' && config.timeRangeLast) {
-        const intervals = {
-          '5m': '5 minutes',
-          '15m': '15 minutes',
-          '1h': '1 hour',
-          '6h': '6 hours',
-          '24h': '24 hours',
-          '7d': '7 days',
-          '30d': '30 days'
-        };
-        const timeClause = `${config.timestampField} >= dateadd('${intervals[config.timeRangeLast]}', -1, now())`;
-        whereClauses.push(timeClause);
-        console.log('⏰ Time range clause:', timeClause);
-      } else if (config.timeRange === 'custom' && config.timeRangeStart && config.timeRangeEnd) {
-        const timeClause = `${config.timestampField} BETWEEN timestamp('${config.timeRangeStart}:00') AND timestamp('${config.timeRangeEnd}:00')`;
-        whereClauses.push(timeClause);
-        console.log('⏰ Custom time range clause:', timeClause);
+      const interval = intervals[config.timeRangeLast];
+      if (interval) {
+        whereClauses.push(
+          `${config.timestampField} >= dateadd('${interval}', -1, now())` // ✅ Correct syntax
+        );
       }
-      
-      if (config.filters && config.filters.length > 0) {
-        config.filters.forEach(filter => {
-          if (filter.field && filter.operator && filter.value !== '') {
-            const isNumber = !isNaN(parseFloat(filter.value)) && isFinite(filter.value);
-            const value = isNumber ? filter.value : `'${filter.value.replace(/'/g, "''")}'`;
-            const filterClause = `${filter.field} ${filter.operator} ${value}`;
-            whereClauses.push(filterClause);
-            console.log('🔍 Filter clause:', filterClause);
-          }
-        });
-      }
-      
-      if (whereClauses.length > 0) {
-        query += ` WHERE ${whereClauses.join(' AND ')}`;
-      }
-      
-      query += ` ORDER BY ${config.timestampField} DESC LIMIT ${config.limit}`;
     }
     
-    console.log('✅ Final query:', query);
-    return query;
-  };
-
+    // ✅ FIX 2: Use cast() instead of timestamp()
+    else if (config.timeRange === 'custom' && config.timeRangeStart && config.timeRangeEnd) {
+      whereClauses.push(
+        `${config.timestampField} BETWEEN cast('${config.timeRangeStart}:00' as timestamp) AND cast('${config.timeRangeEnd}:00' as timestamp)` // ✅ Use cast()
+      );
+    }
+    
+    // Filters (unchanged)
+    if (config.filters && config.filters.length > 0) {
+      config.filters.forEach(filter => {
+        if (filter.field && filter.operator && filter.value !== '') {
+          const isNumber = !isNaN(parseFloat(filter.value)) && isFinite(filter.value);
+          const value = isNumber ? filter.value : `'${filter.value.replace(/'/g, "''")}'`;
+          whereClauses.push(`${filter.field} ${filter.operator} ${value}`);
+        }
+      });
+    }
+    
+    if (whereClauses.length > 0) {
+      query += ` WHERE ${whereClauses.join(' AND ')}`;
+    }
+    
+    query += ` ORDER BY ${config.timestampField} DESC LIMIT ${config.limit}`;
+  }
+  
+  return query;
+};
   const formatNumber = (value) => {
     if (value === null || value === undefined || isNaN(value)) return 'N/A';
     
