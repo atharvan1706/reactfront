@@ -513,17 +513,23 @@ const buildQueryWithFiltersAndTimeRange = () => {
         : `rgba(0, 0, 0, ${config.gridOpacity ?? 0.1})`
     } : false;
 
-    // ✅ Compact legend configuration
+    // ✅ DYNAMIC legend configuration based on user preference
+    const legendPosition = config.legendPosition || 'top'; // Default to top
+    const isVerticalLegend = legendPosition === 'left' || legendPosition === 'right';
+    const isHorizontalLegend = legendPosition === 'top' || legendPosition === 'bottom';
+    
     const legendConfig = config.showLegend ? {
       wrapperStyle: { 
         color: theme.text, 
         fontSize: `${fontSize}px`,
-        paddingTop: '5px',
-        paddingBottom: '3px'
+        paddingTop: legendPosition === 'top' ? '5px' : '0',
+        paddingBottom: legendPosition === 'bottom' ? '5px' : '0',
+        paddingLeft: legendPosition === 'left' ? '5px' : '0',
+        paddingRight: legendPosition === 'right' ? '5px' : '0'
       },
-      layout: 'horizontal',
-      verticalAlign: 'top',
-      align: 'center',
+      layout: isVerticalLegend ? 'vertical' : 'horizontal',
+      verticalAlign: isHorizontalLegend ? legendPosition : 'middle',
+      align: isVerticalLegend ? legendPosition : 'center',
       iconSize: isSmall ? 8 : 9,
       iconType: 'line',
       wrapperMargin: { top: 0, bottom: 0 }
@@ -637,16 +643,19 @@ const buildQueryWithFiltersAndTimeRange = () => {
         const pieDataKey = filteredYFields[0] || config.yAxis;
         const pieHasLegend = config.showLegend && data.length > 1;
         const pieRadius = isSmall ? 45 : isMedium ? 60 : 75;
+        const pieLegendPosition = config.legendPosition || 'top';
+        const isPieVerticalLegend = pieLegendPosition === 'left' || pieLegendPosition === 'right';
+        
         const pieLegendConfig = pieHasLegend ? {
           wrapperStyle: { 
             color: theme.text, 
             fontSize: `${fontSize}px`,
-            paddingTop: '5px',
-            paddingBottom: '5px'
+            paddingTop: pieLegendPosition === 'top' ? '5px' : '0',
+            paddingBottom: pieLegendPosition === 'bottom' ? '5px' : '0'
           },
-          layout: 'horizontal',
-          verticalAlign: 'top',
-          align: 'center',
+          layout: isPieVerticalLegend ? 'vertical' : 'horizontal',
+          verticalAlign: (pieLegendPosition === 'top' || pieLegendPosition === 'bottom') ? pieLegendPosition : 'middle',
+          align: isPieVerticalLegend ? pieLegendPosition : 'center',
           iconSize: 8
         } : null;
         
@@ -720,6 +729,8 @@ const buildQueryWithFiltersAndTimeRange = () => {
       case 'radar':
         // Radar with minimal margins
         const radarHasLegend = config.showLegend && filteredYFields.length > 1;
+        const radarLegendPosition = config.legendPosition || 'top';
+        const isRadarVerticalLegend = radarLegendPosition === 'left' || radarLegendPosition === 'right';
         
         const radarMargin = isSmall 
           ? { top: radarHasLegend ? 48 : 32, right: 25, bottom: 32, left: 25 }
@@ -731,12 +742,12 @@ const buildQueryWithFiltersAndTimeRange = () => {
           wrapperStyle: { 
             color: theme.text, 
             fontSize: `${fontSize}px`,
-            paddingTop: '5px',
-            paddingBottom: '5px'
+            paddingTop: radarLegendPosition === 'top' ? '5px' : '0',
+            paddingBottom: radarLegendPosition === 'bottom' ? '5px' : '0'
           },
-          layout: 'horizontal',
-          verticalAlign: 'top',
-          align: 'center',
+          layout: isRadarVerticalLegend ? 'vertical' : 'horizontal',
+          verticalAlign: (radarLegendPosition === 'top' || radarLegendPosition === 'bottom') ? radarLegendPosition : 'middle',
+          align: isRadarVerticalLegend ? radarLegendPosition : 'center',
           iconSize: 8,
           iconType: 'line'
         } : null;
