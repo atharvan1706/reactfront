@@ -1,4 +1,4 @@
-// QuestDBPanel.jsx - FIXED TICK COLORS
+// QuestDBPanel.jsx - FIXED RESPONSIVE MARGINS
 import React, { useState, useEffect, useRef } from 'react';
 import {
   LineChart, Line, BarChart, Bar, AreaChart, Area, PieChart, Pie, Cell,
@@ -373,19 +373,51 @@ const buildQueryWithFiltersAndTimeRange = () => {
       );
     }
 
-    const chartProps = {
-      data,
-      margin: isSmall 
-        ? { top: 50, right: 15, left: 5, bottom: 28 }
-        : isMedium
-        ? { top: 55, right: 18, left: 8, bottom: 30 }
-        : { top: 58, right: 22, left: 12, bottom: 32 }
-    };
-
     const yFields = (config.yAxes && config.yAxes.length > 0) ? config.yAxes : [config.yAxis].filter(Boolean);
     const filteredYFields = yFields.filter(field => field && field !== 'value');
-    const yDomain = getYAxisDomain();
     
+    // ✅ FIXED: Calculate dynamic margins based on content
+    const hasLegend = config.showLegend && filteredYFields.length > 1;
+    const hasRotatedXTicks = (config.xAxisTickRotation ?? 0) !== 0;
+    const hasYAxisLabel = config.yAxisShowLabel !== false && config.yAxisLabel;
+    const hasXAxisLabel = config.xAxisShowLabel !== false && config.xAxisLabel;
+    
+    // Dynamic bottom margin based on tick rotation and label
+    const bottomMargin = isSmall 
+      ? (hasRotatedXTicks ? 55 : 40) + (hasXAxisLabel ? 15 : 0)
+      : isMedium
+      ? (hasRotatedXTicks ? 65 : 45) + (hasXAxisLabel ? 18 : 0)
+      : (hasRotatedXTicks ? 75 : 50) + (hasXAxisLabel ? 20 : 0);
+    
+    // Dynamic left margin based on Y-axis content and number format length
+    const estimatedYAxisWidth = isSmall ? 35 : isMedium ? 45 : 55;
+    const leftMargin = isSmall
+      ? (hasYAxisLabel ? estimatedYAxisWidth + 15 : estimatedYAxisWidth)
+      : isMedium
+      ? (hasYAxisLabel ? estimatedYAxisWidth + 18 : estimatedYAxisWidth)
+      : (hasYAxisLabel ? estimatedYAxisWidth + 20 : estimatedYAxisWidth);
+    
+    // Dynamic top margin for legend (wrappers need space)
+    const topMargin = isSmall
+      ? (hasLegend ? 65 : 50)
+      : isMedium
+      ? (hasLegend ? 70 : 55)
+      : (hasLegend ? 75 : 60);
+    
+    // Right margin for overflow protection
+    const rightMargin = isSmall ? 25 : isMedium ? 30 : 35;
+
+    const chartProps = {
+      data,
+      margin: { 
+        top: topMargin, 
+        right: rightMargin, 
+        left: leftMargin, 
+        bottom: bottomMargin 
+      }
+    };
+    
+    const yDomain = getYAxisDomain();
     const yAxisScaleType = config.yAxisScale === 'log' ? 'log' : config.yAxisScale === 'linear' ? 'linear' : 'auto';
     console.log('📊 Using Y-axis scale:', yAxisScaleType, 'domain:', yDomain);
 
@@ -408,7 +440,8 @@ const buildQueryWithFiltersAndTimeRange = () => {
       tickCount: config.xAxisTickCount !== 'auto' ? parseInt(config.xAxisTickCount) : undefined,
       interval: config.xAxisTickInterval !== 'auto' ? parseInt(config.xAxisTickInterval) : undefined,
       stroke: theme.chartAxis,
-      tickLine: { stroke: theme.chartAxis }
+      tickLine: { stroke: theme.chartAxis },
+      height: hasRotatedXTicks ? (isSmall ? 50 : isMedium ? 60 : 70) : undefined
     };
 
     const yAxisConfig = {
@@ -428,7 +461,7 @@ const buildQueryWithFiltersAndTimeRange = () => {
       } : undefined,
       domain: yDomain,
       scale: yAxisScaleType,
-      width: config.yAxisWidth !== 'auto' ? parseInt(config.yAxisWidth) : undefined,
+      width: config.yAxisWidth !== 'auto' ? parseInt(config.yAxisWidth) : (isSmall ? 45 : isMedium ? 55 : 65),
       orientation: config.yAxisPosition || 'left',
       tickCount: config.yAxisTickCount !== 'auto' ? parseInt(config.yAxisTickCount) : undefined,
       stroke: theme.chartAxis,
@@ -441,6 +474,19 @@ const buildQueryWithFiltersAndTimeRange = () => {
         ? `rgba(148, 163, 184, ${config.gridOpacity ?? 0.1})` 
         : `rgba(0, 0, 0, ${config.gridOpacity ?? 0.1})`
     } : false;
+
+    // ✅ FIXED: Legend configuration with proper wrapping
+    const legendConfig = config.showLegend ? {
+      wrapperStyle: { 
+        color: theme.text, 
+        fontSize: `${fontSize}px`,
+        paddingTop: '8px'
+      },
+      layout: isSmall ? 'horizontal' : 'horizontal',
+      verticalAlign: 'top',
+      align: 'center',
+      iconSize: isSmall ? 8 : 10
+    } : null;
 
     switch (config.vizType) {
       case 'line':
@@ -460,7 +506,7 @@ const buildQueryWithFiltersAndTimeRange = () => {
                 }}
                 formatter={(value) => formatTickValue(value)}
               />
-              {config.showLegend && <Legend wrapperStyle={{ color: theme.text, fontSize: `${fontSize}px` }} />}
+              {legendConfig && <Legend {...legendConfig} />}
               {filteredYFields.map((yField, idx) => (
                 <Line 
                   key={yField}
@@ -495,7 +541,7 @@ const buildQueryWithFiltersAndTimeRange = () => {
                 }}
                 formatter={(value) => formatTickValue(value)}
               />
-              {config.showLegend && <Legend wrapperStyle={{ color: theme.text, fontSize: `${fontSize}px` }} />}
+              {legendConfig && <Legend {...legendConfig} />}
               {filteredYFields.map((yField, idx) => (
                 <Area 
                   key={yField}
@@ -531,7 +577,7 @@ const buildQueryWithFiltersAndTimeRange = () => {
                 }}
                 formatter={(value) => formatTickValue(value)}
               />
-              {config.showLegend && <Legend wrapperStyle={{ color: theme.text, fontSize: `${fontSize}px` }} />}
+              {legendConfig && <Legend {...legendConfig} />}
               {filteredYFields.map((yField, idx) => (
                 <Bar 
                   key={yField}
@@ -570,7 +616,7 @@ const buildQueryWithFiltersAndTimeRange = () => {
                 contentStyle={{ background: theme.card, border: `1px solid ${theme.border}`, borderRadius: '6px', color: theme.text, fontSize: `${fontSize}px` }}
                 formatter={(value) => formatTickValue(value)}
               />
-              {config.showLegend && !isSmall && <Legend wrapperStyle={{ color: theme.text, fontSize: `${fontSize}px` }} />}
+              {legendConfig && <Legend {...legendConfig} />}
             </PieChart>
           </ResponsiveContainer>
         );
@@ -586,7 +632,7 @@ const buildQueryWithFiltersAndTimeRange = () => {
                 contentStyle={{ background: theme.card, border: `1px solid ${theme.border}`, borderRadius: '6px', color: theme.text, fontSize: `${fontSize}px` }}
                 formatter={(value) => formatTickValue(value)}
               />
-              {config.showLegend && <Legend wrapperStyle={{ color: theme.text, fontSize: `${fontSize}px` }} />}
+              {legendConfig && <Legend {...legendConfig} />}
               {filteredYFields.map((yField, idx) => (
                 <Scatter 
                   key={yField}
@@ -602,10 +648,10 @@ const buildQueryWithFiltersAndTimeRange = () => {
 
       case 'radar':
         const radarMargin = isSmall 
-          ? { top: 45, right: 15, bottom: 35, left: 15 }
+          ? { top: 50, right: 25, bottom: 40, left: 25 }
           : isMedium
-          ? { top: 50, right: 18, bottom: 38, left: 18 }
-          : { top: 55, right: 22, bottom: 42, left: 22 };
+          ? { top: 55, right: 30, bottom: 45, left: 30 }
+          : { top: 60, right: 35, bottom: 50, left: 35 };
         
         return (
           <ResponsiveContainer width="100%" height="100%">
@@ -624,7 +670,7 @@ const buildQueryWithFiltersAndTimeRange = () => {
                   isAnimationActive={true}
                 />
               ))}
-              {config.showLegend && !isSmall && <Legend wrapperStyle={{ color: theme.text, fontSize: `${fontSize}px` }} />}
+              {legendConfig && <Legend {...legendConfig} />}
             </RadarChart>
           </ResponsiveContainer>
         );
