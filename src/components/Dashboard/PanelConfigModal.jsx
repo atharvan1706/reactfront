@@ -1,4 +1,4 @@
-// PanelConfigModal.jsx - ENHANCED WITH GRAFANA-LIKE AXIS CONFIGURATIONS
+// PanelConfigModal.jsx - REFINED MINIMAL PREMIUM DESIGN
 import React, { useState, useEffect } from 'react';
 import {
   LineChart, Line, BarChart, Bar, AreaChart, Area, PieChart, Pie, Cell,
@@ -62,7 +62,6 @@ const LABEL_ROTATIONS = [
 ];
 
 function PanelConfigModal({ panel, onSave, onClose, allTables, darkMode }) {
-  // ✅ ENHANCED: Added axis configuration fields
   const [config, setConfig] = useState(() => {
     if (panel) {
       return {
@@ -80,7 +79,6 @@ function PanelConfigModal({ panel, onSave, onClose, allTables, darkMode }) {
         filters: panel.filters || [],
         transformations: panel.transformations || [],
         
-        // ✅ NEW: Advanced Axis Configurations
         xAxisLabel: panel.xAxisLabel || '',
         yAxisLabel: panel.yAxisLabel || '',
         xAxisLabelRotation: panel.xAxisLabelRotation ?? 0,
@@ -92,30 +90,24 @@ function PanelConfigModal({ panel, onSave, onClose, allTables, darkMode }) {
         xAxisShowTicks: panel.xAxisShowTicks ?? true,
         yAxisShowTicks: panel.yAxisShowTicks ?? true,
         
-        // Number formatting
         yAxisNumberFormat: panel.yAxisNumberFormat || 'number',
         yAxisDecimals: panel.yAxisDecimals ?? 2,
         yAxisUnit: panel.yAxisUnit || '',
-        yAxisUnitPosition: panel.yAxisUnitPosition || 'suffix', // 'prefix' or 'suffix'
+        yAxisUnitPosition: panel.yAxisUnitPosition || 'suffix',
         yAxisCustomFormat: panel.yAxisCustomFormat || '',
         
-        // Comma separated values
         yAxisUseCommas: panel.yAxisUseCommas ?? true,
         
-        // Axis width/position
         yAxisWidth: panel.yAxisWidth || 'auto',
-        yAxisPosition: panel.yAxisPosition || 'left', // 'left' or 'right'
+        yAxisPosition: panel.yAxisPosition || 'left',
         
-        // Grid customization
         gridStrokeDashArray: panel.gridStrokeDashArray || '3 3',
         gridOpacity: panel.gridOpacity ?? 0.1,
         
-        // Tick customization
         xAxisTickCount: panel.xAxisTickCount || 'auto',
         yAxisTickCount: panel.yAxisTickCount || 'auto',
         xAxisTickInterval: panel.xAxisTickInterval || 'auto',
         
-        // Label styling
         xAxisLabelFontSize: panel.xAxisLabelFontSize || 12,
         yAxisLabelFontSize: panel.yAxisLabelFontSize || 12,
         xAxisTickFontSize: panel.xAxisTickFontSize || 11,
@@ -137,8 +129,8 @@ function PanelConfigModal({ panel, onSave, onClose, allTables, darkMode }) {
         timeRangeStart: '',
         timeRangeEnd: '',
         filters: [],
+        dataSource: 'table', // ✅ DEFAULT TO TABLE
         
-        // ✅ NEW: Default axis configurations
         xAxisLabel: '',
         yAxisLabel: '',
         xAxisLabelRotation: 0,
@@ -176,27 +168,35 @@ function PanelConfigModal({ panel, onSave, onClose, allTables, darkMode }) {
   const [availableFields, setAvailableFields] = useState([]);
   const [activeTab, setActiveTab] = useState('data');
 
-  // Dark mode theme
+  // Refined theme with subtle premium touches
   const theme = darkMode ? {
-    bg: '#1e293b',
-    card: '#0f172a',
-    hover: '#334155',
+    bg: '#0f172a',
+    card: '#1e293b',
+    cardHover: '#334155',
     text: '#f1f5f9',
     textSecondary: '#cbd5e1',
     textMuted: '#94a3b8',
     border: '#334155',
     borderLight: '#475569',
-    accent: '#667eea'
+    accent: '#6366f1',
+    accentHover: '#4f46e5',
+    shadow: '0 1px 3px rgba(0,0,0,0.3)',
+    shadowMd: '0 4px 12px rgba(0,0,0,0.4)',
+    shadowLg: '0 10px 40px rgba(0,0,0,0.5)'
   } : {
-    bg: 'white',
-    card: '#f9fafb',
-    hover: '#f3f4f6',
-    text: '#111827',
-    textSecondary: '#374151',
-    textMuted: '#6b7280',
-    border: '#e5e7eb',
-    borderLight: '#d1d5db',
-    accent: '#667eea'
+    bg: '#ffffff',
+    card: '#f8fafc',
+    cardHover: '#f1f5f9',
+    text: '#0f172a',
+    textSecondary: '#475569',
+    textMuted: '#64748b',
+    border: '#e2e8f0',
+    borderLight: '#cbd5e1',
+    accent: '#6366f1',
+    accentHover: '#4f46e5',
+    shadow: '0 1px 2px rgba(0,0,0,0.05)',
+    shadowMd: '0 4px 6px rgba(0,0,0,0.07)',
+    shadowLg: '0 20px 25px rgba(0,0,0,0.1)'
   };
 
   useEffect(() => {
@@ -222,7 +222,6 @@ function PanelConfigModal({ panel, onSave, onClose, allTables, darkMode }) {
     }
   };
 
- // ✅ CORRECT VERSION
 const buildQueryWithFiltersAndTimeRange = () => {
   let query = config.query;
   
@@ -231,10 +230,9 @@ const buildQueryWithFiltersAndTimeRange = () => {
     
     const whereClauses = [];
     
-    // ✅ FIX 1: Use dateadd() with proper interval format
     if (config.timeRange === 'last' && config.timeRangeLast) {
       const intervals = {
-        '5m': '5 minutes',      // ✅ Use full word format
+        '5m': '5 minutes',
         '15m': '15 minutes',
         '1h': '1 hour',
         '6h': '6 hours',
@@ -246,19 +244,17 @@ const buildQueryWithFiltersAndTimeRange = () => {
       const interval = intervals[config.timeRangeLast];
       if (interval) {
         whereClauses.push(
-          `${config.timestampField} >= dateadd('${interval}', -1, now())` // ✅ Correct syntax
+          `${config.timestampField} >= dateadd('${interval}', -1, now())`
         );
       }
     }
     
-    // ✅ FIX 2: Use cast() instead of timestamp()
     else if (config.timeRange === 'custom' && config.timeRangeStart && config.timeRangeEnd) {
       whereClauses.push(
-        `${config.timestampField} BETWEEN cast('${config.timeRangeStart}:00' as timestamp) AND cast('${config.timeRangeEnd}:00' as timestamp)` // ✅ Use cast()
+        `${config.timestampField} BETWEEN cast('${config.timeRangeStart}:00' as timestamp) AND cast('${config.timeRangeEnd}:00' as timestamp)`
       );
     }
     
-    // Filters (unchanged)
     if (config.filters && config.filters.length > 0) {
       config.filters.forEach(filter => {
         if (filter.field && filter.operator && filter.value !== '') {
@@ -279,8 +275,6 @@ const buildQueryWithFiltersAndTimeRange = () => {
   return query;
 };
 
-
-  // ✅ NEW: Format number based on configuration
   const formatNumber = (value) => {
     if (value === null || value === undefined || isNaN(value)) return 'N/A';
     
@@ -386,7 +380,6 @@ const buildQueryWithFiltersAndTimeRange = () => {
     }
   };
 
-  // ✅ NEW: Format tick value with unit
   const formatTickValue = (value) => {
     const formatted = formatNumber(value);
     
@@ -479,7 +472,7 @@ const buildQueryWithFiltersAndTimeRange = () => {
     if (previewLoading) {
       return (
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '200px' }}>
-          <RefreshCw size={24} color={theme.accent} style={{ animation: 'spin 1s linear infinite' }} />
+          <RefreshCw size={20} color={theme.accent} style={{ animation: 'spin 1s linear infinite' }} />
         </div>
       );
     }
@@ -493,10 +486,11 @@ const buildQueryWithFiltersAndTimeRange = () => {
           height: '200px',
           color: '#ef4444',
           textAlign: 'center',
-          padding: '20px'
+          padding: '20px',
+          fontSize: '13px'
         }}>
           <div>
-            <AlertCircle size={32} style={{ marginBottom: '8px' }} />
+            <AlertCircle size={24} style={{ marginBottom: '8px' }} />
             <div>{previewError}</div>
           </div>
         </div>
@@ -510,7 +504,8 @@ const buildQueryWithFiltersAndTimeRange = () => {
           alignItems: 'center', 
           justifyContent: 'center', 
           height: '200px',
-          color: theme.textMuted
+          color: theme.textMuted,
+          fontSize: '13px'
         }}>
           Click "Preview" to test your configuration
         </div>
@@ -524,7 +519,6 @@ const buildQueryWithFiltersAndTimeRange = () => {
     const yFields = (config.yAxes && config.yAxes.length > 0) ? config.yAxes : [config.yAxis].filter(Boolean);
     const yDomain = getYAxisDomain();
 
-    // ✅ ENHANCED: Apply axis configurations
     const xAxisConfig = {
       dataKey: "_time",
       tick: config.xAxisShowTicks ? { 
@@ -631,43 +625,112 @@ const buildQueryWithFiltersAndTimeRange = () => {
             ))}
           </AreaChart>
         )}
-        {/* Other chart types remain the same */}
       </ResponsiveContainer>
     );
   };
 
-  const renderDataTab = () => (
-    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px' }}>
-      {/* Left column - same as before */}
-      <div>
-        {/* Panel Title */}
-        <div style={{ marginBottom: '20px' }}>
-          <label style={{ display: 'block', marginBottom: '8px', fontSize: '13px', color: theme.textSecondary, fontWeight: '600' }}>
-            Panel Title
-          </label>
-          <input
-            type="text"
-            value={config.title}
-            onChange={(e) => setConfig({ ...config, title: e.target.value })}
-            placeholder="My Panel Title"
-            style={{
-              width: '100%',
-              padding: '10px 12px',
-              background: theme.bg,
-              border: `2px solid ${theme.border}`,
-              borderRadius: '8px',
-              color: theme.text,
-              fontSize: '14px'
-            }}
-          />
-        </div>
+  // Input component for consistency
+  const Input = ({ label, value, onChange, placeholder, type = "text", ...props }) => (
+    <div style={{ marginBottom: '12px' }}>
+      {label && (
+        <label style={{ 
+          display: 'block', 
+          marginBottom: '6px', 
+          fontSize: '11px', 
+          fontWeight: '500',
+          color: theme.textMuted,
+          letterSpacing: '0.02em'
+        }}>
+          {label}
+        </label>
+      )}
+      <input
+        type={type}
+        value={value}
+        onChange={onChange}
+        placeholder={placeholder}
+        style={{
+          width: '100%',
+          padding: '8px 10px',
+          background: theme.bg,
+          border: `1px solid ${theme.border}`,
+          borderRadius: '6px',
+          color: theme.text,
+          fontSize: '13px',
+          transition: 'all 0.15s ease',
+          outline: 'none',
+          ...props.style
+        }}
+        onFocus={(e) => e.target.style.borderColor = theme.accent}
+        onBlur={(e) => e.target.style.borderColor = theme.border}
+        {...props}
+      />
+    </div>
+  );
 
-        {/* Visualization Type */}
-        <div style={{ marginBottom: '20px' }}>
-          <label style={{ display: 'block', marginBottom: '12px', fontSize: '13px', color: theme.textSecondary, fontWeight: '600' }}>
+  // Select component for consistency
+  const Select = ({ label, value, onChange, children, ...props }) => (
+    <div style={{ marginBottom: '12px' }}>
+      {label && (
+        <label style={{ 
+          display: 'block', 
+          marginBottom: '6px', 
+          fontSize: '11px', 
+          fontWeight: '500',
+          color: theme.textMuted,
+          letterSpacing: '0.02em'
+        }}>
+          {label}
+        </label>
+      )}
+      <select
+        value={value}
+        onChange={onChange}
+        style={{
+          width: '100%',
+          padding: '8px 10px',
+          background: theme.bg,
+          border: `1px solid ${theme.border}`,
+          borderRadius: '6px',
+          color: theme.text,
+          fontSize: '13px',
+          transition: 'all 0.15s ease',
+          outline: 'none',
+          cursor: 'pointer',
+          ...props.style
+        }}
+        onFocus={(e) => e.target.style.borderColor = theme.accent}
+        onBlur={(e) => e.target.style.borderColor = theme.border}
+        {...props}
+      >
+        {children}
+      </select>
+    </div>
+  );
+
+  const renderDataTab = () => (
+    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
+      <div>
+        <Input
+          label="Panel Title"
+          value={config.title}
+          onChange={(e) => setConfig({ ...config, title: e.target.value })}
+          placeholder="My Dashboard Panel"
+        />
+
+        {/* Visualization Type - Compact Grid */}
+        <div style={{ marginBottom: '16px' }}>
+          <label style={{ 
+            display: 'block', 
+            marginBottom: '8px', 
+            fontSize: '11px', 
+            fontWeight: '500',
+            color: theme.textMuted,
+            letterSpacing: '0.02em'
+          }}>
             Visualization Type
           </label>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px' }}>
             {VIZ_TYPES.map(type => {
               const Icon = type.icon;
               const isSelected = config.vizType === type.id;
@@ -676,69 +739,74 @@ const buildQueryWithFiltersAndTimeRange = () => {
                   key={type.id}
                   onClick={() => setConfig({ ...config, vizType: type.id })}
                   style={{
-                    padding: '12px',
+                    padding: '8px 10px',
                     background: isSelected ? theme.accent : theme.card,
-                    border: '2px solid',
-                    borderColor: isSelected ? theme.accent : theme.border,
-                    borderRadius: '8px',
+                    border: `1px solid ${isSelected ? theme.accent : theme.border}`,
+                    borderRadius: '6px',
                     color: isSelected ? 'white' : theme.text,
                     cursor: 'pointer',
                     display: 'flex',
                     alignItems: 'center',
-                    gap: '10px',
-                    fontSize: '13px',
-                    transition: 'all 0.2s',
-                    textAlign: 'left'
+                    gap: '8px',
+                    fontSize: '12px',
+                    transition: 'all 0.15s ease',
+                    fontWeight: '500'
                   }}
+                  onMouseEnter={(e) => !isSelected && (e.currentTarget.style.background = theme.cardHover)}
+                  onMouseLeave={(e) => !isSelected && (e.currentTarget.style.background = theme.card)}
                 >
-                  {Icon && <Icon size={18} />}
-                  <div>
-                    <div style={{ fontWeight: '600' }}>{type.name}</div>
-                    <div style={{ fontSize: '11px', opacity: 0.7 }}>{type.description}</div>
-                  </div>
+                  {Icon && <Icon size={14} />}
+                  {type.name}
                 </button>
               );
             })}
           </div>
         </div>
 
-        {/* Data Source */}
-        <div style={{ marginBottom: '20px' }}>
-          <label style={{ display: 'block', marginBottom: '8px', fontSize: '13px', color: theme.textSecondary, fontWeight: '600' }}>
+        {/* Data Source - Inline Toggle */}
+        <div style={{ marginBottom: '16px' }}>
+          <label style={{ 
+            display: 'block', 
+            marginBottom: '8px', 
+            fontSize: '11px', 
+            fontWeight: '500',
+            color: theme.textMuted,
+            letterSpacing: '0.02em'
+          }}>
             Data Source
           </label>
-          <div style={{ display: 'flex', gap: '8px', marginBottom: '12px' }}>
+          <div style={{ display: 'inline-flex', gap: '4px', marginBottom: '10px', padding: '3px', background: theme.card, borderRadius: '6px' }}>
             <button
               onClick={() => setConfig({ ...config, dataSource: 'table' })}
               style={{
-                flex: 1,
-                padding: '10px',
-                background: config.dataSource === 'table' ? theme.accent : theme.card,
-                border: '2px solid',
-                borderColor: config.dataSource === 'table' ? theme.accent : theme.border,
-                borderRadius: '8px',
-                color: config.dataSource === 'table' ? 'white' : theme.text,
+                padding: '6px 14px',
+                background: config.dataSource === 'table' ? theme.bg : 'transparent',
+                border: 'none',
+                borderRadius: '4px',
+                color: config.dataSource === 'table' ? theme.text : theme.textMuted,
                 cursor: 'pointer',
-                fontSize: '13px',
-                fontWeight: '600'
+                fontSize: '12px',
+                fontWeight: '500',
+                transition: 'all 0.15s ease',
+                boxShadow: config.dataSource === 'table' ? theme.shadow : 'none'
               }}
             >
-              <Database size={16} style={{ display: 'inline', marginRight: '6px' }} />
-              From Table
+              <Database size={12} style={{ display: 'inline', marginRight: '4px', verticalAlign: 'middle' }} />
+              Table
             </button>
             <button
               onClick={() => setConfig({ ...config, dataSource: 'custom' })}
               style={{
-                flex: 1,
-                padding: '10px',
-                background: config.dataSource === 'custom' ? theme.accent : theme.card,
-                border: '2px solid',
-                borderColor: config.dataSource === 'custom' ? theme.accent : theme.border,
-                borderRadius: '8px',
-                color: config.dataSource === 'custom' ? 'white' : theme.text,
+                padding: '6px 14px',
+                background: config.dataSource === 'custom' ? theme.bg : 'transparent',
+                border: 'none',
+                borderRadius: '4px',
+                color: config.dataSource === 'custom' ? theme.text : theme.textMuted,
                 cursor: 'pointer',
-                fontSize: '13px',
-                fontWeight: '600'
+                fontSize: '12px',
+                fontWeight: '500',
+                transition: 'all 0.15s ease',
+                boxShadow: config.dataSource === 'custom' ? theme.shadow : 'none'
               }}
             >
               Custom SQL
@@ -746,18 +814,9 @@ const buildQueryWithFiltersAndTimeRange = () => {
           </div>
 
           {config.dataSource === 'table' ? (
-            <select
+            <Select
               value={config.table}
               onChange={(e) => setConfig({ ...config, table: e.target.value })}
-              style={{
-                width: '100%',
-                padding: '10px 12px',
-                background: theme.bg,
-                border: `2px solid ${theme.border}`,
-                borderRadius: '8px',
-                color: theme.text,
-                fontSize: '14px'
-              }}
             >
               <option value="">Select a table...</option>
               {allTables && allTables.length > 0 ? (
@@ -767,238 +826,210 @@ const buildQueryWithFiltersAndTimeRange = () => {
               ) : (
                 <option value="" disabled>No tables available</option>
               )}
-            </select>
+            </Select>
           ) : (
             <textarea
               value={config.query}
               onChange={(e) => setConfig({ ...config, query: e.target.value })}
-              rows={4}
+              rows={3}
               placeholder="SELECT * FROM your_table WHERE condition ORDER BY timestamp DESC LIMIT 100"
               style={{
                 width: '100%',
-                padding: '10px 12px',
+                padding: '8px 10px',
                 background: theme.bg,
-                border: `2px solid ${theme.border}`,
-                borderRadius: '8px',
+                border: `1px solid ${theme.border}`,
+                borderRadius: '6px',
                 color: theme.text,
-                fontSize: '13px',
-                fontFamily: 'monospace',
-                resize: 'vertical'
+                fontSize: '12px',
+                fontFamily: 'ui-monospace, monospace',
+                resize: 'vertical',
+                outline: 'none',
+                transition: 'all 0.15s ease'
               }}
+              onFocus={(e) => e.target.style.borderColor = theme.accent}
+              onBlur={(e) => e.target.style.borderColor = theme.border}
             />
           )}
         </div>
 
-        {/* Field Configuration */}
-        <div style={{ marginBottom: '20px' }}>
-          <label style={{ display: 'block', marginBottom: '12px', fontSize: '13px', color: theme.textSecondary, fontWeight: '600' }}>
-            Field Configuration
-          </label>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '12px' }}>
-            <div>
-              <label style={{ display: 'block', marginBottom: '6px', fontSize: '12px', color: theme.textMuted }}>
-                Timestamp Field
-              </label>
-              {availableFields.length > 0 ? (
-                <select
-                  value={config.timestampField}
-                  onChange={(e) => setConfig({ ...config, timestampField: e.target.value })}
-                  style={{
-                    width: '100%',
-                    padding: '8px',
-                    background: theme.bg,
-                    border: `2px solid ${theme.border}`,
-                    borderRadius: '6px',
-                    color: theme.text,
-                    fontSize: '13px'
-                  }}
-                >
-                  {availableFields.map(field => (
-                    <option key={field} value={field}>{field}</option>
-                  ))}
-                </select>
-              ) : (
-                <input
-                  type="text"
-                  value={config.timestampField}
-                  onChange={(e) => setConfig({ ...config, timestampField: e.target.value })}
-                  placeholder="timestamp"
-                  style={{
-                    width: '100%',
-                    padding: '8px',
-                    background: theme.bg,
-                    border: `2px solid ${theme.border}`,
-                    borderRadius: '6px',
-                    color: theme.text,
-                    fontSize: '13px'
-                  }}
-                />
-              )}
-            </div>
-            <div>
-              <label style={{ display: 'block', marginBottom: '6px', fontSize: '12px', color: theme.textMuted }}>
-                Value Fields (Y-Axis) - Select Multiple
-              </label>
-              {availableFields.length > 0 ? (
-                <div style={{
-                  border: `2px solid ${theme.border}`,
-                  borderRadius: '6px',
-                  background: theme.bg,
-                  maxHeight: '150px',
-                  overflow: 'auto',
-                  padding: '8px'
-                }}>
-                  {availableFields.filter(f => f !== config.timestampField).map((field) => (
-                    <label 
-                      key={field}
-                      style={{ 
-                        display: 'flex', 
-                        alignItems: 'center', 
-                        gap: '8px', 
-                        padding: '6px',
-                        cursor: 'pointer',
-                        borderRadius: '4px',
-                        fontSize: '13px',
-                        color: theme.text,
-                        transition: 'background 0.2s'
+        {/* Field Configuration - Compact */}
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '16px' }}>
+          <Select
+            label="Timestamp Field"
+            value={config.timestampField}
+            onChange={(e) => setConfig({ ...config, timestampField: e.target.value })}
+          >
+            {availableFields.length > 0 ? (
+              availableFields.map(field => (
+                <option key={field} value={field}>{field}</option>
+              ))
+            ) : (
+              <option value={config.timestampField || 'timestamp'}>{config.timestampField || 'timestamp'}</option>
+            )}
+          </Select>
+
+          <div>
+            <label style={{ 
+              display: 'block', 
+              marginBottom: '6px', 
+              fontSize: '11px', 
+              fontWeight: '500',
+              color: theme.textMuted,
+              letterSpacing: '0.02em'
+            }}>
+              Value Fields (Y-Axis)
+            </label>
+            {availableFields.length > 0 ? (
+              <div style={{
+                border: `1px solid ${theme.border}`,
+                borderRadius: '6px',
+                background: theme.bg,
+                maxHeight: '120px',
+                overflow: 'auto',
+                padding: '4px'
+              }}>
+                {availableFields.filter(f => f !== config.timestampField).map((field) => (
+                  <label 
+                    key={field}
+                    style={{ 
+                      display: 'flex', 
+                      alignItems: 'center', 
+                      gap: '6px', 
+                      padding: '4px 6px',
+                      cursor: 'pointer',
+                      borderRadius: '4px',
+                      fontSize: '12px',
+                      color: theme.text,
+                      transition: 'background 0.15s ease'
+                    }}
+                    onMouseEnter={(e) => e.currentTarget.style.background = theme.cardHover}
+                    onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
+                  >
+                    <input
+                      type="checkbox"
+                      checked={config.yAxes?.includes(field)}
+                      onChange={(e) => {
+                        const newYAxes = e.target.checked
+                          ? [...(config.yAxes || []), field]
+                          : (config.yAxes || []).filter(y => y !== field);
+                        setConfig({ ...config, yAxes: newYAxes, yAxis: newYAxes[0] || '' });
                       }}
-                      onMouseEnter={(e) => e.currentTarget.style.background = theme.hover}
-                      onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
-                    >
-                      <input
-                        type="checkbox"
-                        checked={config.yAxes?.includes(field)}
-                        onChange={(e) => {
-                          const newYAxes = e.target.checked
-                            ? [...(config.yAxes || []), field]
-                            : (config.yAxes || []).filter(y => y !== field);
-                          setConfig({ ...config, yAxes: newYAxes, yAxis: newYAxes[0] || '' });
-                        }}
-                        style={{ width: '16px', height: '16px' }}
-                      />
-                      <div style={{
-                        width: '12px',
-                        height: '12px',
-                        borderRadius: '3px',
-                        background: getColor((config.yAxes || []).indexOf(field)),
-                        marginLeft: 'auto'
-                      }} />
-                      {field}
-                    </label>
-                  ))}
-                </div>
-              ) : (
-                <input
-                  type="text"
-                  value={(config.yAxes || []).join(', ')}
-                  onChange={(e) => setConfig({ 
-                    ...config, 
-                    yAxes: e.target.value.split(',').map(s => s.trim()).filter(Boolean),
-                    yAxis: e.target.value.split(',')[0]?.trim() || ''
-                  })}
-                  placeholder="value1, value2, value3"
-                  style={{
-                    width: '100%',
-                    padding: '8px',
-                    background: theme.bg,
-                    border: `2px solid ${theme.border}`,
-                    borderRadius: '6px',
-                    color: theme.text,
-                    fontSize: '13px'
-                  }}
-                />
-              )}
-            </div>
+                      style={{ width: '14px', height: '14px', cursor: 'pointer' }}
+                    />
+                    <div style={{
+                      width: '10px',
+                      height: '10px',
+                      borderRadius: '2px',
+                      background: getColor((config.yAxes || []).indexOf(field)),
+                      marginLeft: 'auto'
+                    }} />
+                    {field}
+                  </label>
+                ))}
+              </div>
+            ) : (
+              <Input
+                value={(config.yAxes || []).join(', ')}
+                onChange={(e) => setConfig({ 
+                  ...config, 
+                  yAxes: e.target.value.split(',').map(s => s.trim()).filter(Boolean),
+                  yAxis: e.target.value.split(',')[0]?.trim() || ''
+                })}
+                placeholder="value1, value2"
+              />
+            )}
           </div>
         </div>
 
-        {/* Timezone Selector */}
-        <div style={{ marginBottom: '20px' }}>
-          <label style={{ display: 'block', marginBottom: '8px', fontSize: '13px', color: theme.textSecondary, fontWeight: '600' }}>
-            <Globe size={14} style={{ display: 'inline', marginRight: '6px', verticalAlign: 'middle' }} />
-            Timezone Display
-          </label>
-          <select
-            value={config.timezone || 'UTC'}
-            onChange={(e) => setConfig({ ...config, timezone: e.target.value })}
-            style={{
-              width: '100%',
-              padding: '10px 12px',
-              background: theme.bg,
-              border: `2px solid ${theme.border}`,
-              borderRadius: '8px',
-              color: theme.text,
-              fontSize: '14px'
-            }}
-          >
-            {TIMEZONES.map(tz => (
-              <option key={tz.value} value={tz.value}>{tz.label}</option>
-            ))}
-          </select>
-        </div>
+        <Select
+          label={<><Globe size={11} style={{ display: 'inline', marginRight: '4px', verticalAlign: 'middle' }} />Timezone</>}
+          value={config.timezone || 'UTC'}
+          onChange={(e) => setConfig({ ...config, timezone: e.target.value })}
+        >
+          {TIMEZONES.map(tz => (
+            <option key={tz.value} value={tz.value}>{tz.label}</option>
+          ))}
+        </Select>
       </div>
 
-      {/* Right Column - Preview */}
+      {/* Right Column - Preview & Filters */}
       <div>
-        <div style={{ marginBottom: '20px' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
-            <label style={{ fontSize: '13px', color: theme.textSecondary, fontWeight: '600' }}>
+        <div style={{ marginBottom: '16px' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+            <label style={{ 
+              fontSize: '11px', 
+              fontWeight: '500',
+              color: theme.textMuted,
+              letterSpacing: '0.02em'
+            }}>
               Preview
             </label>
             <button
               onClick={handlePreview}
               disabled={previewLoading}
               style={{
-                padding: '6px 12px',
+                padding: '5px 12px',
                 background: theme.accent,
                 border: 'none',
-                borderRadius: '6px',
+                borderRadius: '5px',
                 color: 'white',
                 cursor: previewLoading ? 'not-allowed' : 'pointer',
-                fontSize: '12px',
-                fontWeight: '600',
+                fontSize: '11px',
+                fontWeight: '500',
                 display: 'flex',
                 alignItems: 'center',
-                gap: '6px'
+                gap: '5px',
+                transition: 'all 0.15s ease',
+                opacity: previewLoading ? 0.6 : 1
               }}
+              onMouseEnter={(e) => !previewLoading && (e.currentTarget.style.background = theme.accentHover)}
+              onMouseLeave={(e) => !previewLoading && (e.currentTarget.style.background = theme.accent)}
             >
-              <Eye size={14} />
-              {previewLoading ? 'Loading...' : 'Preview Data'}
+              <Eye size={12} />
+              {previewLoading ? 'Loading...' : 'Preview'}
             </button>
           </div>
           <div style={{
             background: theme.card,
-            border: `2px solid ${theme.border}`,
+            border: `1px solid ${theme.border}`,
             borderRadius: '8px',
-            padding: '16px',
+            padding: '12px',
             minHeight: '200px'
           }}>
             {renderPreviewChart()}
           </div>
         </div>
 
-        {/* Time Range */}
-        <div style={{ marginBottom: '20px' }}>
-          <label style={{ display: 'block', marginBottom: '12px', fontSize: '13px', color: theme.textSecondary, fontWeight: '600' }}>
+        {/* Time Range - Compact */}
+        <div style={{ marginBottom: '16px' }}>
+          <label style={{ 
+            display: 'block', 
+            marginBottom: '8px', 
+            fontSize: '11px', 
+            fontWeight: '500',
+            color: theme.textMuted,
+            letterSpacing: '0.02em'
+          }}>
             Time Range
           </label>
-          <div style={{ display: 'flex', gap: '8px', marginBottom: '12px' }}>
+          <div style={{ display: 'inline-flex', gap: '4px', marginBottom: '10px', padding: '3px', background: theme.card, borderRadius: '6px', width: '100%' }}>
             {['all', 'last', 'custom'].map(range => (
               <button
                 key={range}
                 onClick={() => setConfig({ ...config, timeRange: range })}
                 style={{
                   flex: 1,
-                  padding: '8px',
-                  background: config.timeRange === range ? theme.accent : theme.card,
-                  border: '2px solid',
-                  borderColor: config.timeRange === range ? theme.accent : theme.border,
-                  borderRadius: '6px',
-                  color: config.timeRange === range ? 'white' : theme.text,
+                  padding: '5px',
+                  background: config.timeRange === range ? theme.bg : 'transparent',
+                  border: 'none',
+                  borderRadius: '4px',
+                  color: config.timeRange === range ? theme.text : theme.textMuted,
                   cursor: 'pointer',
-                  fontSize: '12px',
-                  fontWeight: '600',
-                  textTransform: 'capitalize'
+                  fontSize: '11px',
+                  fontWeight: '500',
+                  textTransform: 'capitalize',
+                  transition: 'all 0.15s ease',
+                  boxShadow: config.timeRange === range ? theme.shadow : 'none'
                 }}
               >
                 {range}
@@ -1007,18 +1038,9 @@ const buildQueryWithFiltersAndTimeRange = () => {
           </div>
           
           {config.timeRange === 'last' && (
-            <select
+            <Select
               value={config.timeRangeLast}
               onChange={(e) => setConfig({ ...config, timeRangeLast: e.target.value })}
-              style={{
-                width: '100%',
-                padding: '8px',
-                background: theme.bg,
-                border: `2px solid ${theme.border}`,
-                borderRadius: '6px',
-                color: theme.text,
-                fontSize: '13px'
-              }}
             >
               <option value="5m">Last 5 minutes</option>
               <option value="15m">Last 15 minutes</option>
@@ -1027,88 +1049,70 @@ const buildQueryWithFiltersAndTimeRange = () => {
               <option value="24h">Last 24 hours</option>
               <option value="7d">Last 7 days</option>
               <option value="30d">Last 30 days</option>
-            </select>
+            </Select>
           )}
           
           {config.timeRange === 'custom' && (
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
-              <div>
-                <label style={{ display: 'block', marginBottom: '4px', fontSize: '11px', color: theme.textMuted }}>
-                  Start
-                </label>
-                <input
-                  type="datetime-local"
-                  value={config.timeRangeStart}
-                  onChange={(e) => setConfig({ ...config, timeRangeStart: e.target.value })}
-                  style={{
-                    width: '100%',
-                    padding: '8px',
-                    background: theme.bg,
-                    border: `2px solid ${theme.border}`,
-                    borderRadius: '6px',
-                    color: theme.text,
-                    fontSize: '12px'
-                  }}
-                />
-              </div>
-              <div>
-                <label style={{ display: 'block', marginBottom: '4px', fontSize: '11px', color: theme.textMuted }}>
-                  End
-                </label>
-                <input
-                  type="datetime-local"
-                  value={config.timeRangeEnd}
-                  onChange={(e) => setConfig({ ...config, timeRangeEnd: e.target.value })}
-                  style={{
-                    width: '100%',
-                    padding: '8px',
-                    background: theme.bg,
-                    border: `2px solid ${theme.border}`,
-                    borderRadius: '6px',
-                    color: theme.text,
-                    fontSize: '12px'
-                  }}
-                />
-              </div>
+              <Input
+                label="Start"
+                type="datetime-local"
+                value={config.timeRangeStart}
+                onChange={(e) => setConfig({ ...config, timeRangeStart: e.target.value })}
+              />
+              <Input
+                label="End"
+                type="datetime-local"
+                value={config.timeRangeEnd}
+                onChange={(e) => setConfig({ ...config, timeRangeEnd: e.target.value })}
+              />
             </div>
           )}
         </div>
 
         {/* Data Filters */}
         <div>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
-            <label style={{ fontSize: '13px', color: theme.textSecondary, fontWeight: '600' }}>
-              Data Filters
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+            <label style={{ 
+              fontSize: '11px', 
+              fontWeight: '500',
+              color: theme.textMuted,
+              letterSpacing: '0.02em'
+            }}>
+              Filters
             </label>
             <button
               onClick={addFilter}
               style={{
-                padding: '6px 12px',
+                padding: '4px 10px',
                 background: theme.card,
-                border: `2px solid ${theme.border}`,
-                borderRadius: '6px',
+                border: `1px solid ${theme.border}`,
+                borderRadius: '5px',
                 color: theme.text,
                 cursor: 'pointer',
-                fontSize: '12px',
-                fontWeight: '600',
+                fontSize: '11px',
+                fontWeight: '500',
                 display: 'flex',
                 alignItems: 'center',
-                gap: '6px'
+                gap: '4px',
+                transition: 'all 0.15s ease'
               }}
+              onMouseEnter={(e) => e.currentTarget.style.background = theme.cardHover}
+              onMouseLeave={(e) => e.currentTarget.style.background = theme.card}
             >
-              <Plus size={14} />
-              Add Filter
+              <Plus size={12} />
+              Add
             </button>
           </div>
           
           {config.filters && config.filters.length > 0 ? (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
               {config.filters.map((filter, idx) => (
                 <div key={idx} style={{ 
                   display: 'grid', 
-                  gridTemplateColumns: '1fr 0.8fr 1fr auto', 
-                  gap: '8px',
-                  padding: '8px',
+                  gridTemplateColumns: '1fr 0.7fr 1fr auto', 
+                  gap: '6px',
+                  padding: '6px',
                   background: theme.card,
                   border: `1px solid ${theme.border}`,
                   borderRadius: '6px'
@@ -1117,15 +1121,16 @@ const buildQueryWithFiltersAndTimeRange = () => {
                     value={filter.field}
                     onChange={(e) => updateFilter(idx, 'field', e.target.value)}
                     style={{
-                      padding: '6px',
+                      padding: '5px',
                       background: theme.bg,
                       border: `1px solid ${theme.border}`,
                       borderRadius: '4px',
                       color: theme.text,
-                      fontSize: '12px'
+                      fontSize: '11px',
+                      outline: 'none'
                     }}
                   >
-                    <option value="">Select field...</option>
+                    <option value="">Field...</option>
                     {availableFields.map(field => (
                       <option key={field} value={field}>{field}</option>
                     ))}
@@ -1134,12 +1139,13 @@ const buildQueryWithFiltersAndTimeRange = () => {
                     value={filter.operator}
                     onChange={(e) => updateFilter(idx, 'operator', e.target.value)}
                     style={{
-                      padding: '6px',
+                      padding: '5px',
                       background: theme.bg,
                       border: `1px solid ${theme.border}`,
                       borderRadius: '4px',
                       color: theme.text,
-                      fontSize: '12px'
+                      fontSize: '11px',
+                      outline: 'none'
                     }}
                   >
                     <option value="=">=</option>
@@ -1156,41 +1162,45 @@ const buildQueryWithFiltersAndTimeRange = () => {
                     onChange={(e) => updateFilter(idx, 'value', e.target.value)}
                     placeholder="Value..."
                     style={{
-                      padding: '6px',
+                      padding: '5px',
                       background: theme.bg,
                       border: `1px solid ${theme.border}`,
                       borderRadius: '4px',
                       color: theme.text,
-                      fontSize: '12px'
+                      fontSize: '11px',
+                      outline: 'none'
                     }}
                   />
                   <button
                     onClick={() => removeFilter(idx)}
                     style={{
-                      padding: '6px',
+                      padding: '5px',
                       background: 'transparent',
                       border: 'none',
                       color: '#ef4444',
                       cursor: 'pointer',
-                      borderRadius: '4px'
+                      borderRadius: '4px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center'
                     }}
                   >
-                    <Trash2 size={16} />
+                    <Trash2 size={13} />
                   </button>
                 </div>
               ))}
             </div>
           ) : (
             <div style={{ 
-              padding: '16px', 
+              padding: '12px', 
               textAlign: 'center', 
               color: theme.textMuted,
-              fontSize: '12px',
+              fontSize: '11px',
               background: theme.card,
               border: `1px dashed ${theme.border}`,
               borderRadius: '6px'
             }}>
-              No filters applied. Click "Add Filter" to create one.
+              No filters applied
             </div>
           )}
         </div>
@@ -1199,259 +1209,154 @@ const buildQueryWithFiltersAndTimeRange = () => {
   );
 
   const renderAxisTab = () => (
-    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px' }}>
+    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
       <div>
-        {/* ✅ X-AXIS CONFIGURATION */}
+        {/* X-Axis */}
         <div style={{ 
-          marginBottom: '24px', 
-          padding: '16px', 
+          marginBottom: '16px', 
+          padding: '12px', 
           background: theme.card, 
           borderRadius: '8px',
           border: `1px solid ${theme.border}`
         }}>
           <h3 style={{ 
-            margin: '0 0 16px 0', 
-            fontSize: '14px', 
-            fontWeight: '700', 
+            margin: '0 0 12px 0', 
+            fontSize: '12px', 
+            fontWeight: '600', 
             color: theme.text,
             display: 'flex',
             alignItems: 'center',
-            gap: '8px'
+            gap: '6px',
+            letterSpacing: '0.02em'
           }}>
-            <AlignLeft size={16} />
-            X-Axis Configuration
+            <AlignLeft size={13} />
+            X-Axis
           </h3>
 
-          {/* X-Axis Label */}
-          <div style={{ marginBottom: '12px' }}>
-            <label style={{ display: 'block', marginBottom: '6px', fontSize: '12px', color: theme.textMuted }}>
-              Axis Label
-            </label>
-            <input
-              type="text"
-              value={config.xAxisLabel}
-              onChange={(e) => setConfig({ ...config, xAxisLabel: e.target.value })}
-              placeholder="e.g., Time"
-              style={{
-                width: '100%',
-                padding: '8px',
-                background: theme.bg,
-                border: `2px solid ${theme.border}`,
-                borderRadius: '6px',
-                color: theme.text,
-                fontSize: '13px'
-              }}
+          <Input
+            label="Axis Label"
+            value={config.xAxisLabel}
+            onChange={(e) => setConfig({ ...config, xAxisLabel: e.target.value })}
+            placeholder="e.g., Time"
+          />
+
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginBottom: '12px' }}>
+            <Input
+              label="Label Size"
+              type="number"
+              value={config.xAxisLabelFontSize}
+              onChange={(e) => setConfig({ ...config, xAxisLabelFontSize: parseInt(e.target.value) || 12 })}
+              min="8"
+              max="24"
+            />
+            <Select
+              label="Label Rotation"
+              value={config.xAxisLabelRotation}
+              onChange={(e) => setConfig({ ...config, xAxisLabelRotation: parseInt(e.target.value) })}
+            >
+              {LABEL_ROTATIONS.map(rot => (
+                <option key={rot.value} value={rot.value}>{rot.label}</option>
+              ))}
+            </Select>
+          </div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginBottom: '12px' }}>
+            <Input
+              label="Tick Size"
+              type="number"
+              value={config.xAxisTickFontSize}
+              onChange={(e) => setConfig({ ...config, xAxisTickFontSize: parseInt(e.target.value) || 11 })}
+              min="6"
+              max="18"
+            />
+            <Select
+              label="Tick Rotation"
+              value={config.xAxisTickRotation}
+              onChange={(e) => setConfig({ ...config, xAxisTickRotation: parseInt(e.target.value) })}
+            >
+              {LABEL_ROTATIONS.map(rot => (
+                <option key={rot.value} value={rot.value}>{rot.label}</option>
+              ))}
+            </Select>
+          </div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginBottom: '12px' }}>
+            <Input
+              label="Tick Count"
+              value={config.xAxisTickCount}
+              onChange={(e) => setConfig({ ...config, xAxisTickCount: e.target.value })}
+              placeholder="auto"
+            />
+            <Input
+              label="Tick Interval"
+              value={config.xAxisTickInterval}
+              onChange={(e) => setConfig({ ...config, xAxisTickInterval: e.target.value })}
+              placeholder="auto"
             />
           </div>
 
-          {/* X-Axis Label Options */}
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', marginBottom: '12px' }}>
-            <div>
-              <label style={{ display: 'block', marginBottom: '6px', fontSize: '11px', color: theme.textMuted }}>
-                Label Font Size
-              </label>
-              <input
-                type="number"
-                value={config.xAxisLabelFontSize}
-                onChange={(e) => setConfig({ ...config, xAxisLabelFontSize: parseInt(e.target.value) || 12 })}
-                min="8"
-                max="24"
-                style={{
-                  width: '100%',
-                  padding: '6px',
-                  background: theme.bg,
-                  border: `1px solid ${theme.border}`,
-                  borderRadius: '4px',
-                  color: theme.text,
-                  fontSize: '12px'
-                }}
-              />
-            </div>
-            <div>
-              <label style={{ display: 'block', marginBottom: '6px', fontSize: '11px', color: theme.textMuted }}>
-                Label Rotation
-              </label>
-              <select
-                value={config.xAxisLabelRotation}
-                onChange={(e) => setConfig({ ...config, xAxisLabelRotation: parseInt(e.target.value) })}
-                style={{
-                  width: '100%',
-                  padding: '6px',
-                  background: theme.bg,
-                  border: `1px solid ${theme.border}`,
-                  borderRadius: '4px',
-                  color: theme.text,
-                  fontSize: '12px'
-                }}
-              >
-                {LABEL_ROTATIONS.map(rot => (
-                  <option key={rot.value} value={rot.value}>{rot.label}</option>
-                ))}
-              </select>
-            </div>
-          </div>
-
-          {/* X-Axis Tick Options */}
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', marginBottom: '12px' }}>
-            <div>
-              <label style={{ display: 'block', marginBottom: '6px', fontSize: '11px', color: theme.textMuted }}>
-                Tick Font Size
-              </label>
-              <input
-                type="number"
-                value={config.xAxisTickFontSize}
-                onChange={(e) => setConfig({ ...config, xAxisTickFontSize: parseInt(e.target.value) || 11 })}
-                min="6"
-                max="18"
-                style={{
-                  width: '100%',
-                  padding: '6px',
-                  background: theme.bg,
-                  border: `1px solid ${theme.border}`,
-                  borderRadius: '4px',
-                  color: theme.text,
-                  fontSize: '12px'
-                }}
-              />
-            </div>
-            <div>
-              <label style={{ display: 'block', marginBottom: '6px', fontSize: '11px', color: theme.textMuted }}>
-                Tick Rotation
-              </label>
-              <select
-                value={config.xAxisTickRotation}
-                onChange={(e) => setConfig({ ...config, xAxisTickRotation: parseInt(e.target.value) })}
-                style={{
-                  width: '100%',
-                  padding: '6px',
-                  background: theme.bg,
-                  border: `1px solid ${theme.border}`,
-                  borderRadius: '4px',
-                  color: theme.text,
-                  fontSize: '12px'
-                }}
-              >
-                {LABEL_ROTATIONS.map(rot => (
-                  <option key={rot.value} value={rot.value}>{rot.label}</option>
-                ))}
-              </select>
-            </div>
-          </div>
-
-          {/* X-Axis Advanced Options */}
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', marginBottom: '12px' }}>
-            <div>
-              <label style={{ display: 'block', marginBottom: '6px', fontSize: '11px', color: theme.textMuted }}>
-                Tick Count
-              </label>
-              <input
-                type="text"
-                value={config.xAxisTickCount}
-                onChange={(e) => setConfig({ ...config, xAxisTickCount: e.target.value })}
-                placeholder="auto"
-                style={{
-                  width: '100%',
-                  padding: '6px',
-                  background: theme.bg,
-                  border: `1px solid ${theme.border}`,
-                  borderRadius: '4px',
-                  color: theme.text,
-                  fontSize: '12px'
-                }}
-              />
-            </div>
-            <div>
-              <label style={{ display: 'block', marginBottom: '6px', fontSize: '11px', color: theme.textMuted }}>
-                Tick Interval
-              </label>
-              <input
-                type="text"
-                value={config.xAxisTickInterval}
-                onChange={(e) => setConfig({ ...config, xAxisTickInterval: e.target.value })}
-                placeholder="auto"
-                style={{
-                  width: '100%',
-                  padding: '6px',
-                  background: theme.bg,
-                  border: `1px solid ${theme.border}`,
-                  borderRadius: '4px',
-                  color: theme.text,
-                  fontSize: '12px'
-                }}
-              />
-            </div>
-          </div>
-
-          {/* X-Axis Visibility Toggles */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-            <label style={{ display: 'flex', alignItems: 'center', gap: '8px', color: theme.textSecondary, fontSize: '12px', cursor: 'pointer' }}>
+          <div style={{ display: 'flex', gap: '12px', fontSize: '11px' }}>
+            <label style={{ display: 'flex', alignItems: 'center', gap: '6px', color: theme.textSecondary, cursor: 'pointer' }}>
               <input
                 type="checkbox"
                 checked={config.xAxisShowLabel}
                 onChange={(e) => setConfig({ ...config, xAxisShowLabel: e.target.checked })}
-                style={{ width: '14px', height: '14px' }}
+                style={{ width: '14px', height: '14px', cursor: 'pointer' }}
               />
-              Show Axis Label
+              Show Label
             </label>
-            <label style={{ display: 'flex', alignItems: 'center', gap: '8px', color: theme.textSecondary, fontSize: '12px', cursor: 'pointer' }}>
+            <label style={{ display: 'flex', alignItems: 'center', gap: '6px', color: theme.textSecondary, cursor: 'pointer' }}>
               <input
                 type="checkbox"
                 checked={config.xAxisShowTicks}
                 onChange={(e) => setConfig({ ...config, xAxisShowTicks: e.target.checked })}
-                style={{ width: '14px', height: '14px' }}
+                style={{ width: '14px', height: '14px', cursor: 'pointer' }}
               />
-              Show Tick Labels
+              Show Ticks
             </label>
           </div>
         </div>
 
-        {/* ✅ GRID CONFIGURATION */}
+        {/* Grid */}
         <div style={{ 
-          padding: '16px', 
+          padding: '12px', 
           background: theme.card, 
           borderRadius: '8px',
           border: `1px solid ${theme.border}`
         }}>
           <h3 style={{ 
-            margin: '0 0 16px 0', 
-            fontSize: '14px', 
-            fontWeight: '700', 
+            margin: '0 0 12px 0', 
+            fontSize: '12px', 
+            fontWeight: '600', 
             color: theme.text,
             display: 'flex',
             alignItems: 'center',
-            gap: '8px'
+            gap: '6px',
+            letterSpacing: '0.02em'
           }}>
-            <Hash size={16} />
-            Grid Configuration
+            <Hash size={13} />
+            Grid
           </h3>
 
-          <div style={{ marginBottom: '12px' }}>
-            <label style={{ display: 'block', marginBottom: '6px', fontSize: '12px', color: theme.textMuted }}>
-              Stroke Pattern (e.g., "3 3" for dashed)
-            </label>
-            <input
-              type="text"
-              value={config.gridStrokeDashArray}
-              onChange={(e) => setConfig({ ...config, gridStrokeDashArray: e.target.value })}
-              placeholder="3 3"
-              style={{
-                width: '100%',
-                padding: '8px',
-                background: theme.bg,
-                border: `2px solid ${theme.border}`,
-                borderRadius: '6px',
-                color: theme.text,
-                fontSize: '13px'
-              }}
-            />
-            <div style={{ marginTop: '4px', fontSize: '10px', color: theme.textMuted }}>
-              Examples: "3 3" (dashed), "1 0" (solid), "5 10" (long dash), "0 0" (hidden)
-            </div>
+          <Input
+            label={`Stroke Pattern`}
+            value={config.gridStrokeDashArray}
+            onChange={(e) => setConfig({ ...config, gridStrokeDashArray: e.target.value })}
+            placeholder="3 3"
+          />
+          <div style={{ fontSize: '10px', color: theme.textMuted, marginTop: '-8px', marginBottom: '12px' }}>
+            Examples: "3 3" (dashed), "1 0" (solid), "0 0" (hidden)
           </div>
 
-          <div style={{ marginBottom: '12px' }}>
-            <label style={{ display: 'block', marginBottom: '6px', fontSize: '12px', color: theme.textMuted }}>
-              Grid Opacity: {Math.round(config.gridOpacity * 100)}%
+          <div>
+            <label style={{ 
+              display: 'block', 
+              marginBottom: '6px', 
+              fontSize: '11px', 
+              fontWeight: '500',
+              color: theme.textMuted
+            }}>
+              Opacity: {Math.round(config.gridOpacity * 100)}%
             </label>
             <input
               type="range"
@@ -1460,334 +1365,176 @@ const buildQueryWithFiltersAndTimeRange = () => {
               step="0.05"
               value={config.gridOpacity}
               onChange={(e) => setConfig({ ...config, gridOpacity: parseFloat(e.target.value) })}
-              style={{ width: '100%' }}
+              style={{ width: '100%', cursor: 'pointer' }}
             />
           </div>
         </div>
       </div>
 
-      {/* Right Column - Y-Axis Configuration */}
+      {/* Y-Axis */}
       <div>
-        {/* ✅ Y-AXIS CONFIGURATION */}
         <div style={{ 
-          padding: '16px', 
+          padding: '12px', 
           background: theme.card, 
           borderRadius: '8px',
           border: `1px solid ${theme.border}`
         }}>
           <h3 style={{ 
-            margin: '0 0 16px 0', 
-            fontSize: '14px', 
-            fontWeight: '700', 
+            margin: '0 0 12px 0', 
+            fontSize: '12px', 
+            fontWeight: '600', 
             color: theme.text,
             display: 'flex',
             alignItems: 'center',
-            gap: '8px'
+            gap: '6px',
+            letterSpacing: '0.02em'
           }}>
-            <RotateCw size={16} />
-            Y-Axis Configuration
+            <RotateCw size={13} />
+            Y-Axis
           </h3>
 
-          {/* Y-Axis Label */}
-          <div style={{ marginBottom: '12px' }}>
-            <label style={{ display: 'block', marginBottom: '6px', fontSize: '12px', color: theme.textMuted }}>
-              Axis Label
-            </label>
-            <input
-              type="text"
-              value={config.yAxisLabel}
-              onChange={(e) => setConfig({ ...config, yAxisLabel: e.target.value })}
-              placeholder="e.g., Value, Temperature, Count"
-              style={{
-                width: '100%',
-                padding: '8px',
-                background: theme.bg,
-                border: `2px solid ${theme.border}`,
-                borderRadius: '6px',
-                color: theme.text,
-                fontSize: '13px'
-              }}
+          <Input
+            label="Axis Label"
+            value={config.yAxisLabel}
+            onChange={(e) => setConfig({ ...config, yAxisLabel: e.target.value })}
+            placeholder="e.g., Value, Temperature"
+          />
+
+          <Select
+            label={<><Type size={11} style={{ display: 'inline', marginRight: '4px', verticalAlign: 'middle' }} />Number Format</>}
+            value={config.yAxisNumberFormat}
+            onChange={(e) => setConfig({ ...config, yAxisNumberFormat: e.target.value })}
+          >
+            {NUMBER_FORMATS.map(format => (
+              <option key={format.value} value={format.value}>
+                {format.label} - {format.example}
+              </option>
+            ))}
+          </Select>
+
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr auto', gap: '10px', marginBottom: '12px' }}>
+            <Input
+              label="Decimals"
+              type="number"
+              value={config.yAxisDecimals}
+              onChange={(e) => setConfig({ ...config, yAxisDecimals: parseInt(e.target.value) || 0 })}
+              min="0"
+              max="10"
             />
-          </div>
-
-          {/* Y-Axis Number Format */}
-          <div style={{ marginBottom: '12px' }}>
-            <label style={{ display: 'block', marginBottom: '6px', fontSize: '12px', color: theme.textMuted }}>
-              <Type size={12} style={{ display: 'inline', marginRight: '4px' }} />
-              Number Format
-            </label>
-            <select
-              value={config.yAxisNumberFormat}
-              onChange={(e) => setConfig({ ...config, yAxisNumberFormat: e.target.value })}
-              style={{
-                width: '100%',
-                padding: '8px',
-                background: theme.bg,
-                border: `2px solid ${theme.border}`,
-                borderRadius: '6px',
-                color: theme.text,
-                fontSize: '13px'
-              }}
-            >
-              {NUMBER_FORMATS.map(format => (
-                <option key={format.value} value={format.value}>
-                  {format.label} - {format.example}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          {/* Decimals and Unit */}
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', marginBottom: '12px' }}>
-            <div>
-              <label style={{ display: 'block', marginBottom: '6px', fontSize: '11px', color: theme.textMuted }}>
-                Decimal Places
-              </label>
-              <input
-                type="number"
-                value={config.yAxisDecimals}
-                onChange={(e) => setConfig({ ...config, yAxisDecimals: parseInt(e.target.value) || 0 })}
-                min="0"
-                max="10"
-                style={{
-                  width: '100%',
-                  padding: '6px',
-                  background: theme.bg,
-                  border: `1px solid ${theme.border}`,
-                  borderRadius: '4px',
-                  color: theme.text,
-                  fontSize: '12px'
-                }}
-              />
-            </div>
-            <div>
-              <label style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px', fontSize: '11px', color: theme.textMuted, cursor: 'pointer' }}>
+            <div style={{ display: 'flex', alignItems: 'flex-end', paddingBottom: '12px' }}>
+              <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '11px', color: theme.textSecondary, cursor: 'pointer', whiteSpace: 'nowrap' }}>
                 <input
                   type="checkbox"
                   checked={config.yAxisUseCommas}
                   onChange={(e) => setConfig({ ...config, yAxisUseCommas: e.target.checked })}
-                  style={{ width: '14px', height: '14px' }}
+                  style={{ width: '14px', height: '14px', cursor: 'pointer' }}
                 />
-                Use Commas (1,000)
+                Commas
               </label>
             </div>
           </div>
 
-          {/* Custom Unit */}
-          <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '8px', marginBottom: '12px' }}>
-            <div>
-              <label style={{ display: 'block', marginBottom: '6px', fontSize: '11px', color: theme.textMuted }}>
-                Custom Unit
-              </label>
-              <input
-                type="text"
-                value={config.yAxisUnit}
-                onChange={(e) => setConfig({ ...config, yAxisUnit: e.target.value })}
-                placeholder="e.g., °C, MB, rpm"
-                style={{
-                  width: '100%',
-                  padding: '6px',
-                  background: theme.bg,
-                  border: `1px solid ${theme.border}`,
-                  borderRadius: '4px',
-                  color: theme.text,
-                  fontSize: '12px'
-                }}
-              />
-            </div>
-            <div>
-              <label style={{ display: 'block', marginBottom: '6px', fontSize: '11px', color: theme.textMuted }}>
-                Position
-              </label>
-              <select
-                value={config.yAxisUnitPosition}
-                onChange={(e) => setConfig({ ...config, yAxisUnitPosition: e.target.value })}
-                style={{
-                  width: '100%',
-                  padding: '6px',
-                  background: theme.bg,
-                  border: `1px solid ${theme.border}`,
-                  borderRadius: '4px',
-                  color: theme.text,
-                  fontSize: '12px'
-                }}
-              >
-                <option value="prefix">Prefix</option>
-                <option value="suffix">Suffix</option>
-              </select>
-            </div>
+          <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '10px', marginBottom: '12px' }}>
+            <Input
+              label="Unit"
+              value={config.yAxisUnit}
+              onChange={(e) => setConfig({ ...config, yAxisUnit: e.target.value })}
+              placeholder="e.g., °C, MB"
+            />
+            <Select
+              label="Position"
+              value={config.yAxisUnitPosition}
+              onChange={(e) => setConfig({ ...config, yAxisUnitPosition: e.target.value })}
+            >
+              <option value="prefix">Prefix</option>
+              <option value="suffix">Suffix</option>
+            </Select>
           </div>
 
-          {/* Custom Format String (for custom format type) */}
           {config.yAxisNumberFormat === 'custom' && (
-            <div style={{ marginBottom: '12px' }}>
-              <label style={{ display: 'block', marginBottom: '6px', fontSize: '11px', color: theme.textMuted }}>
-                Custom Format String (use {'{value}'} as placeholder)
-              </label>
-              <input
-                type="text"
-                value={config.yAxisCustomFormat}
-                onChange={(e) => setConfig({ ...config, yAxisCustomFormat: e.target.value })}
-                placeholder="e.g., {value} units"
-                style={{
-                  width: '100%',
-                  padding: '6px',
-                  background: theme.bg,
-                  border: `1px solid ${theme.border}`,
-                  borderRadius: '4px',
-                  color: theme.text,
-                  fontSize: '12px',
-                  fontFamily: 'monospace'
-                }}
-              />
-            </div>
+            <Input
+              label="Custom Format ({value})"
+              value={config.yAxisCustomFormat}
+              onChange={(e) => setConfig({ ...config, yAxisCustomFormat: e.target.value })}
+              placeholder="e.g., {value} units"
+              style={{ fontFamily: 'ui-monospace, monospace' }}
+            />
           )}
 
-          {/* Y-Axis Label & Tick Styling */}
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', marginBottom: '12px' }}>
-            <div>
-              <label style={{ display: 'block', marginBottom: '6px', fontSize: '11px', color: theme.textMuted }}>
-                Label Font Size
-              </label>
-              <input
-                type="number"
-                value={config.yAxisLabelFontSize}
-                onChange={(e) => setConfig({ ...config, yAxisLabelFontSize: parseInt(e.target.value) || 12 })}
-                min="8"
-                max="24"
-                style={{
-                  width: '100%',
-                  padding: '6px',
-                  background: theme.bg,
-                  border: `1px solid ${theme.border}`,
-                  borderRadius: '4px',
-                  color: theme.text,
-                  fontSize: '12px'
-                }}
-              />
-            </div>
-            <div>
-              <label style={{ display: 'block', marginBottom: '6px', fontSize: '11px', color: theme.textMuted }}>
-                Tick Font Size
-              </label>
-              <input
-                type="number"
-                value={config.yAxisTickFontSize}
-                onChange={(e) => setConfig({ ...config, yAxisTickFontSize: parseInt(e.target.value) || 11 })}
-                min="6"
-                max="18"
-                style={{
-                  width: '100%',
-                  padding: '6px',
-                  background: theme.bg,
-                  border: `1px solid ${theme.border}`,
-                  borderRadius: '4px',
-                  color: theme.text,
-                  fontSize: '12px'
-                }}
-              />
-            </div>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginBottom: '12px' }}>
+            <Input
+              label="Label Size"
+              type="number"
+              value={config.yAxisLabelFontSize}
+              onChange={(e) => setConfig({ ...config, yAxisLabelFontSize: parseInt(e.target.value) || 12 })}
+              min="8"
+              max="24"
+            />
+            <Input
+              label="Tick Size"
+              type="number"
+              value={config.yAxisTickFontSize}
+              onChange={(e) => setConfig({ ...config, yAxisTickFontSize: parseInt(e.target.value) || 11 })}
+              min="6"
+              max="18"
+            />
           </div>
 
-          {/* Y-Axis Advanced Options */}
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '8px', marginBottom: '12px' }}>
-            <div>
-              <label style={{ display: 'block', marginBottom: '6px', fontSize: '11px', color: theme.textMuted }}>
-                Width
-              </label>
-              <input
-                type="text"
-                value={config.yAxisWidth}
-                onChange={(e) => setConfig({ ...config, yAxisWidth: e.target.value })}
-                placeholder="auto"
-                style={{
-                  width: '100%',
-                  padding: '6px',
-                  background: theme.bg,
-                  border: `1px solid ${theme.border}`,
-                  borderRadius: '4px',
-                  color: theme.text,
-                  fontSize: '12px'
-                }}
-              />
-            </div>
-            <div>
-              <label style={{ display: 'block', marginBottom: '6px', fontSize: '11px', color: theme.textMuted }}>
-                Position
-              </label>
-              <select
-                value={config.yAxisPosition}
-                onChange={(e) => setConfig({ ...config, yAxisPosition: e.target.value })}
-                style={{
-                  width: '100%',
-                  padding: '6px',
-                  background: theme.bg,
-                  border: `1px solid ${theme.border}`,
-                  borderRadius: '4px',
-                  color: theme.text,
-                  fontSize: '12px'
-                }}
-              >
-                <option value="left">Left</option>
-                <option value="right">Right</option>
-              </select>
-            </div>
-            <div>
-              <label style={{ display: 'block', marginBottom: '6px', fontSize: '11px', color: theme.textMuted }}>
-                Tick Count
-              </label>
-              <input
-                type="text"
-                value={config.yAxisTickCount}
-                onChange={(e) => setConfig({ ...config, yAxisTickCount: e.target.value })}
-                placeholder="auto"
-                style={{
-                  width: '100%',
-                  padding: '6px',
-                  background: theme.bg,
-                  border: `1px solid ${theme.border}`,
-                  borderRadius: '4px',
-                  color: theme.text,
-                  fontSize: '12px'
-                }}
-              />
-            </div>
+            <Input
+              label="Width"
+              value={config.yAxisWidth}
+              onChange={(e) => setConfig({ ...config, yAxisWidth: e.target.value })}
+              placeholder="auto"
+            />
+            <Select
+              label="Side"
+              value={config.yAxisPosition}
+              onChange={(e) => setConfig({ ...config, yAxisPosition: e.target.value })}
+            >
+              <option value="left">Left</option>
+              <option value="right">Right</option>
+            </Select>
+            <Input
+              label="Ticks"
+              value={config.yAxisTickCount}
+              onChange={(e) => setConfig({ ...config, yAxisTickCount: e.target.value })}
+              placeholder="auto"
+            />
           </div>
 
-          {/* Y-Axis Visibility Toggles */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-            <label style={{ display: 'flex', alignItems: 'center', gap: '8px', color: theme.textSecondary, fontSize: '12px', cursor: 'pointer' }}>
+          <div style={{ display: 'flex', gap: '12px', fontSize: '11px', marginBottom: '12px' }}>
+            <label style={{ display: 'flex', alignItems: 'center', gap: '6px', color: theme.textSecondary, cursor: 'pointer' }}>
               <input
                 type="checkbox"
                 checked={config.yAxisShowLabel}
                 onChange={(e) => setConfig({ ...config, yAxisShowLabel: e.target.checked })}
-                style={{ width: '14px', height: '14px' }}
+                style={{ width: '14px', height: '14px', cursor: 'pointer' }}
               />
-              Show Axis Label
+              Show Label
             </label>
-            <label style={{ display: 'flex', alignItems: 'center', gap: '8px', color: theme.textSecondary, fontSize: '12px', cursor: 'pointer' }}>
+            <label style={{ display: 'flex', alignItems: 'center', gap: '6px', color: theme.textSecondary, cursor: 'pointer' }}>
               <input
                 type="checkbox"
                 checked={config.yAxisShowTicks}
                 onChange={(e) => setConfig({ ...config, yAxisShowTicks: e.target.checked })}
-                style={{ width: '14px', height: '14px' }}
+                style={{ width: '14px', height: '14px', cursor: 'pointer' }}
               />
-              Show Tick Labels
+              Show Ticks
             </label>
           </div>
 
           {/* Format Preview */}
           <div style={{ 
-            marginTop: '16px', 
-            padding: '12px', 
+            padding: '10px', 
             background: theme.bg, 
             borderRadius: '6px',
             border: `1px dashed ${theme.border}`
           }}>
-            <div style={{ fontSize: '11px', color: theme.textMuted, marginBottom: '6px' }}>
+            <div style={{ fontSize: '10px', color: theme.textMuted, marginBottom: '4px' }}>
               Format Preview:
             </div>
-            <div style={{ fontSize: '14px', color: theme.text, fontWeight: '600', fontFamily: 'monospace' }}>
+            <div style={{ fontSize: '13px', color: theme.text, fontWeight: '600', fontFamily: 'ui-monospace, monospace' }}>
               {formatTickValue(1234.567)}
             </div>
           </div>
@@ -1797,30 +1544,39 @@ const buildQueryWithFiltersAndTimeRange = () => {
   );
 
   const renderAdvancedTab = () => (
-    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px' }}>
+    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
       <div>
         {/* Axis Scaling */}
-        <div style={{ marginBottom: '20px' }}>
-          <label style={{ display: 'block', marginBottom: '12px', fontSize: '13px', color: theme.textSecondary, fontWeight: '600' }}>
+        <div style={{ marginBottom: '16px' }}>
+          <label style={{ 
+            display: 'block', 
+            marginBottom: '8px', 
+            fontSize: '11px', 
+            fontWeight: '500',
+            color: theme.textMuted,
+            letterSpacing: '0.02em'
+          }}>
             Y-Axis Scaling
           </label>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', marginBottom: '12px' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: '6px', marginBottom: '12px' }}>
             {['auto', 'linear', 'log', 'custom'].map(scale => (
               <button
                 key={scale}
                 onClick={() => setConfig({ ...config, yAxisScale: scale })}
                 style={{
-                  padding: '8px',
+                  padding: '6px',
                   background: config.yAxisScale === scale ? theme.accent : theme.card,
-                  border: '2px solid',
-                  borderColor: config.yAxisScale === scale ? theme.accent : theme.border,
-                  borderRadius: '6px',
+                  border: `1px solid ${config.yAxisScale === scale ? theme.accent : theme.border}`,
+                  borderRadius: '5px',
                   color: config.yAxisScale === scale ? 'white' : theme.text,
                   cursor: 'pointer',
-                  fontSize: '12px',
-                  fontWeight: '600',
-                  textTransform: 'capitalize'
+                  fontSize: '11px',
+                  fontWeight: '500',
+                  textTransform: 'capitalize',
+                  transition: 'all 0.15s ease'
                 }}
+                onMouseEnter={(e) => config.yAxisScale !== scale && (e.currentTarget.style.background = theme.cardHover)}
+                onMouseLeave={(e) => config.yAxisScale !== scale && (e.currentTarget.style.background = theme.card)}
               >
                 {scale}
               </button>
@@ -1828,150 +1584,79 @@ const buildQueryWithFiltersAndTimeRange = () => {
           </div>
           
           {config.yAxisScale === 'custom' && (
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
-              <div>
-                <label style={{ display: 'block', marginBottom: '4px', fontSize: '11px', color: theme.textMuted }}>
-                  Min Value
-                </label>
-                <input
-                  type="number"
-                  value={config.yAxisMin}
-                  onChange={(e) => setConfig({ ...config, yAxisMin: e.target.value })}
-                  placeholder="Auto"
-                  style={{
-                    width: '100%',
-                    padding: '8px',
-                    background: theme.bg,
-                    border: `2px solid ${theme.border}`,
-                    borderRadius: '6px',
-                    color: theme.text,
-                    fontSize: '13px'
-                  }}
-                />
-              </div>
-              <div>
-                <label style={{ display: 'block', marginBottom: '4px', fontSize: '11px', color: theme.textMuted }}>
-                  Max Value
-                </label>
-                <input
-                  type="number"
-                  value={config.yAxisMax}
-                  onChange={(e) => setConfig({ ...config, yAxisMax: e.target.value })}
-                  placeholder="Auto"
-                  style={{
-                    width: '100%',
-                    padding: '8px',
-                    background: theme.bg,
-                    border: `2px solid ${theme.border}`,
-                    borderRadius: '6px',
-                    color: theme.text,
-                    fontSize: '13px'
-                  }}
-                />
-              </div>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+              <Input
+                label="Min"
+                type="number"
+                value={config.yAxisMin}
+                onChange={(e) => setConfig({ ...config, yAxisMin: e.target.value })}
+                placeholder="Auto"
+              />
+              <Input
+                label="Max"
+                type="number"
+                value={config.yAxisMax}
+                onChange={(e) => setConfig({ ...config, yAxisMax: e.target.value })}
+                placeholder="Auto"
+              />
             </div>
           )}
         </div>
 
         {/* Panel Size */}
-        <div style={{ marginBottom: '20px' }}>
-          <label style={{ display: 'block', marginBottom: '12px', fontSize: '13px', color: theme.textSecondary, fontWeight: '600' }}>
+        <div style={{ marginBottom: '16px' }}>
+          <label style={{ 
+            display: 'block', 
+            marginBottom: '8px', 
+            fontSize: '11px', 
+            fontWeight: '500',
+            color: theme.textMuted,
+            letterSpacing: '0.02em'
+          }}>
             Panel Size
           </label>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
-            <div>
-              <label style={{ display: 'block', marginBottom: '6px', fontSize: '12px', color: theme.textMuted }}>
-                Width (columns)
-              </label>
-              <input
-                type="number"
-                value={config.width}
-                onChange={(e) => setConfig({ ...config, width: Math.max(1, Math.min(12, parseInt(e.target.value) || 1)) })}
-                min="1"
-                max="12"
-                style={{
-                  width: '100%',
-                  padding: '8px',
-                  background: theme.bg,
-                  border: `2px solid ${theme.border}`,
-                  borderRadius: '6px',
-                  color: theme.text,
-                  fontSize: '13px'
-                }}
-              />
-            </div>
-            <div>
-              <label style={{ display: 'block', marginBottom: '6px', fontSize: '12px', color: theme.textMuted }}>
-                Height (rows)
-              </label>
-              <input
-                type="number"
-                value={config.height}
-                onChange={(e) => setConfig({ ...config, height: Math.max(1, Math.min(10, parseInt(e.target.value) || 1)) })}
-                min="1"
-                max="10"
-                style={{
-                  width: '100%',
-                  padding: '8px',
-                  background: theme.bg,
-                  border: `2px solid ${theme.border}`,
-                  borderRadius: '6px',
-                  color: theme.text,
-                  fontSize: '13px'
-                }}
-              />
-            </div>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+            <Input
+              label="Width (1-12)"
+              type="number"
+              value={config.width}
+              onChange={(e) => setConfig({ ...config, width: Math.max(1, Math.min(12, parseInt(e.target.value) || 1)) })}
+              min="1"
+              max="12"
+            />
+            <Input
+              label="Height (1-10)"
+              type="number"
+              value={config.height}
+              onChange={(e) => setConfig({ ...config, height: Math.max(1, Math.min(10, parseInt(e.target.value) || 1)) })}
+              min="1"
+              max="10"
+            />
           </div>
         </div>
 
         {/* Data Limit & Refresh */}
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
-          <div>
-            <label style={{ display: 'block', marginBottom: '8px', fontSize: '13px', color: theme.textSecondary, fontWeight: '600' }}>
-              Data Limit
-            </label>
-            <input
-              type="number"
-              value={config.limit}
-              onChange={(e) => setConfig({ ...config, limit: parseInt(e.target.value) })}
-              min="10"
-              max="10000"
-              style={{
-                width: '100%',
-                padding: '10px 12px',
-                background: theme.bg,
-                border: `2px solid ${theme.border}`,
-                borderRadius: '8px',
-                color: theme.text,
-                fontSize: '14px'
-              }}
-            />
-          </div>
-          <div>
-            <label style={{ display: 'block', marginBottom: '8px', fontSize: '13px', color: theme.textSecondary, fontWeight: '600' }}>
-              Auto Refresh
-            </label>
-            <select
-              value={config.refreshInterval}
-              onChange={(e) => setConfig({ ...config, refreshInterval: parseInt(e.target.value) })}
-              style={{
-                width: '100%',
-                padding: '10px 12px',
-                background: theme.bg,
-                border: `2px solid ${theme.border}`,
-                borderRadius: '8px',
-                color: theme.text,
-                fontSize: '14px'
-              }}
-            >
-              <option value={0}>None</option>
-              <option value={1000}>1s</option>
-              <option value={5000}>5s</option>
-              <option value={10000}>10s</option>
-              <option value={30000}>30s</option>
-              <option value={60000}>1m</option>
-            </select>
-          </div>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+          <Input
+            label="Data Limit"
+            type="number"
+            value={config.limit}
+            onChange={(e) => setConfig({ ...config, limit: parseInt(e.target.value) })}
+            min="10"
+            max="10000"
+          />
+          <Select
+            label="Auto Refresh"
+            value={config.refreshInterval}
+            onChange={(e) => setConfig({ ...config, refreshInterval: parseInt(e.target.value) })}
+          >
+            <option value={0}>None</option>
+            <option value={1000}>1s</option>
+            <option value={5000}>5s</option>
+            <option value={10000}>10s</option>
+            <option value={30000}>30s</option>
+            <option value={60000}>1m</option>
+          </Select>
         </div>
       </div>
 
@@ -1987,17 +1672,24 @@ const buildQueryWithFiltersAndTimeRange = () => {
   );
 
   const renderStyleTab = () => (
-    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px' }}>
+    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
       <div>
         {/* Chart Colors */}
-        <div style={{ marginBottom: '20px' }}>
-          <label style={{ display: 'block', marginBottom: '12px', fontSize: '13px', color: theme.textSecondary, fontWeight: '600' }}>
+        <div style={{ marginBottom: '16px' }}>
+          <label style={{ 
+            display: 'block', 
+            marginBottom: '8px', 
+            fontSize: '11px', 
+            fontWeight: '500',
+            color: theme.textMuted,
+            letterSpacing: '0.02em'
+          }}>
             Chart Colors
           </label>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: '8px' }}>
             {[0, 1, 2, 3, 4].map((colorIdx) => (
               <div key={colorIdx} style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                <div style={{ fontSize: '10px', color: theme.textMuted, textAlign: 'center' }}>Y{colorIdx + 1}</div>
+                <div style={{ fontSize: '9px', color: theme.textMuted, textAlign: 'center', fontWeight: '500' }}>Y{colorIdx + 1}</div>
                 <select
                   value={config.colors?.[colorIdx] || COLORS[colorIdx]}
                   onChange={(e) => {
@@ -2007,10 +1699,10 @@ const buildQueryWithFiltersAndTimeRange = () => {
                   }}
                   style={{
                     width: '100%',
-                    height: '36px',
+                    height: '32px',
                     background: config.colors?.[colorIdx] || COLORS[colorIdx],
-                    border: `2px solid ${theme.border}`,
-                    borderRadius: '6px',
+                    border: `1px solid ${theme.border}`,
+                    borderRadius: '5px',
                     cursor: 'pointer',
                     color: 'transparent'
                   }}
@@ -2026,10 +1718,16 @@ const buildQueryWithFiltersAndTimeRange = () => {
           </div>
         </div>
 
-        {/* Line/Area Specific Options */}
+        {/* Line/Area Options */}
         {(config.vizType === 'line' || config.vizType === 'area') && (
           <div style={{ marginBottom: '12px' }}>
-            <label style={{ display: 'block', marginBottom: '6px', fontSize: '12px', color: theme.textMuted }}>
+            <label style={{ 
+              display: 'block', 
+              marginBottom: '6px', 
+              fontSize: '11px', 
+              fontWeight: '500',
+              color: theme.textMuted
+            }}>
               Line Width: {config.lineWidth}px
             </label>
             <input
@@ -2038,14 +1736,20 @@ const buildQueryWithFiltersAndTimeRange = () => {
               max="5"
               value={config.lineWidth}
               onChange={(e) => setConfig({ ...config, lineWidth: parseInt(e.target.value) })}
-              style={{ width: '100%' }}
+              style={{ width: '100%', cursor: 'pointer' }}
             />
           </div>
         )}
 
         {config.vizType === 'area' && (
           <div style={{ marginBottom: '12px' }}>
-            <label style={{ display: 'block', marginBottom: '6px', fontSize: '12px', color: theme.textMuted }}>
+            <label style={{ 
+              display: 'block', 
+              marginBottom: '6px', 
+              fontSize: '11px', 
+              fontWeight: '500',
+              color: theme.textMuted
+            }}>
               Fill Opacity: {Math.round(config.fillOpacity * 100)}%
             </label>
             <input
@@ -2055,38 +1759,38 @@ const buildQueryWithFiltersAndTimeRange = () => {
               step="0.1"
               value={config.fillOpacity}
               onChange={(e) => setConfig({ ...config, fillOpacity: parseFloat(e.target.value) })}
-              style={{ width: '100%' }}
+              style={{ width: '100%', cursor: 'pointer' }}
             />
           </div>
         )}
 
         {/* Display Options */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-          <label style={{ display: 'flex', alignItems: 'center', gap: '8px', color: theme.textSecondary, fontSize: '13px', cursor: 'pointer' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', fontSize: '12px' }}>
+          <label style={{ display: 'flex', alignItems: 'center', gap: '8px', color: theme.textSecondary, cursor: 'pointer' }}>
             <input
               type="checkbox"
               checked={config.showLegend}
               onChange={(e) => setConfig({ ...config, showLegend: e.target.checked })}
-              style={{ width: '16px', height: '16px' }}
+              style={{ width: '14px', height: '14px', cursor: 'pointer' }}
             />
             Show Legend
           </label>
-          <label style={{ display: 'flex', alignItems: 'center', gap: '8px', color: theme.textSecondary, fontSize: '13px', cursor: 'pointer' }}>
+          <label style={{ display: 'flex', alignItems: 'center', gap: '8px', color: theme.textSecondary, cursor: 'pointer' }}>
             <input
               type="checkbox"
               checked={config.showGrid}
               onChange={(e) => setConfig({ ...config, showGrid: e.target.checked })}
-              style={{ width: '16px', height: '16px' }}
+              style={{ width: '14px', height: '14px', cursor: 'pointer' }}
             />
             Show Grid Lines
           </label>
           {(config.vizType === 'line' || config.vizType === 'area') && (
-            <label style={{ display: 'flex', alignItems: 'center', gap: '8px', color: theme.textSecondary, fontSize: '13px', cursor: 'pointer' }}>
+            <label style={{ display: 'flex', alignItems: 'center', gap: '8px', color: theme.textSecondary, cursor: 'pointer' }}>
               <input
                 type="checkbox"
                 checked={config.showDots}
                 onChange={(e) => setConfig({ ...config, showDots: e.target.checked })}
-                style={{ width: '16px', height: '16px' }}
+                style={{ width: '14px', height: '14px', cursor: 'pointer' }}
               />
               Show Data Points
             </label>
@@ -2095,16 +1799,23 @@ const buildQueryWithFiltersAndTimeRange = () => {
       </div>
 
       <div>
-        {/* Preview in Style Tab */}
+        {/* Preview */}
         <div>
-          <label style={{ display: 'block', marginBottom: '12px', fontSize: '13px', color: theme.textSecondary, fontWeight: '600' }}>
+          <label style={{ 
+            display: 'block', 
+            marginBottom: '8px', 
+            fontSize: '11px', 
+            fontWeight: '500',
+            color: theme.textMuted,
+            letterSpacing: '0.02em'
+          }}>
             Style Preview
           </label>
           <div style={{
             background: theme.card,
-            border: `2px solid ${theme.border}`,
+            border: `1px solid ${theme.border}`,
             borderRadius: '8px',
-            padding: '16px',
+            padding: '12px',
             minHeight: '300px'
           }}>
             {renderPreviewChart()}
@@ -2121,7 +1832,8 @@ const buildQueryWithFiltersAndTimeRange = () => {
       left: 0,
       right: 0,
       bottom: 0,
-      background: 'rgba(0,0,0,0.75)',
+      background: 'rgba(0,0,0,0.6)',
+      backdropFilter: 'blur(4px)',
       display: 'flex',
       alignItems: 'center',
       justifyContent: 'center',
@@ -2130,18 +1842,19 @@ const buildQueryWithFiltersAndTimeRange = () => {
     }}>
       <div style={{
         background: theme.bg,
-        borderRadius: '16px',
+        borderRadius: '12px',
         width: '100%',
-        maxWidth: '1200px',
+        maxWidth: '1100px',
         maxHeight: '90vh',
         overflow: 'hidden',
         display: 'flex',
         flexDirection: 'column',
-        boxShadow: '0 20px 60px rgba(0,0,0,0.3)'
+        boxShadow: theme.shadowLg,
+        border: `1px solid ${theme.border}`
       }}>
         {/* Header */}
         <div style={{
-          padding: '20px 24px',
+          padding: '16px 20px',
           borderBottom: `1px solid ${theme.border}`,
           display: 'flex',
           justifyContent: 'space-between',
@@ -2149,10 +1862,20 @@ const buildQueryWithFiltersAndTimeRange = () => {
           background: theme.card
         }}>
           <div>
-            <h2 style={{ margin: 0, fontSize: '20px', color: theme.text, fontWeight: '700' }}>
+            <h2 style={{ 
+              margin: 0, 
+              fontSize: '16px', 
+              color: theme.text, 
+              fontWeight: '600',
+              letterSpacing: '-0.01em'
+            }}>
               {panel ? 'Edit Panel' : 'Add New Panel'}
             </h2>
-            <p style={{ margin: '4px 0 0', fontSize: '13px', color: theme.textMuted }}>
+            <p style={{ 
+              margin: '2px 0 0', 
+              fontSize: '12px', 
+              color: theme.textMuted 
+            }}>
               Configure your visualization settings
             </p>
           </div>
@@ -2161,23 +1884,28 @@ const buildQueryWithFiltersAndTimeRange = () => {
             border: 'none',
             color: theme.textMuted,
             cursor: 'pointer',
-            padding: '8px'
-          }}>
-            <X size={20} />
+            padding: '6px',
+            borderRadius: '4px',
+            transition: 'all 0.15s ease'
+          }}
+          onMouseEnter={(e) => e.currentTarget.style.background = theme.cardHover}
+          onMouseLeave={(e) => e.currentTarget.style.background = 'none'}
+          >
+            <X size={18} />
           </button>
         </div>
 
-        {/* ✅ ENHANCED: Added Axes tab */}
+        {/* Tabs */}
         <div style={{
           display: 'flex',
-          gap: '4px',
-          padding: '16px 24px 0',
+          gap: '2px',
+          padding: '12px 20px 0',
           borderBottom: `1px solid ${theme.border}`,
           background: theme.bg
         }}>
           {[
-            { id: 'data', label: 'Data & Filters', icon: Database },
-            { id: 'axes', label: 'Axes & Format', icon: AlignLeft },
+            { id: 'data', label: 'Data', icon: Database },
+            { id: 'axes', label: 'Axes', icon: AlignLeft },
             { id: 'style', label: 'Style', icon: Eye },
             { id: 'advanced', label: 'Advanced', icon: Settings }
           ].map(tab => {
@@ -2187,21 +1915,24 @@ const buildQueryWithFiltersAndTimeRange = () => {
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
                 style={{
-                  padding: '10px 20px',
+                  padding: '8px 16px',
                   background: activeTab === tab.id ? theme.card : 'transparent',
                   border: 'none',
                   borderBottom: `2px solid ${activeTab === tab.id ? theme.accent : 'transparent'}`,
                   color: activeTab === tab.id ? theme.text : theme.textMuted,
                   cursor: 'pointer',
-                  fontSize: '13px',
-                  fontWeight: '600',
+                  fontSize: '12px',
+                  fontWeight: '500',
                   display: 'flex',
                   alignItems: 'center',
-                  gap: '8px',
-                  transition: 'all 0.2s'
+                  gap: '6px',
+                  transition: 'all 0.15s ease',
+                  borderRadius: '6px 6px 0 0'
                 }}
+                onMouseEnter={(e) => activeTab !== tab.id && (e.currentTarget.style.color = theme.text)}
+                onMouseLeave={(e) => activeTab !== tab.id && (e.currentTarget.style.color = theme.textMuted)}
               >
-                <Icon size={16} />
+                <Icon size={13} />
                 {tab.label}
               </button>
             );
@@ -2209,7 +1940,12 @@ const buildQueryWithFiltersAndTimeRange = () => {
         </div>
 
         {/* Content */}
-        <div style={{ flex: 1, overflow: 'auto', padding: '24px' }}>
+        <div style={{ 
+          flex: 1, 
+          overflow: 'auto', 
+          padding: '20px',
+          background: theme.bg
+        }}>
           {activeTab === 'data' && renderDataTab()}
           {activeTab === 'axes' && renderAxisTab()}
           {activeTab === 'style' && renderStyleTab()}
@@ -2218,25 +1954,28 @@ const buildQueryWithFiltersAndTimeRange = () => {
 
         {/* Footer */}
         <div style={{
-          padding: '16px 24px',
+          padding: '12px 20px',
           borderTop: `1px solid ${theme.border}`,
           display: 'flex',
           justifyContent: 'flex-end',
-          gap: '12px',
+          gap: '10px',
           background: theme.card
         }}>
           <button
             onClick={onClose}
             style={{
-              padding: '10px 20px',
+              padding: '8px 16px',
               background: theme.bg,
-              border: `2px solid ${theme.border}`,
-              borderRadius: '8px',
+              border: `1px solid ${theme.border}`,
+              borderRadius: '6px',
               color: theme.textMuted,
               cursor: 'pointer',
-              fontSize: '14px',
-              fontWeight: '600'
+              fontSize: '12px',
+              fontWeight: '500',
+              transition: 'all 0.15s ease'
             }}
+            onMouseEnter={(e) => e.currentTarget.style.background = theme.cardHover}
+            onMouseLeave={(e) => e.currentTarget.style.background = theme.bg}
           >
             Cancel
           </button>
@@ -2246,20 +1985,24 @@ const buildQueryWithFiltersAndTimeRange = () => {
               onSave(config);
             }}
             style={{
-              padding: '10px 20px',
-              background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+              padding: '8px 20px',
+              background: theme.accent,
               border: 'none',
-              borderRadius: '8px',
+              borderRadius: '6px',
               color: 'white',
               cursor: 'pointer',
-              fontSize: '14px',
-              fontWeight: '600',
+              fontSize: '12px',
+              fontWeight: '500',
               display: 'flex',
               alignItems: 'center',
-              gap: '8px'
+              gap: '6px',
+              transition: 'all 0.15s ease',
+              boxShadow: theme.shadow
             }}
+            onMouseEnter={(e) => e.currentTarget.style.background = theme.accentHover}
+            onMouseLeave={(e) => e.currentTarget.style.background = theme.accent}
           >
-            <Save size={16} />
+            <Save size={14} />
             {panel ? 'Save Changes' : 'Add Panel'}
           </button>
         </div>
@@ -2269,6 +2012,44 @@ const buildQueryWithFiltersAndTimeRange = () => {
         @keyframes spin {
           0% { transform: rotate(0deg); }
           100% { transform: rotate(360deg); }
+        }
+        
+        input[type="range"] {
+          -webkit-appearance: none;
+          appearance: none;
+          height: 4px;
+          background: ${theme.border};
+          border-radius: 2px;
+          outline: none;
+        }
+        
+        input[type="range"]::-webkit-slider-thumb {
+          -webkit-appearance: none;
+          appearance: none;
+          width: 14px;
+          height: 14px;
+          background: ${theme.accent};
+          border-radius: 50%;
+          cursor: pointer;
+          transition: all 0.15s ease;
+        }
+        
+        input[type="range"]::-webkit-slider-thumb:hover {
+          transform: scale(1.1);
+        }
+        
+        input[type="range"]::-moz-range-thumb {
+          width: 14px;
+          height: 14px;
+          background: ${theme.accent};
+          border-radius: 50%;
+          cursor: pointer;
+          border: none;
+          transition: all 0.15s ease;
+        }
+        
+        input[type="range"]::-moz-range-thumb:hover {
+          transform: scale(1.1);
         }
       `}</style>
     </div>
