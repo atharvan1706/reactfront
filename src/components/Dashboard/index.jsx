@@ -1,3 +1,4 @@
+// Dashboard.jsx - COMPLETE VERSION WITH LEGEND POSITION FIX
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
@@ -285,15 +286,44 @@ export default function Dashboard({ onLogout }) {
     updateDashboard(updated);
   };
 
+  // ✅ FIXED: handleSavePanel with explicit legendPosition preservation
   const handleSavePanel = (panelData) => {
     if (!currentDashboard) return;
+    
+    console.log('💾 SAVE PANEL - Received panelData:', {
+      id: panelData.id,
+      title: panelData.title,
+      legendPosition: panelData.legendPosition,
+      showLegend: panelData.showLegend,
+      vizType: panelData.vizType
+    });
     
     let updatedPanels;
     if (editingPanel || editingScadaDiagram) {
       const editingId = editingPanel?.id || editingScadaDiagram?.id;
-      updatedPanels = currentDashboard.panels.map(p => 
-        p.id === editingId ? { ...panelData, id: p.id } : p
-      );
+      updatedPanels = currentDashboard.panels.map(p => {
+        if (p.id === editingId) {
+          // ✅ CRITICAL FIX: Explicitly preserve all properties including legendPosition
+          const mergedPanel = {
+            ...p,              // Start with existing panel
+            ...panelData,      // Override with new data
+            id: p.id,          // Always preserve ID
+            // ✅ Explicitly ensure critical properties are not lost
+            legendPosition: panelData.legendPosition || p.legendPosition || 'top',
+            showLegend: panelData.showLegend !== undefined ? panelData.showLegend : (p.showLegend !== undefined ? p.showLegend : true)
+          };
+          
+          console.log('✅ MERGED PANEL:', {
+            id: mergedPanel.id,
+            title: mergedPanel.title,
+            legendPosition: mergedPanel.legendPosition,
+            showLegend: mergedPanel.showLegend
+          });
+          
+          return mergedPanel;
+        }
+        return p;
+      });
     } else {
       const newPanel = {
         ...panelData,
@@ -303,8 +333,16 @@ export default function Dashboard({ onLogout }) {
           ? Math.max(...currentDashboard.panels.map(p => p.y + p.height)) 
           : 0,
         width: panelData.width || 4,
-        height: panelData.height || 2
+        height: panelData.height || 2,
+        legendPosition: panelData.legendPosition || 'top'
       };
+      
+      console.log('✅ NEW PANEL:', {
+        id: newPanel.id,
+        title: newPanel.title,
+        legendPosition: newPanel.legendPosition
+      });
+      
       updatedPanels = [...currentDashboard.panels, newPanel];
     }
 
@@ -312,6 +350,13 @@ export default function Dashboard({ onLogout }) {
       ...currentDashboard,
       panels: updatedPanels
     };
+    
+    console.log('📦 DASHBOARD UPDATE - Panels:', updated.panels.map(p => ({
+      id: p.id,
+      title: p.title,
+      legendPosition: p.legendPosition
+    })));
+    
     updateDashboard(updated);
     
     setShowConfigModal(false);
