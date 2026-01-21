@@ -709,7 +709,7 @@ const buildQueryWithFiltersAndTimeRange = () => {
   );
 
   const renderDataTab = () => (
-    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
+    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px', minHeight: '500px' }}>
       <div>
         <Input
           label="Panel Title"
@@ -852,8 +852,8 @@ const buildQueryWithFiltersAndTimeRange = () => {
           )}
         </div>
 
-        {/* Field Configuration - Compact */}
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '16px' }}>
+        {/* Field Configuration - Improved for many columns */}
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '12px', marginBottom: '16px' }}>
           <Select
             label="Timestamp Field"
             value={config.timestampField}
@@ -869,22 +869,63 @@ const buildQueryWithFiltersAndTimeRange = () => {
           </Select>
 
           <div>
-            <label style={{ 
-              display: 'block', 
-              marginBottom: '6px', 
-              fontSize: '11px', 
-              fontWeight: '500',
-              color: theme.textMuted,
-              letterSpacing: '0.02em'
-            }}>
-              Value Fields (Y-Axis)
-            </label>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+              <label style={{ 
+                fontSize: '11px', 
+                fontWeight: '500',
+                color: theme.textMuted,
+                letterSpacing: '0.02em'
+              }}>
+                Value Fields (Y-Axis)
+              </label>
+              {availableFields.length > 0 && (
+                <div style={{ display: 'flex', gap: '6px', fontSize: '10px' }}>
+                  <button
+                    onClick={() => {
+                      const numericFields = availableFields.filter(f => f !== config.timestampField);
+                      setConfig({ ...config, yAxes: numericFields, yAxis: numericFields[0] || '' });
+                    }}
+                    style={{
+                      padding: '3px 8px',
+                      background: 'transparent',
+                      border: `1px solid ${theme.border}`,
+                      borderRadius: '4px',
+                      color: theme.textMuted,
+                      cursor: 'pointer',
+                      fontWeight: '500',
+                      transition: 'all 0.15s ease'
+                    }}
+                    onMouseEnter={(e) => e.currentTarget.style.color = theme.text}
+                    onMouseLeave={(e) => e.currentTarget.style.color = theme.textMuted}
+                  >
+                    Select All
+                  </button>
+                  <button
+                    onClick={() => setConfig({ ...config, yAxes: [], yAxis: '' })}
+                    style={{
+                      padding: '3px 8px',
+                      background: 'transparent',
+                      border: `1px solid ${theme.border}`,
+                      borderRadius: '4px',
+                      color: theme.textMuted,
+                      cursor: 'pointer',
+                      fontWeight: '500',
+                      transition: 'all 0.15s ease'
+                    }}
+                    onMouseEnter={(e) => e.currentTarget.style.color = theme.text}
+                    onMouseLeave={(e) => e.currentTarget.style.color = theme.textMuted}
+                  >
+                    Clear
+                  </button>
+                </div>
+              )}
+            </div>
             {availableFields.length > 0 ? (
               <div style={{
                 border: `1px solid ${theme.border}`,
                 borderRadius: '6px',
                 background: theme.bg,
-                maxHeight: '120px',
+                maxHeight: '180px',
                 overflow: 'auto',
                 padding: '4px'
               }}>
@@ -894,8 +935,8 @@ const buildQueryWithFiltersAndTimeRange = () => {
                     style={{ 
                       display: 'flex', 
                       alignItems: 'center', 
-                      gap: '6px', 
-                      padding: '4px 6px',
+                      gap: '8px', 
+                      padding: '5px 8px',
                       cursor: 'pointer',
                       borderRadius: '4px',
                       fontSize: '12px',
@@ -914,16 +955,18 @@ const buildQueryWithFiltersAndTimeRange = () => {
                           : (config.yAxes || []).filter(y => y !== field);
                         setConfig({ ...config, yAxes: newYAxes, yAxis: newYAxes[0] || '' });
                       }}
-                      style={{ width: '14px', height: '14px', cursor: 'pointer' }}
+                      style={{ width: '14px', height: '14px', cursor: 'pointer', flexShrink: 0 }}
                     />
-                    <div style={{
-                      width: '10px',
-                      height: '10px',
-                      borderRadius: '2px',
-                      background: getColor((config.yAxes || []).indexOf(field)),
-                      marginLeft: 'auto'
-                    }} />
-                    {field}
+                    <span style={{ flex: 1 }}>{field}</span>
+                    {config.yAxes?.includes(field) && (
+                      <div style={{
+                        width: '12px',
+                        height: '12px',
+                        borderRadius: '2px',
+                        background: getColor(config.yAxes.indexOf(field)),
+                        flexShrink: 0
+                      }} />
+                    )}
                   </label>
                 ))}
               </div>
@@ -937,6 +980,11 @@ const buildQueryWithFiltersAndTimeRange = () => {
                 })}
                 placeholder="value1, value2"
               />
+            )}
+            {config.yAxes && config.yAxes.length > 0 && (
+              <div style={{ marginTop: '6px', fontSize: '10px', color: theme.textMuted }}>
+                {config.yAxes.length} field{config.yAxes.length !== 1 ? 's' : ''} selected
+              </div>
             )}
           </div>
         </div>
@@ -1209,7 +1257,7 @@ const buildQueryWithFiltersAndTimeRange = () => {
   );
 
   const renderAxisTab = () => (
-    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
+    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px', minHeight: '500px' }}>
       <div>
         {/* X-Axis */}
         <div style={{ 
@@ -1544,7 +1592,7 @@ const buildQueryWithFiltersAndTimeRange = () => {
   );
 
   const renderAdvancedTab = () => (
-    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
+    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px', minHeight: '500px' }}>
       <div>
         {/* Axis Scaling */}
         <div style={{ marginBottom: '16px' }}>
@@ -1672,7 +1720,7 @@ const buildQueryWithFiltersAndTimeRange = () => {
   );
 
   const renderStyleTab = () => (
-    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
+    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px', minHeight: '500px' }}>
       <div>
         {/* Chart Colors */}
         <div style={{ marginBottom: '16px' }}>
@@ -1845,103 +1893,137 @@ const buildQueryWithFiltersAndTimeRange = () => {
         borderRadius: '12px',
         width: '100%',
         maxWidth: '1100px',
-        maxHeight: '90vh',
-        overflow: 'hidden',
+        height: '700px',
         display: 'flex',
         flexDirection: 'column',
         boxShadow: theme.shadowLg,
-        border: `1px solid ${theme.border}`
+        border: `1px solid ${theme.border}`,
+        overflow: 'hidden'
       }}>
-        {/* Header */}
+        {/* Compact Header with Tabs */}
         <div style={{
           padding: '16px 20px',
           borderBottom: `1px solid ${theme.border}`,
+          background: theme.card,
           display: 'flex',
           justifyContent: 'space-between',
-          alignItems: 'center',
-          background: theme.card
+          alignItems: 'center'
         }}>
-          <div>
-            <h2 style={{ 
-              margin: 0, 
-              fontSize: '16px', 
-              color: theme.text, 
-              fontWeight: '600',
-              letterSpacing: '-0.01em'
+          <div style={{ display: 'flex', alignItems: 'center', gap: '20px', flex: 1 }}>
+            <div>
+              <h2 style={{ 
+                margin: 0, 
+                fontSize: '16px', 
+                color: theme.text, 
+                fontWeight: '600',
+                letterSpacing: '-0.01em'
+              }}>
+                {panel ? 'Edit Panel' : 'Add New Panel'}
+              </h2>
+              <p style={{ 
+                margin: '2px 0 0', 
+                fontSize: '11px', 
+                color: theme.textMuted 
+              }}>
+                Configure your visualization
+              </p>
+            </div>
+
+            {/* Tabs integrated in header */}
+            <div style={{
+              display: 'flex',
+              gap: '4px',
+              marginLeft: '20px'
             }}>
-              {panel ? 'Edit Panel' : 'Add New Panel'}
-            </h2>
-            <p style={{ 
-              margin: '2px 0 0', 
-              fontSize: '12px', 
-              color: theme.textMuted 
-            }}>
-              Configure your visualization settings
-            </p>
+              {[
+                { id: 'data', label: 'Data', icon: Database },
+                { id: 'axes', label: 'Axes', icon: AlignLeft },
+                { id: 'style', label: 'Style', icon: Eye },
+                { id: 'advanced', label: 'Advanced', icon: Settings }
+              ].map(tab => {
+                const Icon = tab.icon;
+                return (
+                  <button
+                    key={tab.id}
+                    onClick={() => setActiveTab(tab.id)}
+                    style={{
+                      padding: '6px 14px',
+                      background: activeTab === tab.id ? theme.bg : 'transparent',
+                      border: 'none',
+                      borderRadius: '6px',
+                      color: activeTab === tab.id ? theme.text : theme.textMuted,
+                      cursor: 'pointer',
+                      fontSize: '12px',
+                      fontWeight: '500',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '6px',
+                      transition: 'all 0.15s ease',
+                      boxShadow: activeTab === tab.id ? theme.shadow : 'none'
+                    }}
+                    onMouseEnter={(e) => activeTab !== tab.id && (e.currentTarget.style.color = theme.text)}
+                    onMouseLeave={(e) => activeTab !== tab.id && (e.currentTarget.style.color = theme.textMuted)}
+                  >
+                    <Icon size={13} />
+                    {tab.label}
+                  </button>
+                );
+              })}
+            </div>
           </div>
-          <button onClick={onClose} style={{
-            background: 'none',
-            border: 'none',
-            color: theme.textMuted,
-            cursor: 'pointer',
-            padding: '6px',
-            borderRadius: '4px',
-            transition: 'all 0.15s ease'
-          }}
-          onMouseEnter={(e) => e.currentTarget.style.background = theme.cardHover}
-          onMouseLeave={(e) => e.currentTarget.style.background = 'none'}
-          >
-            <X size={18} />
-          </button>
+
+          {/* Actions in header */}
+          <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+            <button
+              onClick={onClose}
+              style={{
+                padding: '6px 14px',
+                background: theme.bg,
+                border: `1px solid ${theme.border}`,
+                borderRadius: '6px',
+                color: theme.textMuted,
+                cursor: 'pointer',
+                fontSize: '12px',
+                fontWeight: '500',
+                transition: 'all 0.15s ease'
+              }}
+              onMouseEnter={(e) => e.currentTarget.style.background = theme.cardHover}
+              onMouseLeave={(e) => e.currentTarget.style.background = theme.bg}
+            >
+              Cancel
+            </button>
+            <button
+              onClick={() => {
+                console.log('💾 Saving config with axes:', config);
+                onSave(config);
+              }}
+              style={{
+                padding: '6px 18px',
+                background: theme.accent,
+                border: 'none',
+                borderRadius: '6px',
+                color: 'white',
+                cursor: 'pointer',
+                fontSize: '12px',
+                fontWeight: '500',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px',
+                transition: 'all 0.15s ease',
+                boxShadow: theme.shadow
+              }}
+              onMouseEnter={(e) => e.currentTarget.style.background = theme.accentHover}
+              onMouseLeave={(e) => e.currentTarget.style.background = theme.accent}
+            >
+              <Save size={14} />
+              {panel ? 'Save' : 'Add'}
+            </button>
+          </div>
         </div>
 
-        {/* Tabs */}
-        <div style={{
-          display: 'flex',
-          gap: '2px',
-          padding: '12px 20px 0',
-          borderBottom: `1px solid ${theme.border}`,
-          background: theme.bg
-        }}>
-          {[
-            { id: 'data', label: 'Data', icon: Database },
-            { id: 'axes', label: 'Axes', icon: AlignLeft },
-            { id: 'style', label: 'Style', icon: Eye },
-            { id: 'advanced', label: 'Advanced', icon: Settings }
-          ].map(tab => {
-            const Icon = tab.icon;
-            return (
-              <button
-                key={tab.id}
-                onClick={() => setActiveTab(tab.id)}
-                style={{
-                  padding: '8px 16px',
-                  background: activeTab === tab.id ? theme.card : 'transparent',
-                  border: 'none',
-                  borderBottom: `2px solid ${activeTab === tab.id ? theme.accent : 'transparent'}`,
-                  color: activeTab === tab.id ? theme.text : theme.textMuted,
-                  cursor: 'pointer',
-                  fontSize: '12px',
-                  fontWeight: '500',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '6px',
-                  transition: 'all 0.15s ease',
-                  borderRadius: '6px 6px 0 0'
-                }}
-                onMouseEnter={(e) => activeTab !== tab.id && (e.currentTarget.style.color = theme.text)}
-                onMouseLeave={(e) => activeTab !== tab.id && (e.currentTarget.style.color = theme.textMuted)}
-              >
-                <Icon size={13} />
-                {tab.label}
-              </button>
-            );
-          })}
-        </div>
-
-        {/* Content */}
+        {/* Content - takes all remaining space */}
         <div style={{ 
-          flex: 1, 
+          flex: 1,
           overflow: 'auto', 
           padding: '20px',
           background: theme.bg
@@ -1950,61 +2032,6 @@ const buildQueryWithFiltersAndTimeRange = () => {
           {activeTab === 'axes' && renderAxisTab()}
           {activeTab === 'style' && renderStyleTab()}
           {activeTab === 'advanced' && renderAdvancedTab()}
-        </div>
-
-        {/* Footer */}
-        <div style={{
-          padding: '12px 20px',
-          borderTop: `1px solid ${theme.border}`,
-          display: 'flex',
-          justifyContent: 'flex-end',
-          gap: '10px',
-          background: theme.card
-        }}>
-          <button
-            onClick={onClose}
-            style={{
-              padding: '8px 16px',
-              background: theme.bg,
-              border: `1px solid ${theme.border}`,
-              borderRadius: '6px',
-              color: theme.textMuted,
-              cursor: 'pointer',
-              fontSize: '12px',
-              fontWeight: '500',
-              transition: 'all 0.15s ease'
-            }}
-            onMouseEnter={(e) => e.currentTarget.style.background = theme.cardHover}
-            onMouseLeave={(e) => e.currentTarget.style.background = theme.bg}
-          >
-            Cancel
-          </button>
-          <button
-            onClick={() => {
-              console.log('💾 Saving config with axes:', config);
-              onSave(config);
-            }}
-            style={{
-              padding: '8px 20px',
-              background: theme.accent,
-              border: 'none',
-              borderRadius: '6px',
-              color: 'white',
-              cursor: 'pointer',
-              fontSize: '12px',
-              fontWeight: '500',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '6px',
-              transition: 'all 0.15s ease',
-              boxShadow: theme.shadow
-            }}
-            onMouseEnter={(e) => e.currentTarget.style.background = theme.accentHover}
-            onMouseLeave={(e) => e.currentTarget.style.background = theme.accent}
-          >
-            <Save size={14} />
-            {panel ? 'Save Changes' : 'Add Panel'}
-          </button>
         </div>
       </div>
 
