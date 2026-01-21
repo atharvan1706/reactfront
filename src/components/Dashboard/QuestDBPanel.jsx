@@ -54,24 +54,23 @@ const buildQueryWithFiltersAndTimeRange = () => {
     const whereClauses = [];
     
     // ✅ FIX 1: Use dateadd() with proper interval format
-    if (config.timeRange === 'last' && config.timeRangeLast) {
-      const intervals = {
-        '5m': '5 minutes',      // ✅ Use full word format
-        '15m': '15 minutes',
-        '1h': '1 hour',
-        '6h': '6 hours',
-        '24h': '24 hours',
-        '7d': '7 days',
-        '30d': '30 days'
-      };
-      
-      const interval = intervals[config.timeRangeLast];
-      if (interval) {
-        whereClauses.push(
-          `${config.timestampField} >= dateadd('${interval}', -1, now())` // ✅ Correct syntax
-        );
-      }
-    }
+   if (config.timeRange === 'last' && config.timeRangeLast) {
+  const timeRangeMap = {
+    '5m':   { unit: 'm', amount: 5 },
+    '15m':  { unit: 'm', amount: 15 },
+    '1h':   { unit: 'h', amount: 1 },
+    '6h':   { unit: 'h', amount: 6 },
+    '24h':  { unit: 'h', amount: 24 },
+    '7d':   { unit: 'd', amount: 7 },
+    '30d':  { unit: 'd', amount: 30 }
+  };
+  const timeSpec = timeRangeMap[config.timeRangeLast];
+  if (timeSpec) {
+    const timeClause = `${config.timestampField} >= dateadd('${timeSpec.unit}', -${timeSpec.amount}, now())`;
+    whereClauses.push(timeClause);
+    console.log('⏰ Time range clause:', timeClause);
+  }
+}
     
     // ✅ FIX 2: Use cast() instead of timestamp()
     else if (config.timeRange === 'custom' && config.timeRangeStart && config.timeRangeEnd) {
