@@ -334,7 +334,7 @@ const buildQueryWithFiltersAndTimeRange = () => {
   // Smart margin calculation based on actual data values
   const calculateSmartMargins = (data, yFields, vizType) => {
     if (!data || data.length === 0 || vizType === 'stat' || vizType === 'table') {
-      return { left: 45, right: 25, top: 60, bottom: 50 };
+      return { left: 40, right: 20, top: 35, bottom: 50 };
     }
 
     // Calculate max Y-axis label width by finding longest formatted value
@@ -351,12 +351,12 @@ const buildQueryWithFiltersAndTimeRange = () => {
     const formattedMin = formatTickValue(minYValue);
     const longestYLabel = formattedMax.length > formattedMin.length ? formattedMax : formattedMin;
     
-    // More precise character width estimation
-    const estimatedCharWidth = isSmall ? 5.5 : isMedium ? 6 : 6.5;
+    // Ultra-tight character width estimation
+    const estimatedCharWidth = isSmall ? 5 : isMedium ? 5.5 : 6;
     const yLabelWidth = Math.ceil(longestYLabel.length * estimatedCharWidth);
     
-    // Smart left margin: tight fit with small buffer
-    const leftMargin = Math.max(35, Math.min(yLabelWidth + 15, 80));
+    // MINIMAL left margin: just enough for Y-axis labels
+    const leftMargin = Math.max(25, Math.min(yLabelWidth + 8, 65));
     
     // Calculate X-axis needs - check if rotation is set or use default
     const rotationAngle = config.xAxisTickRotation ?? -45; // Default to -45
@@ -364,18 +364,18 @@ const buildQueryWithFiltersAndTimeRange = () => {
     const sampleXLabels = data.slice(0, Math.min(10, data.length)).map(d => d._time || '');
     const maxXLabelLength = Math.max(...sampleXLabels.map(l => String(l).length));
     
-    // Smart right margin: prevent overflow
+    // Minimal right margin
     const rightMargin = hasRotatedXTicks 
-      ? Math.max(25, Math.min(maxXLabelLength * 2, 50))
-      : Math.max(30, Math.min(maxXLabelLength * 3, 60));
+      ? Math.max(15, Math.min(maxXLabelLength * 1.5, 35))
+      : Math.max(20, Math.min(maxXLabelLength * 2, 45));
     
-    // Smart bottom margin based on rotation (increased for rotated labels)
-    const bottomMargin = hasRotatedXTicks ? 85 : 45;
+    // Smart bottom margin based on rotation
+    const bottomMargin = hasRotatedXTicks ? 80 : 40;
     
     return {
       left: leftMargin,
       right: rightMargin,
-      top: 40,
+      top: 35,
       bottom: bottomMargin
     };
   };
@@ -425,18 +425,18 @@ const buildQueryWithFiltersAndTimeRange = () => {
     const yFields = (config.yAxes && config.yAxes.length > 0) ? config.yAxes : [config.yAxis].filter(Boolean);
     const filteredYFields = yFields.filter(field => field && field !== 'value');
     
-    // ✅ SMART DYNAMIC MARGINS based on actual data with vizType
+    // ✅ SMART DYNAMIC MARGINS - MINIMAL SPACING
     const smartMargins = calculateSmartMargins(data, filteredYFields, config.vizType);
     
     const hasLegend = config.showLegend && filteredYFields.length > 1;
-    const hasRotatedXTicks = (config.xAxisTickRotation ?? 0) !== 0;
+    const hasRotatedXTicks = Math.abs(config.xAxisTickRotation ?? -45) > 0;
     const hasYAxisLabel = config.yAxisShowLabel !== false && config.yAxisLabel;
     const hasXAxisLabel = config.xAxisShowLabel !== false && config.xAxisLabel;
     
-    // Adjust margins based on labels (minimal additions)
-    const bottomMargin = smartMargins.bottom + (hasXAxisLabel ? 18 : 0);
-    const leftMargin = smartMargins.left + (hasYAxisLabel ? 18 : 0);
-    const topMargin = hasLegend ? 50 : 40; // Reduced from 70/55
+    // MINIMAL margin additions for labels
+    const bottomMargin = smartMargins.bottom + (hasXAxisLabel ? 15 : 0);
+    const leftMargin = smartMargins.left + (hasYAxisLabel ? 12 : 0);
+    const topMargin = hasLegend ? 42 : 35; // Much tighter
     const rightMargin = smartMargins.right;
 
     const chartProps = {
@@ -485,25 +485,25 @@ const buildQueryWithFiltersAndTimeRange = () => {
         fontSize: config.yAxisTickFontSize ?? (fontSize - 1),
         angle: config.yAxisTickRotation ?? 0,
         textAnchor: (config.yAxisTickRotation ?? 0) !== 0 ? 'end' : 'end',
-        dx: -5
+        dx: -3
       } : false,
       tickFormatter: formatTickValue,
       label: (config.yAxisShowLabel !== false && config.yAxisLabel) ? {
         value: config.yAxisLabel,
         angle: -90,
         position: 'insideLeft',
-        fontSize: config.yAxisLabelFontSize ?? 11,
+        fontSize: config.yAxisLabelFontSize ?? 10,
         fill: theme.text,
-        offset: 5
+        offset: 0
       } : undefined,
       domain: yDomain,
       scale: yAxisScaleType,
-      width: config.yAxisWidth !== 'auto' ? parseInt(config.yAxisWidth) : smartMargins.left + (hasYAxisLabel ? 15 : 0),
+      width: config.yAxisWidth !== 'auto' ? parseInt(config.yAxisWidth) : smartMargins.left + (hasYAxisLabel ? 10 : 0),
       orientation: config.yAxisPosition || 'left',
       tickCount: config.yAxisTickCount !== 'auto' ? parseInt(config.yAxisTickCount) : undefined,
       stroke: theme.chartAxis,
       tickLine: { stroke: theme.chartAxis },
-      tickMargin: 8
+      tickMargin: 5
     };
 
     const gridConfig = config.showGrid ? {
@@ -513,20 +513,20 @@ const buildQueryWithFiltersAndTimeRange = () => {
         : `rgba(0, 0, 0, ${config.gridOpacity ?? 0.1})`
     } : false;
 
-    // ✅ FIXED: Legend configuration with proper spacing to prevent overlap
+    // ✅ Compact legend configuration
     const legendConfig = config.showLegend ? {
       wrapperStyle: { 
         color: theme.text, 
         fontSize: `${fontSize}px`,
-        paddingTop: '10px',
-        paddingBottom: '5px'
+        paddingTop: '5px',
+        paddingBottom: '3px'
       },
       layout: 'horizontal',
       verticalAlign: 'top',
       align: 'center',
-      iconSize: isSmall ? 8 : 10,
+      iconSize: isSmall ? 8 : 9,
       iconType: 'line',
-      wrapperMargin: { top: 5, bottom: 5 }
+      wrapperMargin: { top: 0, bottom: 0 }
     } : null;
 
     switch (config.vizType) {
@@ -636,25 +636,25 @@ const buildQueryWithFiltersAndTimeRange = () => {
       case 'pie':
         const pieDataKey = filteredYFields[0] || config.yAxis;
         const pieHasLegend = config.showLegend && data.length > 1;
-        const pieRadius = isSmall ? 42 : isMedium ? 58 : 72;
+        const pieRadius = isSmall ? 45 : isMedium ? 60 : 75;
         const pieLegendConfig = pieHasLegend ? {
           wrapperStyle: { 
             color: theme.text, 
             fontSize: `${fontSize}px`,
-            paddingTop: '5px'
+            paddingTop: '5px',
+            paddingBottom: '5px'
           },
           layout: 'horizontal',
-          verticalAlign: 'bottom',
+          verticalAlign: 'top',
           align: 'center',
-          iconSize: 9,
-          height: 30
+          iconSize: 8
         } : null;
         
         const pieMargin = { 
-          top: 40, 
-          right: 25, 
-          bottom: pieHasLegend ? 60 : 35, 
-          left: 25 
+          top: pieHasLegend ? 48 : 35, 
+          right: 20, 
+          bottom: 30, 
+          left: 20 
         };
         
         return (
@@ -665,7 +665,7 @@ const buildQueryWithFiltersAndTimeRange = () => {
                 dataKey={pieDataKey} 
                 nameKey="_time" 
                 cx="50%" 
-                cy={pieHasLegend ? "43%" : "50%"}
+                cy="50%"
                 outerRadius={pieRadius} 
                 label={!isSmall && {
                   fill: theme.text,
@@ -718,26 +718,27 @@ const buildQueryWithFiltersAndTimeRange = () => {
         );
 
       case 'radar':
-        // Radar needs more space due to circular layout
+        // Radar with minimal margins
         const radarHasLegend = config.showLegend && filteredYFields.length > 1;
+        
         const radarMargin = isSmall 
-          ? { top: 45, right: 35, bottom: radarHasLegend ? 60 : 40, left: 35 }
+          ? { top: radarHasLegend ? 48 : 32, right: 25, bottom: 32, left: 25 }
           : isMedium
-          ? { top: 50, right: 40, bottom: radarHasLegend ? 65 : 45, left: 40 }
-          : { top: 55, right: 45, bottom: radarHasLegend ? 70 : 50, left: 45 };
+          ? { top: radarHasLegend ? 52 : 35, right: 28, bottom: 35, left: 28 }
+          : { top: radarHasLegend ? 55 : 38, right: 30, bottom: 38, left: 30 };
         
         const radarLegendConfig = radarHasLegend ? {
           wrapperStyle: { 
             color: theme.text, 
             fontSize: `${fontSize}px`,
-            paddingTop: '5px'
+            paddingTop: '5px',
+            paddingBottom: '5px'
           },
           layout: 'horizontal',
-          verticalAlign: 'bottom',
+          verticalAlign: 'top',
           align: 'center',
-          iconSize: 9,
-          iconType: 'line',
-          height: 30
+          iconSize: 8,
+          iconType: 'line'
         } : null;
         
         return (
