@@ -41,6 +41,7 @@ export const DEFAULT_PANEL_CONFIG = {
   lineWidth: 2,
   fillOpacity: 0.5,
   showLegend: true,
+  legendPosition: 'top',
   showGrid: true,
   showDots: false,
   transformations: [],
