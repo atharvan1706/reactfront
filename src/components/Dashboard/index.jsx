@@ -632,9 +632,18 @@ export default function Dashboard({ onLogout }) {
             borderRadius: windowWidth < 640 ? '6px' : '8px',
             display: 'flex',
             alignItems: 'center',
-            justifyContent: 'center'
+            justifyContent: 'center',
+            padding: '4px'
           }}>
-            <Activity size={windowWidth < 640 ? 16 : 18} color="white" />
+            <img 
+              src="/vite.svg" 
+              alt="Miralys Logo" 
+              style={{
+                width: '100%',
+                height: '100%',
+                objectFit: 'contain'
+              }}
+            />
           </div>
           {windowWidth >= 640 && (
             <span style={{
