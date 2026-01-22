@@ -6,7 +6,6 @@ import {
   Building2,
   Eye,
   EyeOff,
-  Sparkles,
   ArrowRight,
   Shield,
   Zap,
@@ -218,7 +217,15 @@ export default function AuthPage({ onAuth }) {
               ...styles.logo,
               justifyContent: isMobile ? 'center' : 'flex-start'
             }}>
-              <Sparkles size={isMobile ? 24 : 32} />
+              <img 
+                src="/vite.svg" 
+                alt="Miralys Logo" 
+                style={{
+                  width: isMobile ? '24px' : '32px',
+                  height: isMobile ? '24px' : '32px',
+                  objectFit: 'contain'
+                }}
+              />
               <span>Miralys</span>
             </div>
 
@@ -247,7 +254,16 @@ export default function AuthPage({ onAuth }) {
                   <Shield /> Enterprise-grade security
                 </div>
                 <div style={styles.feature}>
-                  <Sparkles /> AI-driven insights
+                  <img 
+                    src="/vite.svg" 
+                    alt="" 
+                    style={{
+                      width: '24px',
+                      height: '24px',
+                      objectFit: 'contain'
+                    }}
+                  />
+                  AI-driven insights
                 </div>
               </>
             )}
