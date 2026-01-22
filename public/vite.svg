@@ -1,16 +1,37 @@
 <svg width="320" height="320" viewBox="0 0 320 320" xmlns="http://www.w3.org/2000/svg">
   <defs>
-    <linearGradient id="monoBlue" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0%" stop-color="#9FB4FF"/>
-      <stop offset="100%" stop-color="#3E5AE6"/>
+    <!-- Elegant premium blue -->
+    <linearGradient id="monoBlueElite" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#B3C5FF"/>
+      <stop offset="50%" stop-color="#6F89F5"/>
+      <stop offset="100%" stop-color="#3A56D8"/>
     </linearGradient>
+
+    <!-- Subtle luxury glow -->
+    <filter id="softEliteGlow" x="-40%" y="-40%" width="180%" height="180%">
+      <feGaussianBlur stdDeviation="2.5" result="blur"/>
+      <feMerge>
+        <feMergeNode in="blur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
   </defs>
 
+  <!-- Dark premium background -->
   <rect width="320" height="320" rx="36" fill="#0B1020"/>
 
-  <path d="M88 232 V96 L160 184 L232 96 V232"
-        fill="none"
-        stroke="url(#monoBlue)"
-        stroke-width="10"
-        stroke-linejoin="round"/>
+  <!-- Elegant Monolith M -->
+  <path
+    d="M96 236
+       V92
+       L160 176
+       L224 92
+       V236"
+    fill="none"
+    stroke="url(#monoBlueElite)"
+    stroke-width="8.5"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+    filter="url(#softEliteGlow)"
+  />
 </svg>
