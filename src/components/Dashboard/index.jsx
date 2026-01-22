@@ -755,22 +755,22 @@ export default function Dashboard({ onLogout }) {
             onClick={handleAddPanel}
             disabled={!currentDashboard}
             style={{
-              padding: windowWidth < 640 ? '6px 10px' : '8px 14px',
+              padding: windowWidth < 640 ? '4px 8px' : '6px 10px',
               background: currentDashboard ? theme.accent : theme.border,
               color: 'white',
               border: 'none',
               borderRadius: '6px',
-              fontSize: windowWidth < 640 ? '11px' : '13px',
+              fontSize: windowWidth < 640 ? '10px' : '12px',
               fontWeight: '600',
               cursor: currentDashboard ? 'pointer' : 'not-allowed',
               display: 'flex',
               alignItems: 'center',
-              gap: windowWidth < 640 ? '4px' : '6px',
+              gap: windowWidth < 640 ? '3px' : '5px',
               opacity: currentDashboard ? 1 : 0.5,
               flexShrink: 0
             }}
           >
-            <BarChart3 size={windowWidth < 640 ? 12 : 14} />
+            <BarChart3 size={windowWidth < 640 ? 11 : 13} />
             {windowWidth >= 1024 && 'Panel'}
           </button>
 
@@ -778,22 +778,22 @@ export default function Dashboard({ onLogout }) {
             onClick={handleAddScada}
             disabled={!currentDashboard}
             style={{
-              padding: windowWidth < 640 ? '6px 10px' : '8px 14px',
+              padding: windowWidth < 640 ? '4px 8px' : '6px 10px',
               background: currentDashboard ? theme.success : theme.border,
               color: 'white',
               border: 'none',
               borderRadius: '6px',
-              fontSize: windowWidth < 640 ? '11px' : '13px',
+              fontSize: windowWidth < 640 ? '10px' : '12px',
               fontWeight: '600',
               cursor: currentDashboard ? 'pointer' : 'not-allowed',
               display: 'flex',
               alignItems: 'center',
-              gap: windowWidth < 640 ? '4px' : '6px',
+              gap: windowWidth < 640 ? '3px' : '5px',
               opacity: currentDashboard ? 1 : 0.5,
               flexShrink: 0
             }}
           >
-            <Settings size={windowWidth < 640 ? 12 : 14} />
+            <Layers size={windowWidth < 640 ? 11 : 13} />
             {windowWidth >= 1024 && 'SCADA'}
           </button>
 
@@ -1002,7 +1002,7 @@ export default function Dashboard({ onLogout }) {
                         : '0 2px 12px rgba(16, 185, 129, 0.3)';
                     }}
                   >
-                    <Settings size={windowWidth < 640 ? 16 : 18} color="white" />
+                    <Layers size={windowWidth < 640 ? 16 : 18} color="white" />
                     Add SCADA Diagram
                   </button>
                 )}
