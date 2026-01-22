@@ -514,7 +514,7 @@ const buildQueryWithFiltersAndTimeRange = () => {
     } : false;
 
     // ✅ DYNAMIC legend configuration based on user preference
-    const legendPosition = config.legendPosition; // Default to top
+    const legendPosition = config.legendPosition || 'top'; // Default to top
     const isVerticalLegend = legendPosition === 'left' || legendPosition === 'right';
     const isHorizontalLegend = legendPosition === 'top' || legendPosition === 'bottom';
     
