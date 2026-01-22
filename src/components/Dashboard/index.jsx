@@ -628,12 +628,9 @@ export default function Dashboard({ onLogout }) {
           <div style={{
             width: windowWidth < 640 ? '28px' : '32px',
             height: windowWidth < 640 ? '28px' : '32px',
-            background: `linear-gradient(135deg, ${theme.accent} 0%, ${theme.accentHover} 100%)`,
-            borderRadius: windowWidth < 640 ? '6px' : '8px',
             display: 'flex',
             alignItems: 'center',
-            justifyContent: 'center',
-            padding: '4px'
+            justifyContent: 'center'
           }}>
             <img 
               src="/vite.svg" 
