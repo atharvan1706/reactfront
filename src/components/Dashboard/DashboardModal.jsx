@@ -128,51 +128,51 @@ function DashboardModal({
         padding: '32px',
         display: 'flex',
         flexDirection: 'column',
-        gap: '28px'
+        gap: '28px',
+        position: 'relative'
       }}>
-        {/* Close Button - Minimal */}
-        <button 
-          onClick={onClose} 
-          className="action-btn" 
-          style={{
-            position: 'absolute',
-            top: '20px',
-            right: '20px',
-            background: 'transparent',
-            border: 'none',
-            color: 'rgba(241, 245, 249, 0.4)',
-            cursor: 'pointer',
-            padding: '8px',
-            borderRadius: '8px',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            opacity: 0.6
-          }}
-        >
-          <X size={20} strokeWidth={2} />
-        </button>
-
-        {/* Title - Compact */}
-        <div>
-          <h2 style={{ 
-            margin: 0, 
-            fontSize: '22px', 
-            fontWeight: '700',
-            letterSpacing: '-0.02em',
-            color: '#f1f5f9',
-            marginBottom: '6px'
-          }}>
-            Dashboards
-          </h2>
-          <p style={{ 
-            margin: 0, 
-            fontSize: '13px', 
-            color: 'rgba(241, 245, 249, 0.5)',
-            fontWeight: '400'
-          }}>
-            {dashboards.length} workspace{dashboards.length !== 1 ? 's' : ''}
-          </p>
+        {/* Title and Close Button */}
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+          <div>
+            <h2 style={{ 
+              margin: 0, 
+              fontSize: '22px', 
+              fontWeight: '700',
+              letterSpacing: '-0.02em',
+              color: '#f1f5f9',
+              marginBottom: '6px'
+            }}>
+              Dashboards
+            </h2>
+            <p style={{ 
+              margin: 0, 
+              fontSize: '13px', 
+              color: 'rgba(241, 245, 249, 0.5)',
+              fontWeight: '400'
+            }}>
+              {dashboards.length} workspace{dashboards.length !== 1 ? 's' : ''}
+            </p>
+          </div>
+          
+          {/* Close Button - Inside Container */}
+          <button 
+            onClick={onClose} 
+            className="action-btn" 
+            style={{
+              background: 'rgba(255, 255, 255, 0.03)',
+              border: '1px solid rgba(255, 255, 255, 0.08)',
+              color: 'rgba(241, 245, 249, 0.5)',
+              cursor: 'pointer',
+              padding: '8px',
+              borderRadius: '8px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              opacity: 0.8
+            }}
+          >
+            <X size={18} strokeWidth={2} />
+          </button>
         </div>
 
         {/* Create New - Compact Inline */}
