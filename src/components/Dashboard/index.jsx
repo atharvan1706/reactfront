@@ -755,22 +755,22 @@ export default function Dashboard({ onLogout }) {
             onClick={handleAddPanel}
             disabled={!currentDashboard}
             style={{
-              padding: windowWidth < 640 ? '4px 8px' : '6px 10px',
+              padding: windowWidth < 640 ? '3px 6px' : '4px 8px',
               background: currentDashboard ? theme.accent : theme.border,
               color: 'white',
               border: 'none',
-              borderRadius: '6px',
-              fontSize: windowWidth < 640 ? '10px' : '12px',
+              borderRadius: '4px',
+              fontSize: windowWidth < 640 ? '9px' : '11px',
               fontWeight: '600',
               cursor: currentDashboard ? 'pointer' : 'not-allowed',
               display: 'flex',
               alignItems: 'center',
-              gap: windowWidth < 640 ? '3px' : '5px',
+              gap: windowWidth < 640 ? '2px' : '4px',
               opacity: currentDashboard ? 1 : 0.5,
               flexShrink: 0
             }}
           >
-            <BarChart3 size={windowWidth < 640 ? 11 : 13} />
+            <BarChart3 size={windowWidth < 640 ? 10 : 12} />
             {windowWidth >= 1024 && 'Panel'}
           </button>
 
@@ -778,22 +778,22 @@ export default function Dashboard({ onLogout }) {
             onClick={handleAddScada}
             disabled={!currentDashboard}
             style={{
-              padding: windowWidth < 640 ? '4px 8px' : '6px 10px',
+              padding: windowWidth < 640 ? '3px 6px' : '4px 8px',
               background: currentDashboard ? theme.success : theme.border,
               color: 'white',
               border: 'none',
-              borderRadius: '6px',
-              fontSize: windowWidth < 640 ? '10px' : '12px',
+              borderRadius: '4px',
+              fontSize: windowWidth < 640 ? '9px' : '11px',
               fontWeight: '600',
               cursor: currentDashboard ? 'pointer' : 'not-allowed',
               display: 'flex',
               alignItems: 'center',
-              gap: windowWidth < 640 ? '3px' : '5px',
+              gap: windowWidth < 640 ? '2px' : '4px',
               opacity: currentDashboard ? 1 : 0.5,
               flexShrink: 0
             }}
           >
-            <Layers size={windowWidth < 640 ? 11 : 13} />
+            <Layers size={windowWidth < 640 ? 10 : 12} />
             {windowWidth >= 1024 && 'SCADA'}
           </button>
 
