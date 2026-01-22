@@ -309,8 +309,8 @@ export default function Dashboard({ onLogout }) {
             ...panelData,      // Override with new data
             id: p.id,          // Always preserve ID
             // ✅ Explicitly ensure critical properties are not lost
-            legendPosition: panelData.legendPosition || p.legendPosition || 'top',
-            showLegend: panelData.showLegend !== undefined ? panelData.showLegend : (p.showLegend !== undefined ? p.showLegend : true)
+           // legendPosition: panelData.legendPosition || p.legendPosition || 'top',
+           // showLegend: panelData.showLegend !== undefined ? panelData.showLegend : (p.showLegend !== undefined ? p.showLegend : true)
           };
           
           console.log('✅ MERGED PANEL:', {
@@ -334,7 +334,7 @@ export default function Dashboard({ onLogout }) {
           : 0,
         width: panelData.width || 4,
         height: panelData.height || 2,
-        legendPosition: panelData.legendPosition || 'top'
+        legendPosition: panelData.legendPosition 
       };
       
       console.log('✅ NEW PANEL:', {
