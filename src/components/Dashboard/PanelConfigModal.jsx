@@ -164,7 +164,7 @@ function PanelConfigModal({ panel, onSave, onClose, allTables, darkMode }) {
         timeRangeEnd: panel.timeRangeEnd || '',
         filters: panel.filters || [],
         transformations: panel.transformations || [],
-        legendPosition: panel.legendPosition || 'top', // ✅ ADD THIS
+      //  legendPosition: panel.legendPosition || 'top', // ✅ ADD THIS
         
         xAxisLabel: panel.xAxisLabel || '',
         yAxisLabel: panel.yAxisLabel || '',
@@ -217,7 +217,7 @@ function PanelConfigModal({ panel, onSave, onClose, allTables, darkMode }) {
         timeRangeEnd: '',
         filters: [],
         dataSource: 'table',
-        legendPosition: 'top', // ✅ ADD THIS
+       // legendPosition: 'top', // ✅ ADD THIS
         
         xAxisLabel: '',
         yAxisLabel: '',
