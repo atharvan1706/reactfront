@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const API_URL = import.meta.env.VITE_API_URL || 'https://reactback-production-6cd8.up.railway.app/api';
+const API_URL = import.meta.env.VITE_API_URL || 'http://13.232.81.24:3001/api';
 
 // 🔍 DEBUG: Check what URL is being used
 console.log('=================================');
