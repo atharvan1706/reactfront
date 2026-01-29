@@ -16,7 +16,7 @@ import {
 
 const API_URL =
   import.meta.env.VITE_API_URL ||
-  'https://reactback-production-6cd8.up.railway.app/api';
+  'http://13.232.81.24:3001/api';
 
 export default function AdminDashboard() {
   const [activeTab, setActiveTab] = useState('invitations');
