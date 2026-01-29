@@ -1,7 +1,7 @@
 // src/services/questdb.js
 import axios from 'axios';
 
-const API_URL = 'https://reactback-production-6cd8.up.railway.app/api/questdb/query';
+const API_URL = 'http://13.232.81.24:3001/api/questdb/query';
 const PLANT_ID = 'plantA';
 
 class QuestDBService {
