@@ -1,5 +1,5 @@
 // frontend/src/services/dashboardService.js - FIXED VERSION
-const API_URL = import.meta.env.VITE_API_URL || 'https://reactback-production-6cd8.up.railway.app/api';
+const API_URL = import.meta.env.VITE_API_URL || 'http://13.232.81.24:3001/api';
 
 // Helper function to safely extract plantId from user object
 const getPlantId = (user) => {
